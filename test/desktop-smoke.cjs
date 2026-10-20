@@ -24,6 +24,27 @@ async function run() {
   delete env.ELECTRON_RUN_AS_NODE;
   const errors = [];
   let app;
+  const deadline = setTimeout(() => {
+    console.error('Desktop smoke exceeded two minutes. Stopping this test process.');
+    app?.process().kill();
+    process.exit(1);
+  }, 120000);
+  deadline.unref();
+  async function closeApp() {
+    if (!app) return;
+    const closing = app;
+    app = null;
+    let timeout;
+    try {
+      await Promise.race([
+        closing.close(),
+        new Promise((_resolve, reject) => { timeout = setTimeout(() => {
+          closing.process().kill();
+          reject(new Error('Electron did not close within ten seconds'));
+        }, 10000); })
+      ]);
+    } finally { clearTimeout(timeout); }
+  }
   async function launch() {
     const executablePath = process.argv[2];
     app = await electron.launch({
@@ -39,6 +60,7 @@ async function run() {
   }
   try {
     let page = await launch();
+    console.log('Desktop check: main window opened.');
     assert.equal(await page.evaluate(() => typeof require), 'undefined');
     const prefs = await app.evaluate(({ BrowserWindow }) => {
       const p = BrowserWindow.getAllWindows()[0].webContents.getLastWebPreferences();
@@ -52,7 +74,7 @@ async function run() {
     await page.locator('#lyrics').fill('[Verse 1]\nFirst line\nSecond line\n\n[Chorus]\nTogether');
     await page.locator('#build').click();
     assert.equal(await page.locator('.slide-card').count(), 2);
-    const popupPromise = app.waitForEvent('window');
+    const popupPromise = app.waitForEvent('window', { timeout: 30000 });
     await page.locator('#open-output').click();
     const output = await popupPromise;
     await output.locator('#stage').waitFor();
@@ -67,6 +89,7 @@ async function run() {
     await page.locator('#restore').click();
     assert.equal(await output.locator('.screen-text').innerText(), 'Together');
     await output.close();
+    console.log('Desktop check: presentation and fullscreen passed.');
 
     // Sharing is opt-in: cancel first, then import the same file deliberately.
     const incoming = { version: 1, songs: [{ title: 'Shared song', lyrics: 'Shared lyrics', lines: 4, slides: [{ text: 'Shared lyrics', section: 'Verse', key: 'v' }] }] };
@@ -79,6 +102,7 @@ async function run() {
     await page.locator('#import').setInputFiles(upload);
     await page.getByRole('button', { name: 'Shared song', exact: false }).waitFor();
     assert.equal(await page.locator('.song').count(), 3);
+    console.log('Desktop check: library import passed.');
 
     const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aB1sAAAAASUVORK5CYII=', 'base64');
     await page.locator('#background').setInputFiles({ name: 'background.png', mimeType: 'image/png', buffer: png });
@@ -87,7 +111,8 @@ async function run() {
     assert.equal(backup.songs.length, 3);
     await fs.mkdir(path.join(__dirname, '..', 'test-results'), { recursive: true });
     await page.screenshot({ path: path.join(__dirname, '..', 'test-results', 'desktop.png'), fullPage: true });
-    const pdfWindowPromise = app.waitForEvent('window');
+    console.log('Desktop check: media storage passed.');
+    const pdfWindowPromise = app.waitForEvent('window', { timeout: 30000 });
     await page.locator('#open-output').click();
     const pdfWindow = await pdfWindowPromise;
     await pdfWindow.locator('#stage').waitFor();
@@ -98,7 +123,8 @@ async function run() {
     assert.ok(pdfWindow.frames().some(frame => frame.url().startsWith('chrome-extension://mhjfbmdgcfjbbpaeojofohoefgiehjai/')), 'Built-in PDF viewer loaded');
     await page.locator('#restore').click();
     await pdfWindow.close();
-    await app.close(); app = null;
+    console.log('Desktop check: PDF passed. Restarting.');
+    await closeApp();
     page = await launch();
     assert.equal(await page.locator('.song').count(), 3);
     assert.equal(await page.locator('#title').inputValue(), 'Smoke test song');
@@ -107,7 +133,8 @@ async function run() {
     assert.deepEqual(errors, []);
     console.log('Desktop smoke passed: sandbox, updates bridge, songs, projector, fullscreen, navigation, blackout, PDF, import consent, persistent songs and background.');
   } finally {
-    if (app) await app.close();
+    clearTimeout(deadline);
+    await closeApp();
     const resolved = path.resolve(directory);
     if (path.dirname(resolved) !== path.resolve(os.tmpdir()) || !path.basename(resolved).startsWith('promax-desktop-test-')) throw new Error('Unexpected test directory');
     await fs.rm(resolved, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
