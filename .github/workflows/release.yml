@@ -1,24 +1,24 @@
 name: Build Windows release
-run-name: ProMax Presenter ${{ inputs.version }}
+run-name: ProMax Presenter release
 on:
+  push:
+    branches: [main]
+    paths: [package.json]
   workflow_dispatch:
     inputs:
       version:
-        description: 'New version (for example 1.0.1, without v)'
+        description: 'New stable version, without v'
         required: true
-        default: '1.0.0'
+        default: '1.2.0'
       require_signing:
-        description: 'Require a signing certificate (configure WINDOWS_CERTIFICATE and WINDOWS_CERTIFICATE_PASSWORD first)'
+        description: 'Require the configured Windows signing certificate'
         type: boolean
         default: false
-
 concurrency:
   group: promax-release
   cancel-in-progress: false
-
 permissions:
   contents: read
-
 jobs:
   release:
     runs-on: windows-latest
@@ -26,7 +26,6 @@ jobs:
     permissions:
       contents: write
     env:
-      RELEASE_VERSION: ${{ inputs.version }}
       GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@v4
@@ -34,55 +33,78 @@ jobs:
         with:
           node-version: '24'
           cache: npm
-      - name: Validate version and prevent replacing an existing release
+      - name: Validate the version and skip existing releases
+        id: version
         shell: pwsh
+        env:
+          REQUESTED_VERSION: ${{ inputs.version }}
         run: |
-          if ($env:RELEASE_VERSION -notmatch '^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$') { throw 'Use a version such as 1.0.1, without v.' }
+          $packageVersion = (Get-Content package.json -Raw | ConvertFrom-Json).version
+          $releaseVersion = if ($env:REQUESTED_VERSION) { $env:REQUESTED_VERSION } else { $packageVersion }
+          if ($releaseVersion -notmatch '^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$') { throw 'Use a stable semantic version.' }
+          if ($releaseVersion -ne $packageVersion) { throw 'Update package.json and its lockfile first.' }
           $tags = gh api --paginate "repos/$env:GITHUB_REPOSITORY/git/matching-refs/tags/v" --jq '.[].ref'
-          if ($LASTEXITCODE -ne 0) { throw 'Could not verify existing release versions.' }
+          if ($LASTEXITCODE -ne 0) { throw 'Could not verify existing versions.' }
           $versions = @($tags | Where-Object { $_ -match '^refs/tags/v\d+\.\d+\.\d+$' } | ForEach-Object { [version]($_ -replace '^refs/tags/v','') })
-          if ($versions.Count -gt 0 -and [version]$env:RELEASE_VERSION -le ($versions | Sort-Object -Descending | Select-Object -First 1)) { throw 'Use a version higher than every earlier release.' }
-          gh release view "v$env:RELEASE_VERSION" --repo $env:GITHUB_REPOSITORY 2>$null
-          if ($LASTEXITCODE -eq 0) { throw 'This version already exists. Choose a new version.' }
-          $global:LASTEXITCODE = 0
-      - run: npm ci --no-fund
-      - run: npm test
-      - run: npm run test:desktop
+          if ($versions.Count -gt 0 -and [version]$releaseVersion -le ($versions | Sort-Object -Descending | Select-Object -First 1)) {
+            'build=false' >> $env:GITHUB_OUTPUT
+          } else {
+            'build=true' >> $env:GITHUB_OUTPUT
+            "RELEASE_VERSION=$releaseVersion" >> $env:GITHUB_ENV
+          }
+      - if: steps.version.outputs.build == 'true'
+        run: npm ci --no-fund
+      - if: steps.version.outputs.build == 'true'
+        run: npm test
+      - if: steps.version.outputs.build == 'true'
+        run: npm run test:desktop
         timeout-minutes: 3
-      - run: npm run test:shared
+      - if: steps.version.outputs.build == 'true'
+        run: npm run test:shared
         timeout-minutes: 3
-      - name: Build installer and update files
+      - if: steps.version.outputs.build == 'true'
+        run: npm run test:backup
+        timeout-minutes: 3
+      - name: Build the installer with all backgrounds included
+        if: steps.version.outputs.build == 'true'
         run: npm run dist:release
         env:
           CSC_LINK: ${{ secrets.WINDOWS_CERTIFICATE }}
           CSC_KEY_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
           PROMAX_REQUIRE_SIGNING: ${{ inputs.require_signing }}
-      - name: Build the matching visual gallery and pack
+      - name: Check the packaged application
+        if: steps.version.outputs.build == 'true'
         shell: pwsh
         run: |
-          node scripts/build-visuals.cjs
-          if ($LASTEXITCODE -ne 0) { throw 'Could not build the visual gallery.' }
-          Compress-Archive -Path visuals/* -DestinationPath "dist/ProMax-Visuals-$env:RELEASE_VERSION.zip" -Force
+          node test/recovered-desktop.cjs "dist/win-unpacked/ProMax Presenter.exe"
+          if ($LASTEXITCODE -ne 0) { throw 'Packaged app verification failed.' }
       - name: Create checksums
+        if: steps.version.outputs.build == 'true'
         shell: pwsh
         run: |
-          Get-ChildItem dist/*.exe,dist/*.blockmap,dist/*.zip,dist/latest.yml | ForEach-Object {
+          Get-ChildItem dist/*.exe,dist/*.blockmap,dist/latest.yml | ForEach-Object {
             $hash = (Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash.ToLower()
             "$hash  $($_.Name)"
           } | Set-Content dist/SHA256SUMS.txt -Encoding utf8
-      - name: Preserve build artifacts
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
+        if: steps.version.outputs.build == 'true'
         with:
-          name: ProMax-Presenter-${{ inputs.version }}
+          name: ProMax-Presenter-${{ env.RELEASE_VERSION }}
           path: |
             dist/*.exe
             dist/*.blockmap
-            dist/*.zip
             dist/latest.yml
             dist/SHA256SUMS.txt
-      - name: Create draft release for review
+      - name: Create the release
+        if: steps.version.outputs.build == 'true'
         shell: pwsh
         run: |
-          $files = @(Get-ChildItem dist/*.exe,dist/*.blockmap,dist/*.zip,dist/latest.yml,dist/SHA256SUMS.txt | ForEach-Object { $_.FullName })
-          gh release create "v$env:RELEASE_VERSION" @files --repo $env:GITHUB_REPOSITORY --target $env:GITHUB_SHA --draft --title "ProMax Presenter $env:RELEASE_VERSION" --generate-notes
-          if ($LASTEXITCODE -ne 0) { throw 'Could not create the draft release.' }
+          $files = @(Get-ChildItem dist/*.exe,dist/*.blockmap,dist/latest.yml,dist/SHA256SUMS.txt | ForEach-Object { $_.FullName })
+          gh release create "v$env:RELEASE_VERSION" @files --repo $env:GITHUB_REPOSITORY --target $env:GITHUB_SHA --draft --title "ProMax Presenter $env:RELEASE_VERSION" --notes-file RELEASE-NOTES.md
+          if ($LASTEXITCODE -ne 0) { throw 'Could not create the release.' }
+      - name: Publish verified updates from main
+        if: steps.version.outputs.build == 'true' && github.event_name == 'push'
+        shell: pwsh
+        run: |
+          gh release edit "v$env:RELEASE_VERSION" --repo $env:GITHUB_REPOSITORY --draft=false --latest
+          if ($LASTEXITCODE -ne 0) { throw 'Could not publish the release.' }

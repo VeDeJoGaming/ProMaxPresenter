@@ -1,0 +1,107 @@
+const {app,BrowserWindow,screen}=require('electron');
+const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict');
+app.setPath('userData',fs.mkdtempSync(path.join(app.getPath('temp'),'promax-editing-')));
+app.whenReady().then(async()=>{
+  const win=new BrowserWindow({show:false,width:1440,height:1000,webPreferences:{backgroundThrottling:false}});
+  const run=code=>win.webContents.executeJavaScript(code);
+  const waitFor=async code=>{const deadline=Date.now()+4000;while(Date.now()<deadline){if(await run('!ProMaxControls.busy && ('+code+')'))return;await new Promise(r=>setTimeout(r,20));}assert.fail('Timed out: '+code);};
+  const key=async(code,options={})=>run(`document.body.dispatchEvent(new KeyboardEvent('keydown',{key:${JSON.stringify(code)},bubbles:true,cancelable:true,...${JSON.stringify(options)}}))`);
+  try{
+    await win.loadFile(path.join(__dirname,'..','index.html'));await run('ProMaxControls.ready');
+    await run(`(async()=>{
+      ProMaxMeetings.create('Sunday');ProMaxMeetings.addSong();await ProMaxMeetings.open(ProMaxMeetings.folder().items[0]);window.firstFolder=meetingSelected;window.originalSong=selected;
+      await ProMaxControls.mutate('Prepare slides',()=>{current().slides=['A','B','C'].map(text=>({id:uid(),text,section:'Verse',key:''}));});
+      goLive(1);window.originalLive=JSON.stringify(state);
+    })()`);
+    await run(`(()=>{
+      const source=document.querySelectorAll('.slide-card')[0],target=document.querySelectorAll('.slide-card')[2],data=new DataTransfer(),r=target.getBoundingClientRect();
+      source.dispatchEvent(new DragEvent('dragstart',{bubbles:true,cancelable:true,dataTransfer:data}));
+      target.dispatchEvent(new DragEvent('drop',{bubbles:true,cancelable:true,dataTransfer:data,clientX:r.right-1,clientY:r.bottom-1}));
+    })()`);
+    await waitFor("current().slides.map(s=>s.text).join('')==='BCA'");
+    assert.equal(await run('liveIndex'),0);assert.equal(await run('JSON.stringify(state)===originalLive'),true);
+    await key('z',{ctrlKey:true});await waitFor("current().slides.map(s=>s.text).join('')==='ABC'");
+    assert.equal(await run('liveIndex'),1);
+    await key('z',{ctrlKey:true,shiftKey:true});await waitFor("current().slides.map(s=>s.text).join('')==='BCA'");
+    await run("document.querySelectorAll('.card-footer')[2].dispatchEvent(new PointerEvent('pointerdown',{bubbles:true}))");
+    await key('Delete');await waitFor("current().slides.map(s=>s.text).join('')==='BC'");
+    assert.equal(await run('JSON.stringify(state)===originalLive'),true);
+    await ProMaxUndo();
+    await run("ProMaxControls.select({type:'slide',songId:selected,slideId:current().slides[0].id})");await key('d',{ctrlKey:true});await waitFor('current().slides.length===4');
+    assert.equal(await run('current().slides[0].id!==current().slides[1].id'),true);
+    await ProMaxUndo();assert.equal(await run('current().slides.length'),3);
+    await run("ProMaxMeetings.add({type:'text',title:'Welcome',slides:[{text:'Welcome',label:'Text'},{text:'Announcements',label:'Text'}]});window.noteId=ProMaxMeetings.folder().items[1].id;ProMaxMeetings.create('Evening');window.secondFolder=meetingSelected;ProMaxMeetings.select(firstFolder)");
+    assert.equal(await run("[...document.querySelectorAll('.meeting-item-actions button')].some(b=>['↑','↓'].includes(b.textContent))"),false);
+    await run("ProMaxControls.drop({type:'item',folderId:firstFolder,itemId:noteId},{type:'item',folderId:firstFolder,itemId:ProMaxMeetings.folder().items[0].id},false)");
+    assert.equal(await run('ProMaxMeetings.folder().items[0].id===noteId'),true);await ProMaxUndo();
+    await run(`(()=>{
+      const source=[...document.querySelectorAll('.meeting-item')].find(e=>e.dataset.itemId===noteId),data=new DataTransfer();
+      source.dispatchEvent(new DragEvent('dragstart',{bubbles:true,cancelable:true,dataTransfer:data}));
+      const target=[...document.querySelectorAll('.folder-drop-target')].find(e=>e.dataset.folderId===secondFolder);
+      if(!target)throw Error('Cross-folder drop targets must appear while dragging');
+      target.dispatchEvent(new DragEvent('drop',{bubbles:true,cancelable:true,dataTransfer:data}));
+    })()`);
+    await waitFor('meetingFolders.find(f=>f.id===secondFolder).items.length===1');
+    assert.equal(await run('meetingFolders.find(f=>f.id===firstFolder).items.length'),1);
+    await ProMaxUndo();assert.equal(await run('meetingFolders.find(f=>f.id===firstFolder).items.length'),2);
+    await run("ProMaxControls.drop({type:'item',folderId:firstFolder,itemId:noteId},{type:'folder',folderId:secondFolder},false,true)");
+    assert.equal(await run('meetingFolders.find(f=>f.id===firstFolder).items.length'),2);
+    assert.equal(await run('meetingFolders.find(f=>f.id===secondFolder).items[0].id!==noteId'),true);await ProMaxUndo();
+    await run("ProMaxControls.select({type:'item',folderId:firstFolder,itemId:noteId})");await key('F2');
+    assert.equal(await run("document.getElementById('rename-item').open"),true);
+    await run("document.querySelector('#rename-item input').value='Announcements cue';document.querySelector('#rename-item form').requestSubmit()");
+    await waitFor("ProMaxMeetings.folder().items.find(i=>i.id===noteId).title==='Announcements cue'");
+    assert.equal(await run('ProMaxMeetings.folder().name'),'Sunday');await ProMaxUndo();
+    await run(`(async()=>{
+      const item=ProMaxMeetings.folder().items.find(i=>i.id===noteId);await ProMaxMeetings.open(item);
+      await ProMaxControls.drop({type:'prepared-slide',folderId:firstFolder,itemId:noteId,slideId:item.slides[0].id},{type:'prepared-slide',folderId:firstFolder,itemId:noteId,slideId:item.slides[1].id},true);
+      document.querySelector('.prepared-slide').click();window.originalLive=JSON.stringify(state);
+      const changed=ProMaxMeetings.folder().items.find(i=>i.id===noteId);
+      await ProMaxControls.drop({type:'prepared-slide',folderId:firstFolder,itemId:noteId,slideId:changed.slides[0].id},{type:'prepared-slide',folderId:firstFolder,itemId:noteId,slideId:changed.slides[1].id},true);
+    })()`);
+    assert.equal(await run('ProMaxFeatures.captureDeck().index'),1);
+    assert.equal(await run('JSON.stringify(state)===originalLive'),true);await ProMaxUndo();
+    await run('ProMaxMeetings.select(null)');
+    await run("ProMaxControls.drop({type:'song',songId:originalSong},{type:'folder',folderId:secondFolder})");
+    assert.equal(await run('meetingFolders.find(f=>f.id===secondFolder).items[0].songId'),await run('originalSong'));await ProMaxUndo();
+    await run("ProMaxControls.select({type:'song',songId:originalSong})");await key('d',{ctrlKey:true});await waitFor('songs.length===2');await ProMaxUndo();
+    await run("ProMaxControls.select({type:'song',songId:originalSong})");await key('Delete');await waitFor('!songs.some(s=>s.id===originalSong)');await ProMaxUndo();
+    assert.equal(await run('songs.some(s=>s.id===originalSong)'),true);
+    // Text editing retains Chromium's own undo and cannot delete the selected slide.
+    await run("ProMaxControls.select({type:'slide',songId:selected,slideId:current().slides[0].id});document.getElementById('lyrics').focus();document.getElementById('lyrics').dispatchEvent(new KeyboardEvent('keydown',{key:'Delete',bubbles:true,cancelable:true}))");
+    assert.equal(await run('current().slides.length'),3);
+    const title=await run('current().title');
+    await run("document.getElementById('title').focus();document.getElementById('title').setSelectionRange(document.getElementById('title').value.length,document.getElementById('title').value.length)");
+    await win.webContents.insertText(' revised');assert.equal(await run('current().title'),title+' revised');
+    win.webContents.sendInputEvent({type:'keyDown',keyCode:'Z',modifiers:['control']});win.webContents.sendInputEvent({type:'keyUp',keyCode:'Z',modifiers:['control']});
+    await waitFor(`current().title===${JSON.stringify(title)}`);
+    await key('f',{ctrlKey:true});assert.equal(await run('document.activeElement.id'),'search');
+    await run("ProMaxControls.select({type:'song',songId:selected})");await key('F2');assert.equal(await run('document.activeElement.id'),'title');
+    await key('F1');assert.equal(await run("document.getElementById('editing-help').open"),true);
+    await key(' ');assert.equal(await run('JSON.stringify(state)===originalLive'),true);await run("document.getElementById('editing-help').close()");
+    await run("ProMaxControls.mutate('Add presentation',()=>ProMaxFeatures.saveDocument({id:'edit-doc',title:'Slides',slides:['file:///C:/one.png','file:///C:/two.png','file:///C:/three.png']}))");
+    await run("ProMaxFeatures.showTab('presentations');ProMaxControls.drop({type:'document-slide',documentId:'edit-doc',index:0},{type:'document-slide',documentId:'edit-doc',index:2},true)");
+    assert.equal(await run("ProMaxFeatures.getDocuments()[0].slides[2]"),'file:///C:/one.png');await ProMaxUndo();
+    await run("ProMaxControls.remove({type:'document-slide',documentId:'edit-doc',index:1})");assert.equal(await run('ProMaxFeatures.getDocuments()[0].slides.length'),2);await ProMaxUndo();
+    await run("ProMaxControls.duplicate({type:'document-slide',documentId:'edit-doc',index:1})");assert.equal(await run('ProMaxFeatures.getDocuments()[0].slides.length'),4);await ProMaxUndo();
+    await run("ProMaxFeatures.addVideos([new File(['metadata test fixture'],'undo-test.webm',{type:'video/webm'})]);");
+    await waitFor('ProMaxFeatures.getVideos().length===1');const videoId=await run('ProMaxFeatures.getVideos()[0].id');
+    await run(`ProMaxControls.remove({type:'video',assetId:${JSON.stringify(videoId)}})`);assert.equal(await run('ProMaxFeatures.getVideos().length'),0);
+    assert.equal(await run(`(async()=>!!await storedAsset('get',null,'video:'+${JSON.stringify(videoId)}))()`),true,'Deleted videos must remain available for undo');
+    await ProMaxUndo();assert.equal(await run('ProMaxFeatures.getVideos()[0].id'),videoId);
+    await run("ProMaxFeatures.importBible(new File([JSON.stringify({name:'Undo Bible',verses:[{book:'John',chapter:3,verse:16,text:'Undo verse'}]})],'undo-bible.json'))");
+    assert.equal(await run('ProMaxFeatures.getBible().name'),'Undo Bible');await ProMaxUndo();assert.equal(await run('ProMaxFeatures.getBible()'),null);
+    await run(`(()=>{const data=new DataTransfer();data.items.add(new File(['<svg xmlns="http://www.w3.org/2000/svg" width="16" height="9"><rect width="16" height="9" fill="red"/></svg>'],'background.svg',{type:'image/svg+xml'}));const input=document.getElementById('background');input.files=data.files;input.dispatchEvent(new Event('change',{bubbles:true}));})()`);
+    await waitFor("media?.type==='image/svg+xml'");
+    await run("window.keptBackgroundUrl=media.url;ProMaxControls.mutate('Rename with background',()=>{current().title+=' temporary';})");await ProMaxUndo();
+    assert.equal(await run('media.url===keptBackgroundUrl'),true,'Undoing metadata must not restart a media background');
+    await ProMaxUndo();assert.equal(await run('media'),null);
+    await run('ProMaxControls.redo()');assert.equal(await run('media.type'),'image/svg+xml');await ProMaxUndo();
+    assert.equal(await run('JSON.stringify(state)===originalLive'),true,'Editing and undo never change the live cue');
+    await run('ProMaxMeetings.select(firstFolder)');
+    const display=screen.getAllDisplays().find(d=>d.id!==screen.getPrimaryDisplay().id)||screen.getPrimaryDisplay();win.setPosition(display.workArea.x,display.workArea.y);win.showInactive();
+    await new Promise(r=>setTimeout(r,200));fs.writeFileSync(path.join(app.getPath('temp'),'promax-editing-controls.png'),(await win.webContents.capturePage()).toPNG());
+    fs.writeFileSync(path.join(app.getPath('temp'),'promax-editing-controls-result.txt'),'PASSED: native text undo, global undo/redo, Delete protection, duplication, slide and item drag, cross-folder move/copy, library-to-folder drag, video recovery, Bible undo, shortcuts and unchanged live cue.');app.exit(0);
+    async function ProMaxUndo(){await run('ProMaxControls.undo()');}
+  }catch(error){fs.writeFileSync(path.join(app.getPath('temp'),'promax-editing-controls-result.txt'),error.stack);console.error(error);app.exit(1);}
+});

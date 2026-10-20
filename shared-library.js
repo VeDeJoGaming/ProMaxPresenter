@@ -1,5 +1,8 @@
 (function(root) {
-  const content = s => JSON.stringify({title:s.title,lyrics:s.lyrics,lines:s.lines,slides:s.slides});
+  const content = s => {
+    const song = ProMaxNormalize({songs:[s]}).songs[0];
+    return JSON.stringify({title:song.title,lyrics:song.lyrics,lines:song.lines,slides:song.slides});
+  };
   async function digest(s) {
     return [...new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(content(s))))].map(x=>x.toString(16).padStart(2,'0')).join('');
   }
