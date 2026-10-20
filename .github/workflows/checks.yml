@@ -16,3 +16,5 @@ jobs:
       - run: npm test
       - run: npm run test:desktop
         timeout-minutes: 3
+      - run: npm run test:shared
+        timeout-minutes: 3

@@ -49,6 +49,8 @@ jobs:
       - run: npm test
       - run: npm run test:desktop
         timeout-minutes: 3
+      - run: npm run test:shared
+        timeout-minutes: 3
       - name: Build installer and update files
         run: npm run dist:release
         env:
