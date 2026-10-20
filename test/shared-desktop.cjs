@@ -30,6 +30,6 @@ async function run(){
     console.log('Shared desktop passed: two independent profiles, explicit sharing, encrypted access, receive-only, automatic revisions, local conflict preservation, revocation and restart.');
   }finally{for(const app of [...processes])try{await close(app);}catch{app.process().kill();}await service.close();clearTimeout(watchdog);
     if(path.dirname(directory)!==path.resolve(os.tmpdir())||!path.basename(directory).startsWith('promax-shared-test-'))throw Error('Unexpected test directory');
-    await fs.rm(directory,{recursive:true,force:true,maxRetries:10,retryDelay:200}).catch(e=>{if(!['EBUSY','EPERM','ENOTEMPTY'].includes(e.code))throw e;});}
+    if(!(process.env.CI==='true'&&process.platform==='win32'))await fs.rm(directory,{recursive:true,force:true,maxRetries:2,retryDelay:200}).catch(e=>{if(!['EBUSY','EPERM','ENOTEMPTY'].includes(e.code))throw e;});}
 }
 run().then(()=>process.exit(0),e=>{console.error(e);process.exit(1);});

@@ -41,7 +41,7 @@ async function run() {
       await Promise.race([
         Promise.all([closing.close(), exited]),
         new Promise((_resolve, reject) => { timeout = setTimeout(() => {
-          closing.process().kill();
+          try { child.kill(); } catch {}
           reject(new Error('Electron did not close within ten seconds'));
         }, 10000); })
       ]);
@@ -140,10 +140,16 @@ async function run() {
       await closeApp();
       const resolved = path.resolve(directory);
       if (path.dirname(resolved) !== path.resolve(os.tmpdir()) || !path.basename(resolved).startsWith('promax-desktop-test-')) throw new Error('Unexpected test directory');
-      try { await fs.rm(resolved, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 }); }
-      catch (error) {
-        if (!['EBUSY', 'EPERM', 'ENOTEMPTY'].includes(error.code)) throw error;
-        console.warn('Windows is still releasing the isolated test profile; leaving it for temporary-file cleanup.');
+      // Hosted Windows runners are disposable. Chromium can hold profile handles after exit;
+      // recursive removal can stall inside Windows for minutes, masking a real test result.
+      if (process.env.CI === 'true' && process.platform === 'win32') {
+        console.log('Leaving the isolated temporary profile for runner cleanup.');
+      } else {
+        try { await fs.rm(resolved, { recursive: true, force: true, maxRetries: 2, retryDelay: 200 }); }
+        catch (error) {
+          if (!['EBUSY', 'EPERM', 'ENOTEMPTY'].includes(error.code)) throw error;
+          console.warn('Windows is still releasing the isolated test profile; leaving it for temporary-file cleanup.');
+        }
       }
     } finally { clearTimeout(deadline); }
   }
