@@ -57,10 +57,16 @@ jobs:
           CSC_LINK: ${{ secrets.WINDOWS_CERTIFICATE }}
           CSC_KEY_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
           PROMAX_REQUIRE_SIGNING: ${{ inputs.require_signing }}
+      - name: Build the matching visual gallery and pack
+        shell: pwsh
+        run: |
+          node scripts/build-visuals.cjs
+          if ($LASTEXITCODE -ne 0) { throw 'Could not build the visual gallery.' }
+          Compress-Archive -Path visuals/* -DestinationPath "dist/ProMax-Visuals-$env:RELEASE_VERSION.zip" -Force
       - name: Create checksums
         shell: pwsh
         run: |
-          Get-ChildItem dist/*.exe,dist/*.blockmap,dist/latest.yml | ForEach-Object {
+          Get-ChildItem dist/*.exe,dist/*.blockmap,dist/*.zip,dist/latest.yml | ForEach-Object {
             $hash = (Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash.ToLower()
             "$hash  $($_.Name)"
           } | Set-Content dist/SHA256SUMS.txt -Encoding utf8
@@ -71,11 +77,12 @@ jobs:
           path: |
             dist/*.exe
             dist/*.blockmap
+            dist/*.zip
             dist/latest.yml
             dist/SHA256SUMS.txt
       - name: Create draft release for review
         shell: pwsh
         run: |
-          $files = @(Get-ChildItem dist/*.exe,dist/*.blockmap,dist/latest.yml,dist/SHA256SUMS.txt | ForEach-Object { $_.FullName })
+          $files = @(Get-ChildItem dist/*.exe,dist/*.blockmap,dist/*.zip,dist/latest.yml,dist/SHA256SUMS.txt | ForEach-Object { $_.FullName })
           gh release create "v$env:RELEASE_VERSION" @files --repo $env:GITHUB_REPOSITORY --target $env:GITHUB_SHA --draft --title "ProMax Presenter $env:RELEASE_VERSION" --generate-notes
           if ($LASTEXITCODE -ne 0) { throw 'Could not create the draft release.' }
