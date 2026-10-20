@@ -1,6 +1,6 @@
 # ProMax Presenter
 
-Offline song and worship presentation for Windows. Songs, settings and background media stay on your computer. No account or subscription is required.
+Offline song and worship presentation for Windows, with optional private group sharing. Your library and backgrounds remain available on your computer. No account is required.
 
 ## Install and update
 
@@ -32,4 +32,9 @@ Node.js 24 is recommended. Run npm ci, then npm start. Check with npm test and n
 
 The original browser edition remains available via **Start ProMax.cmd** or npm run start:browser at http://127.0.0.1:4173. Its songs are stored in that browser. It does not receive desktop updates.
 
-Shared online libraries, Bible import/search, YouTube support, service playlists, native PowerPoint import and per-song backgrounds are future ideas. No copyrighted Bible text is bundled. Source redistribution rights have not yet been chosen (UNLICENSED).
+Bible import/search, YouTube support, service playlists, native PowerPoint import and per-song backgrounds are future ideas. No copyrighted Bible text is bundled. Source redistribution rights have not yet been chosen (UNLICENSED).
+
+## Shared library
+
+Create a private group or join with an invitation in the Windows app. Choose **Off**, **Receive only**, or **Receive & share**. Uploading your existing songs always requires a separate choice. See [the shared library guide](SHARED-LIBRARY.md) for invitations, offline use, access recovery and service operation.
+

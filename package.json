@@ -1,7 +1,7 @@
 {
   "name": "promax-presenter",
   "productName": "ProMax Presenter",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Offline song and worship presentation workspace",
   "author": "ProMax Presenter",
   "private": true,
@@ -14,7 +14,8 @@
     "test": "node --test test/*.test.cjs",
     "test:desktop": "node test/desktop-smoke.cjs",
     "dist": "electron-builder --win nsis --x64 --publish never",
-    "dist:release": "node scripts/build-release.cjs"
+    "dist:release": "node scripts/build-release.cjs",
+    "test:shared": "node test/shared-desktop.cjs"
   },
   "dependencies": {
     "electron-updater": "6.8.9"
@@ -32,10 +33,32 @@
     "productName": "ProMax Presenter",
     "copyright": "Copyright © 2026 ProMax Presenter",
     "asar": true,
-    "directories": { "output": "dist", "buildResources": "build" },
-    "files": ["desktop/**", "build/icon.ico", "index.html", "app.js", "style.css", "library.js", "updates-ui.js", "package.json"],
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "desktop/**",
+      "build/icon.ico",
+      "index.html",
+      "app.js",
+      "style.css",
+      "library.js",
+      "updates-ui.js",
+      "package.json",
+      "shared-library.js",
+      "sharing-ui.js",
+      "shared-config.json"
+    ],
     "win": {
-      "target": [{ "target": "nsis", "arch": ["x64"] }],
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
       "icon": "build/icon.ico",
       "artifactName": "ProMax-Presenter-Setup-${version}.${ext}"
     },

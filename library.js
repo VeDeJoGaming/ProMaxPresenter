@@ -9,6 +9,9 @@
       return {
         id: typeof song.id === 'string' ? song.id : '', title: song.title, lyrics: song.lyrics,
         lines: [2, 4, 6, 8].includes(song.lines) ? song.lines : 4,
+        ...(song.shared && typeof song.shared.groupId === 'string' && typeof song.shared.songId === 'string' &&
+          Number.isSafeInteger(song.shared.revision) && song.shared.revision > 0 && /^[a-f0-9]{64}$/.test(song.shared.baseline) ?
+          { shared: {groupId:song.shared.groupId,songId:song.shared.songId,revision:song.shared.revision,baseline:song.shared.baseline} } : {}),
         slides: song.slides.map(slide => {
           if (!slide || typeof slide.text !== 'string' || slide.text.length > 100000 || typeof slide.section !== 'string' ||
               slide.section.length > 1000 || typeof slide.key !== 'string' || slide.key.length > 1) return fail();
