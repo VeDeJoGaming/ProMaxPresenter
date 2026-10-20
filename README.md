@@ -38,3 +38,9 @@ Bible import/search, YouTube support, service playlists, native PowerPoint impor
 
 Create a private group or join with an invitation in the Windows app. Choose **Off**, **Receive only**, or **Receive & share**. Uploading your existing songs always requires a separate choice. See [the shared library guide](SHARED-LIBRARY.md) for invitations, offline use, access recovery and service operation.
 
+## Visual backgrounds and theme
+
+Six original animated SVG backgrounds are in `visuals/`. Open `visuals/index.html` for a preview, then choose a background with **Add image or video background** in ProMax. Releases include a matching visual pack ZIP. Run `node scripts/build-visuals.cjs` to rebuild the gallery.
+
+The desktop app, sharing page and visual gallery use the same palette and controls from `theme.css`. The theme rules for future changes are recorded in [AGENTS.md](AGENTS.md).
+

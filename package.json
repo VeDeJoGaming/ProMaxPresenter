@@ -1,7 +1,7 @@
 {
   "name": "promax-presenter",
   "productName": "ProMax Presenter",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Offline song and worship presentation workspace",
   "author": "ProMax Presenter",
   "private": true,
@@ -48,7 +48,8 @@
       "package.json",
       "shared-library.js",
       "sharing-ui.js",
-      "shared-config.json"
+      "shared-config.json",
+      "theme.css"
     ],
     "win": {
       "target": [

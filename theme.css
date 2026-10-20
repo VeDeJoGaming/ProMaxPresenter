@@ -1,0 +1,31 @@
+/* Shared ProMax UI palette: desktop, group pages and visual gallery. */
+:root {
+  --pm-font: Inter, "Segoe UI", Arial, sans-serif;
+  --pm-bg: #151111;
+  --pm-header: #1c1616;
+  --pm-panel: #1e1818;
+  --pm-card: #241c1b;
+  --pm-field: #191313;
+  --pm-button: #302522;
+  --pm-button-hover: #44302a;
+  --pm-border: #4b3430;
+  --pm-border-soft: #372825;
+  --pm-border-hover: #98614d;
+  --pm-text: #f4e9e5;
+  --pm-muted: #b7a39c;
+  --pm-accent: #ff8a3d;
+  --pm-accent-hover: #ffab69;
+  --pm-on-accent: #241108;
+  --pm-red: #ef5349;
+  --pm-selection-bg: #37221b;
+  --pm-selection-border: #7b4230;
+  --pm-selection-text: #ffb37e;
+  --pm-notice-bg: #ffd5b8;
+  --pm-radius: 7px;
+  --pm-radius-panel: 10px;
+  accent-color: var(--pm-accent);
+}
+:where(button, a, input, select, textarea):focus-visible {
+  outline: 2px solid var(--pm-accent);
+  outline-offset: 3px;
+}
