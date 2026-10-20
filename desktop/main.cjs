@@ -1,10 +1,12 @@
-const { app, BrowserWindow, ipcMain, Menu, session, dialog } = require('electron');
+const { app, BrowserWindow, ipcMain, Menu, session, dialog, safeStorage, clipboard } = require('electron');
 const path = require('node:path');
 const fs = require('node:fs');
 const { pathToFileURL } = require('node:url');
 const { autoUpdater } = require('electron-updater');
 const { createUpdateController } = require('./update-controller.cjs');
 const { backupLibrary } = require('./backup.cjs');
+const { createSharedController } = require('./shared-controller.cjs');
+const { createSharedVault } = require('./shared-vault.cjs');
 
 // The stable application ID and user-data directory must survive every update.
 app.setName('ProMax Presenter');
@@ -58,7 +60,7 @@ if (!app.requestSingleInstanceLock()) {
   app.quit();
 } else {
   app.on('second-instance', () => { if (mainWindow) { if (mainWindow.isMinimized()) mainWindow.restore(); mainWindow.focus(); } });
-  app.whenReady().then(() => {
+  app.whenReady().then(async () => {
     Menu.setApplicationMenu(null);
     const canFullscreen = (contents, permission) => permission === 'fullscreen' &&
       [...presentationWindows].some(window => !window.isDestroyed() && window.webContents === contents);
@@ -95,6 +97,19 @@ if (!app.requestSingleInstanceLock()) {
     });
     for (const [channel, action] of Object.entries({ 'updates:state': updates.getState, 'updates:check': updates.check, 'updates:install': updates.install })) {
       ipcMain.handle(channel, event => { if (!trusted(event)) throw new Error('Untrusted request'); return action(); });
+    }
+    const origin = !app.isPackaged && process.env.PROMAX_SHARED_TEST_URL || require('../shared-config.json').origin;
+    const shared = createSharedController({ origin, clipboard,
+      vault: createSharedVault(path.join(app.getPath('userData'), 'shared-access.enc'), safeStorage) });
+    let sharedError;
+    try { await shared.init(); } catch { sharedError='Your protected group access could not be opened. Restore your access key or reconnect to your group.'; }
+    for (const action of ['getState','create','join','restore','setMode','sync','publish','unpublish','copyInvite','copyAccessKey','members','revoke','disconnect']) {
+      ipcMain.handle('shared:'+action, async (event, input) => {
+        if(!trusted(event)) throw new Error('Untrusted request');
+        try { if(sharedError&&action==='getState') return {...shared.getState(),error:sharedError};
+          const result=await shared[action](input);sharedError=null;return result;
+        } catch(error) { return {error:error.message}; }
+      });
     }
     createWindow();
     mainWindow.webContents.once('did-finish-load', () => {

@@ -10,3 +10,8 @@ contextBridge.exposeInMainWorld('proMaxDesktop', {
     return () => ipcRenderer.removeListener('updates:changed', listener);
   }
 });
+
+contextBridge.exposeInMainWorld('proMaxShared', Object.fromEntries(
+  ['getState','create','join','restore','setMode','sync','publish','unpublish','copyInvite','copyAccessKey','members','revoke','disconnect']
+    .map(action => [action, input => ipcRenderer.invoke('shared:'+action,input)])
+));
