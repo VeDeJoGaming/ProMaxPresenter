@@ -35,9 +35,11 @@ async function run() {
     const closing = app;
     app = null;
     let timeout;
+    const child = closing.process();
+    const exited = child.exitCode !== null ? Promise.resolve() : new Promise(resolve => child.once('exit', resolve));
     try {
       await Promise.race([
-        closing.close(),
+        Promise.all([closing.close(), exited]),
         new Promise((_resolve, reject) => { timeout = setTimeout(() => {
           closing.process().kill();
           reject(new Error('Electron did not close within ten seconds'));
@@ -46,6 +48,7 @@ async function run() {
     } finally { clearTimeout(timeout); }
   }
   async function launch() {
+    console.log('Desktop check: launching an isolated app process.');
     const executablePath = process.argv[2];
     app = await electron.launch({
       executablePath,
@@ -133,11 +136,16 @@ async function run() {
     assert.deepEqual(errors, []);
     console.log('Desktop smoke passed: sandbox, updates bridge, songs, projector, fullscreen, navigation, blackout, PDF, import consent, persistent songs and background.');
   } finally {
-    clearTimeout(deadline);
-    await closeApp();
-    const resolved = path.resolve(directory);
-    if (path.dirname(resolved) !== path.resolve(os.tmpdir()) || !path.basename(resolved).startsWith('promax-desktop-test-')) throw new Error('Unexpected test directory');
-    await fs.rm(resolved, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
+    try {
+      await closeApp();
+      const resolved = path.resolve(directory);
+      if (path.dirname(resolved) !== path.resolve(os.tmpdir()) || !path.basename(resolved).startsWith('promax-desktop-test-')) throw new Error('Unexpected test directory');
+      try { await fs.rm(resolved, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 }); }
+      catch (error) {
+        if (!['EBUSY', 'EPERM', 'ENOTEMPTY'].includes(error.code)) throw error;
+        console.warn('Windows is still releasing the isolated test profile; leaving it for temporary-file cleanup.');
+      }
+    } finally { clearTimeout(deadline); }
   }
 }
-run().catch(error => { console.error(error); process.exitCode = 1; });
+run().then(() => process.exit(0), error => { console.error(error); process.exit(1); });
