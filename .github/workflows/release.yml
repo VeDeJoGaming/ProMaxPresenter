@@ -1,0 +1,77 @@
+name: Build Windows release
+run-name: ProMax Presenter ${{ inputs.version }}
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'New version (for example 1.0.1, without v)'
+        required: true
+        default: '1.0.0'
+      require_signing:
+        description: 'Require a signing certificate (configure WINDOWS_CERTIFICATE and WINDOWS_CERTIFICATE_PASSWORD first)'
+        type: boolean
+        default: false
+
+concurrency:
+  group: promax-release
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  release:
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    env:
+      RELEASE_VERSION: ${{ inputs.version }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - name: Validate version and prevent replacing an existing release
+        shell: pwsh
+        run: |
+          if ($env:RELEASE_VERSION -notmatch '^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$') { throw 'Use a version such as 1.0.1, without v.' }
+          $tags = gh api --paginate "repos/$env:GITHUB_REPOSITORY/git/matching-refs/tags/v" --jq '.[].ref'
+          if ($LASTEXITCODE -ne 0) { throw 'Could not verify existing release versions.' }
+          $versions = @($tags | Where-Object { $_ -match '^refs/tags/v\d+\.\d+\.\d+$' } | ForEach-Object { [version]($_ -replace '^refs/tags/v','') })
+          if ($versions.Count -gt 0 -and [version]$env:RELEASE_VERSION -le ($versions | Sort-Object -Descending | Select-Object -First 1)) { throw 'Use a version higher than every earlier release.' }
+          gh release view "v$env:RELEASE_VERSION" --repo $env:GITHUB_REPOSITORY 2>$null
+          if ($LASTEXITCODE -eq 0) { throw 'This version already exists. Choose a new version.' }
+          $global:LASTEXITCODE = 0
+      - run: npm ci --no-fund
+      - run: npm test
+      - run: npm run test:desktop
+      - name: Build installer and update files
+        run: npm run dist:release
+        env:
+          CSC_LINK: ${{ secrets.WINDOWS_CERTIFICATE }}
+          CSC_KEY_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
+          PROMAX_REQUIRE_SIGNING: ${{ inputs.require_signing }}
+      - name: Create checksums
+        shell: pwsh
+        run: |
+          Get-ChildItem dist/*.exe,dist/*.blockmap,dist/latest.yml | ForEach-Object {
+            $hash = (Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash.ToLower()
+            "$hash  $($_.Name)"
+          } | Set-Content dist/SHA256SUMS.txt -Encoding utf8
+      - name: Preserve build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ProMax-Presenter-${{ inputs.version }}
+          path: |
+            dist/*.exe
+            dist/*.blockmap
+            dist/latest.yml
+            dist/SHA256SUMS.txt
+      - name: Create draft release for review
+        shell: pwsh
+        run: |
+          $files = @(Get-ChildItem dist/*.exe,dist/*.blockmap,dist/latest.yml,dist/SHA256SUMS.txt | ForEach-Object { $_.FullName })
+          gh release create "v$env:RELEASE_VERSION" @files --repo $env:GITHUB_REPOSITORY --target $env:GITHUB_SHA --draft --title "ProMax Presenter $env:RELEASE_VERSION" --generate-notes
+          if ($LASTEXITCODE -ne 0) { throw 'Could not create the draft release.' }
