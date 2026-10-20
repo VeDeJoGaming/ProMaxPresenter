@@ -22,6 +22,7 @@ permissions:
 jobs:
   release:
     runs-on: windows-latest
+    timeout-minutes: 25
     permissions:
       contents: write
     env:
@@ -47,6 +48,7 @@ jobs:
       - run: npm ci --no-fund
       - run: npm test
       - run: npm run test:desktop
+        timeout-minutes: 3
       - name: Build installer and update files
         run: npm run dist:release
         env:
