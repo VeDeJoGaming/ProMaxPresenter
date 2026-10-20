@@ -16,7 +16,8 @@ app.whenReady().then(async()=>{
         const text=document.querySelector('#preview .screen-text'),before=pixels(live);selectVisual('still-waters');const first=pixels(live),starts=difference(before,first);
         clock+=750;const middle=pixels(live),midProgress=live.getLookState().backgroundProgress;
         selectVisual('velocity-streams');const interrupted=pixels(live),interruption=difference(middle,interrupted),snapshotError=live.getContext('webgl').getError();
-        const jumps=[];for(let i=0;i<20;i++){clock+=100;const old=pixels(live);selectVisual(ProMaxVisuals.presets[i%ProMaxVisuals.presets.length].id);jumps.push(difference(old,pixels(live)));}
+        const procedural=ProMaxVisuals.presets.filter(p=>p.kind!=='bundled-svg');
+        const jumps=[];for(let i=0;i<20;i++){clock+=100;const old=pixels(live);selectVisual(procedural[i%procedural.length].id);jumps.push(difference(old,pixels(live)));}
         const sameText=text===document.querySelector('#preview .screen-text');goLive(1);const changedText=document.querySelector('#preview .screen-text').textContent===state.text;
         clock+=1600;pixels(live);const ended=!live.getRenderStats().transitioning;
         selectVisual(null);const solidStart=live.getLookState().backgroundProgress;clock+=1600;const solid=pixels(live),solidPixel=Array.from(solid.slice(0,3));
@@ -42,7 +43,7 @@ app.whenReady().then(async()=>{
     const value={text:'Readable throughout',black:false,pdf:null,media:null,settings:{color:'#181818',fontSize:5,align:'center',visual:'golden-hour',glassAuto:false,glassVariant:'a',visualPalette:'original',renderQuality:'performance'}};
     output.webContents.send('presentation:state',value);await new Promise(r=>setTimeout(r,200));
     await outputRun("window.fadeCanvas=document.querySelector('canvas[data-glass]');window.fadeText=document.querySelector('.screen-text');window.frameStart=fadeCanvas.getRenderStats().frames;window.fadeStart=performance.now()");
-    const choices=await run('ProMaxVisuals.presets.map(p=>p.id)');
+    const choices=await run("ProMaxVisuals.presets.filter(p=>p.kind!=='bundled-svg').map(p=>p.id)");
     for(const id of choices){value.settings.visual=id;output.webContents.send('presentation:state',value);await new Promise(r=>setTimeout(r,100));}
     value.text='Text changes immediately';output.webContents.send('presentation:state',value);await new Promise(r=>setTimeout(r,80));
     assert.equal(await outputRun("fadeCanvas===document.querySelector('canvas[data-glass]')&&fadeText===document.querySelector('.screen-text')&&fadeText.textContent==='Text changes immediately'"),true,'Native output retains its canvas and text node across styles');
@@ -51,6 +52,7 @@ app.whenReady().then(async()=>{
     assert.equal(await outputRun("document.querySelector('#stage video').readyState>=2&&!!document.querySelector('#stage .background-fade')"),true,'Native output also fades into decoded video backgrounds');
     value.black=true;output.webContents.send('presentation:state',value);await new Promise(r=>setTimeout(r,50));assert.equal(await outputRun("document.getElementById('stage').children.length"),0);
     const report={passed:true,...result,mediaFadeOpacity:opacity,nativeCrossfadeFps:fps};
+    fs.mkdirSync(path.join(__dirname,'..','artifacts'),{recursive:true});
     fs.writeFileSync(path.join(__dirname,'..','artifacts',packageIndex>=0?'packaged-background-transitions.json':'background-transitions.json'),JSON.stringify(report,null,2));
     console.log(JSON.stringify(report));app.exit(0);
   }catch(error){console.error(error.stack);app.exit(1);}

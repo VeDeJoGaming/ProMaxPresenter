@@ -10,13 +10,13 @@ app.whenReady().then(async()=>{
       const checks=[],differences=[];
       const pixels=()=>canvas.getContext('2d').getImageData(0,0,canvas.width,canvas.height).data;
       const compare=(a,b)=>{let total=0,changed=0;for(let i=0;i<a.length;i+=4){let delta=0;for(let j=0;j<3;j++)delta+=Math.abs(a[i+j]-b[i+j]);total+=delta;if(delta>54)changed++;}return {mean:Math.round(total/(a.length/4*3)*100)/100,changed:Math.round(changed/(a.length/4)*1000)/10};};
-      for(const p of ProMaxVisuals.presets)for(const variant of ['a','b','c']){
+      for(const p of ProMaxVisuals.presets.filter(p=>p.kind!=='bundled-svg'))for(const variant of ['a','b','c']){
         const preset={...p,variant};const frame=phase=>{ProMaxVisuals.draw(canvas,preset,phase);return canvas.toDataURL();};
         const start=frame(0),firstPixels=pixels();frame(.99999);const seam=compare(firstPixels,pixels()).mean;
         checks.push({name:p.name+' '+variant,loops:start===frame(1),moves:start!==frame(.173),seam});
       }
-      for(const p of ProMaxVisuals.presets){const images=['a','b','c'].map(variant=>{ProMaxVisuals.draw(canvas,{...p,variant},.17);return pixels();});differences.push({name:p.name,ab:compare(images[0],images[1]),bc:compare(images[1],images[2])});}
-      const scenes=ProMaxVisuals.presets;
+      for(const p of ProMaxVisuals.presets.filter(p=>p.kind!=='bundled-svg')){const images=['a','b','c'].map(variant=>{ProMaxVisuals.draw(canvas,{...p,variant},.17);return pixels();});differences.push({name:p.name,ab:compare(images[0],images[1]),bc:compare(images[1],images[2])});}
+      const scenes=ProMaxVisuals.presets.filter(p=>p.kind!=='bundled-svg');
       const sheets=[];canvas.width=480;canvas.height=270;
       for(let group=0;group<scenes.length;group+=4){
         const sheet=document.createElement('canvas');sheet.width=1440;sheet.height=1200;
@@ -38,7 +38,7 @@ app.whenReady().then(async()=>{
       document.getElementById('browse-visuals').click();
       const triptychs=document.querySelectorAll('.visual-triptych').length;
       const galleryFrames=document.querySelectorAll('.visual-triptych canvas').length;
-      return {checks,reused,colorsChanged,sheets,differences,timings,triptychs,galleryFrames,count:ProMaxVisuals.presets.length};
+      return {checks,reused,colorsChanged,sheets,differences,timings,triptychs,galleryFrames,count:scenes.length};
     })()`);
     assert.equal(result.count,16);for(const check of result.checks){assert.ok(check.loops,check.name+' loop');assert.ok(check.moves,check.name+' moves');assert.ok(check.seam<.5,check.name+' motion approaches loop boundary smoothly');}
     for(const check of result.differences)for(const pair of ['ab','bc']){
@@ -46,7 +46,7 @@ app.whenReady().then(async()=>{
       assert.ok(check[pair].changed>=2,check.name+' '+pair+' must change a meaningful image area');
     }
     assert.ok(result.reused,'Section changes retain animation canvas');assert.ok(result.colorsChanged,'Custom gradient changes image');
-    assert.equal(result.triptychs,16);assert.equal(result.galleryFrames,48);
+    assert.equal(result.triptychs,22);assert.equal(result.galleryFrames,48);
     fs.mkdirSync(path.join(__dirname,'..','artifacts'),{recursive:true});
     result.sheets.forEach((data,index)=>fs.writeFileSync(path.join(__dirname,'..','artifacts','visuals-quality-'+(index+1)+'.png'),Buffer.from(data.split(',')[1],'base64')));
     fs.writeFileSync(path.join(__dirname,'..','artifacts','visuals-quality.json'),JSON.stringify(result.differences,null,2));
