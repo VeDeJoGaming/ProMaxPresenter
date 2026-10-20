@@ -1,21 +1,23 @@
 {
   "name": "promax-presenter",
   "productName": "ProMax Presenter",
-  "version": "1.1.1",
-  "description": "Offline song and worship presentation workspace",
+  "version": "1.2.0",
+  "description": "Complete worship presentation app with meetings, Bible, YouTube and offline motion backgrounds",
   "author": "ProMax Presenter",
   "private": true,
   "license": "UNLICENSED",
-  "main": "desktop/main.cjs",
+  "main": "desktop/main.js",
   "scripts": {
     "postinstall": "node node_modules/electron/install.js",
     "start": "electron .",
     "start:browser": "node server.js",
-    "test": "node --test test/*.test.cjs",
-    "test:desktop": "node test/desktop-smoke.cjs",
+    "test": "node --test test/*.test.cjs tests/*.test.js",
+    "test:desktop": "node test/recovered-desktop.cjs",
     "dist": "electron-builder --win nsis --x64 --publish never",
     "dist:release": "node scripts/build-release.cjs",
-    "test:shared": "node test/shared-desktop.cjs"
+    "test:shared": "node test/shared-desktop.cjs",
+    "verify": "electron . --smoke-test --feature-test --release-test",
+    "test:backup": "node tests/backup-roundtrip.cjs"
   },
   "dependencies": {
     "electron-updater": "6.8.9"
@@ -40,16 +42,12 @@
     "files": [
       "desktop/**",
       "build/icon.ico",
-      "index.html",
-      "app.js",
-      "style.css",
-      "library.js",
-      "updates-ui.js",
-      "package.json",
-      "shared-library.js",
-      "sharing-ui.js",
+      "*.html",
+      "*.js",
+      "*.css",
       "shared-config.json",
-      "theme.css"
+      "visuals/*.svg",
+      "package.json"
     ],
     "win": {
       "target": [
@@ -71,6 +69,9 @@
       "deleteAppDataOnUninstall": false,
       "runAfterFinish": true
     },
-    "publish": null
+    "publish": null,
+    "asarUnpack": [
+      "**/*.ps1"
+    ]
   }
 }

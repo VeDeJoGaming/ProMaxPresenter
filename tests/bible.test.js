@@ -1,0 +1,58 @@
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const Bible = require('../bible');
+const rows=[{book:'John',chapter:3,verse:16,text:'Synthetic verse with a light.'},
+  {book:'John',chapter:3,verse:17,text:'Another synthetic verse.'},
+  {book:'John',chapter:4,verse:1,text:'A light appears here.'}];
+test('JSON import normalizes Norwegian and OSIS book names and searches ranges',()=>{
+  const bible=Bible.parse(JSON.stringify({name:'Test translation',verses:rows}));
+  assert.equal(bible.name,'Test translation');assert.equal(bible.verses[0].book,'Johannes');
+  assert.equal(Bible.search(bible,'Joh 3:16–17').length,2);
+  assert.equal(Bible.search(bible,'Johannes 3').length,2);
+  assert.equal(Bible.search(bible,'light').length,2);
+  assert.equal(Bible.search(bible,'verse light').length,1);
+  assert.equal(Bible.search(bible,'Joh 3:18').length,0);
+});
+test('CSV supports escaped quotes, commas and newlines inside verse text',()=>{
+  const bible=Bible.parse('book,chapter,verse,text\nJohn,3,16,"A comma, a ""quote""\nand a new line"','test.csv');
+  assert.equal(bible.verses[0].text,'A comma, a "quote"\nand a new line');
+  assert.equal(Bible.parse('book\tchapter\tverse\ttext\nJohn\t3\t16\tSynthetic','test.tsv').verses.length,1);
+});
+test('Plain text and nested JSON import supported',()=>{
+  assert.equal(Bible.parse('1. Mosebok 1:1 Synthetic text','test.txt').verses[0].book,'1. Mosebok');
+  assert.equal(Bible.parse(JSON.stringify({books:[{name:'John',chapters:[{number:3,verses:[{number:16,text:'Synthetic'}]}]}]})).verses[0].verse,16);
+});
+test('Invalid and duplicate rows cannot replace a Bible',()=>{
+  assert.throws(()=>Bible.parse('{bad}'));
+  assert.throws(()=>Bible.parse(JSON.stringify([{chapter:1,verse:1,text:'Missing book'}])),/Every verse/);
+  assert.throws(()=>Bible.parse(JSON.stringify({verses:[...rows,rows[0]]})),/duplicate/);
+  assert.throws(()=>Bible.parse(JSON.stringify([{book:'John',chapter:0,verse:1,text:'Synthetic'}])),/Every verse/);
+  assert.throws(()=>Bible.parse('not a verse','test.txt'),/one verse per line/);
+  assert.throws(()=>Bible.parse('book,chapter,verse,text\nJohn,3,16,"unclosed','test.csv'),/Unclosed/);
+});
+
+test('Live search accepts partial books and references while typing',()=>{
+  const bible=Bible.parse(JSON.stringify({verses:[
+    {book:'Matt',chapter:2,verse:1,text:'Second chapter'},
+    {book:'Matt',chapter:1,verse:2,text:'Second verse'},
+    {book:'Matt',chapter:1,verse:1,text:'First verse'},
+    {book:'John',chapter:1,verse:1,text:'A different book'},
+    {book:'1John',chapter:1,verse:1,text:'Letter'}
+  ]}));
+  assert.deepEqual(Bible.search(bible,'Mat').map(v=>[v.chapter,v.verse]),[[1,1],[1,2],[2,1]]);
+  for(const query of ['Mat 1.1','Mat1:1','Mattheus 1:1'])assert.equal(Bible.search(bible,query)[0].text,'First verse');
+  assert.equal(Bible.search(bible,'Mat 1:').length,2);
+  assert.equal(Bible.search(bible,'Mat 1:1–').length,1);
+  assert.equal(Bible.search(bible,'1 Joh 1.1')[0].text,'Letter');
+  assert.equal(Bible.search(bible,'Joh')[0].text,'A different book');
+  assert.equal(Bible.search(bible,'different book').length,1);
+  assert.equal(Bible.search(bible,'').length,0);
+});
+
+test('Passage references combine only consecutive verses in the same chapter',()=>{
+  const v=(verse,chapter=16,book='Matteus')=>({book,chapter,verse});
+  assert.equal(Bible.formatReference([v(26),v(27)]),'Matteus 16:26-27');
+  assert.equal(Bible.formatReference([v(26)]),'Matteus 16:26');
+  assert.equal(Bible.formatReference([v(26),v(28)]),'Matteus 16:26 · Matteus 16:28');
+  assert.equal(Bible.formatReference([v(28),v(1,17)]),'Matteus 16:28 · Matteus 17:1');
+});

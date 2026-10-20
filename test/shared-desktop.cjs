@@ -4,7 +4,7 @@ async function run(){
   const service=await startTestService();const directory=await fs.mkdtemp(path.join(os.tmpdir(),'promax-shared-test-'));const processes=new Set(),errors=[];
   const watchdog=setTimeout(()=>{for(const app of processes)app.process().kill();console.error('Shared desktop test timed out.');process.exit(1);},120000);watchdog.unref();
   async function launch(profile){const env={...process.env,PROMAX_TEST_DATA:path.join(directory,profile),PROMAX_SHARED_TEST_URL:service.url};delete env.ELECTRON_RUN_AS_NODE;
-    const app=await electron.launch({args:[path.join(__dirname,'..')],env,timeout:30000});processes.add(app);const page=await app.firstWindow();page.on('pageerror',e=>errors.push(e.message));await page.locator('.song').first().waitFor();return {app,page};}
+    const app=await electron.launch({args:[path.join(__dirname,'..')],env,timeout:30000});processes.add(app);const page=await app.firstWindow();page.on('pageerror',e=>errors.push(e.message));await page.locator('.song').first().waitFor();await page.evaluate(()=>{document.getElementById('lyrics-fold').open=true;});return {app,page};}
   async function close(app){const child=app.process();const exited=child.exitCode!==null?Promise.resolve():new Promise(resolve=>child.once('exit',resolve));app.close().catch(()=>{});await exited;processes.delete(app);}
   async function open(page){await page.locator('#shared-open').click();await page.locator('#sharing-dialog').waitFor();}
   async function done(page,text){await page.locator('#shared-message').filter({hasText:text}).waitFor();}

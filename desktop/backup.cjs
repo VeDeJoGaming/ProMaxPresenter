@@ -1,9 +1,9 @@
 const fs = require('node:fs/promises');
 const path = require('node:path');
-const { normalizeLibrary } = require('../library.js');
+const { parse } = require('../library-data.js');
 
 async function backupLibrary(directory, data, version) {
-  const library = normalizeLibrary(data);
+  const library = parse(data);
   const body = JSON.stringify({ version: 1, appVersion: version, savedAt: new Date().toISOString(), ...library }, null, 2);
   if (Buffer.byteLength(body) > 20 * 1024 * 1024) throw new Error('Library backup is too large');
   await fs.mkdir(directory, { recursive: true });

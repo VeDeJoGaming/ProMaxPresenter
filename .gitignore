@@ -9,3 +9,5 @@ test-results/
 *.pfx
 *.p12
 release-config.local.json
+artifacts/
+*.promax-backup/

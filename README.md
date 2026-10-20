@@ -1,46 +1,39 @@
 # ProMax Presenter
 
-Offline song and worship presentation for Windows, with optional private group sharing. Your library and backgrounds remain available on your computer. No account is required.
+Windows presentation software for worship meetings. Version 1.2 restores the complete original application and combines it with GitHub updates and optional private group sharing.
 
-## Install and update
+## Install
 
-Install the setup file from the project's GitHub Releases. An installed release checks for updates shortly after startup. Click **Update** to download, back up your library, install and restart. Close the presentation window first. Songs and background media are kept across updates. Without internet, presenting continues normally.
+Download **ProMax-Presenter-Setup-1.2.0.exe** from [GitHub Releases](https://github.com/VeDeJoGaming/ProMaxPresenter/releases/latest). Node.js is not needed. Existing installations can use **Update**. Close the presentation window before updating.
 
-Local test installers have updates disabled until built with a real release repository. See [PUBLISERING.md](PUBLISERING.md) for the complete Norwegian publishing guide and signing setup.
+Your songs, folders, imported Bible and media stay local. Installation includes all **22 motion backgrounds**: the 16 original procedural styles and Nordlys, Blå tide, Gyllent lys, Purpurdis, Prisme and Etterklang. Open **Look & feel → Browse motion backgrounds**. No separate visual download is needed.
 
-## Present
+## Features
 
-1. Create a song and paste lyrics. Blank lines start a new slide. Use [Verse 1], [Chorus] and [Bridge] headings.
-2. Choose lines per slide and click **Generate slides**. Regenerate after changing lyrics.
-3. Click **Open presentation**, move the window to your projector, and double-click for fullscreen.
-4. Click a slide, use arrow keys or Space, or assign a one-character shortcut below a thumbnail. Repeated shortcuts cycle through matching slides. Escape toggles blackout outside text fields; fullscreen may consume Escape first.
-5. Use temporary text, a countdown, or a local PDF. **Return to selected slide** resumes the song.
+- Meeting folders and running orders with songs, Bible passages, text, video, YouTube and PowerPoint; drag/drop, undo/redo and automatic saving.
+- Song sections, slide editing, keyboard shortcuts, quick text, countdown, PDF and blackout.
+- Imported Bible search and verse selection; local video library and native YouTube preview/output.
+- PowerPoint import through installed Microsoft PowerPoint on Windows.
+- Native fullscreen presentation on the selected external screen. Use **Extend displays** in Windows, select the screen in Settings and press **Presentation off** to open output.
+- Built-in offline motion backgrounds, custom media, and A/B/C looks, palettes and section-following for the original procedural styles.
+- Full backup/restore in Settings, including IndexedDB media and converted presentations. Update backups also preserve meeting folders and all presentation settings.
+- Optional invitation-only shared song library without accounts. Choose Off, Receive only, or Receive & share. Joining uploads nothing; sharing songs requires an explicit choice.
 
-Images and muted looping videos are copied into local storage for offline use. PDFs last for the current session and use the built-in PDF viewer. Export PowerPoint to PDF first. The presentation fills its window; preview thumbnails use 16:9.
-
-## Back up or share songs
-
-**Export library** saves songs and settings as JSON, without media. Send that file to someone else to share manually. **Import library** previews how many songs will be added and asks before importing. It preserves existing songs. No library is uploaded automatically.
-
-Keep exported backups and original media. Desktop data lives in %APPDATA%/ProMax Presenter; deleting this folder removes your library. The ten most recent pre-update song backups are kept in its backups folder.
-
-To move from the browser edition, export there and import in the desktop edition. Select background media again.
+The app retains the stable application identity and profile folder (`ProMax Presenter`, `com.promax.presenter`). When an early reduced GitHub library and an original recovery copy coexist, songs from both and the original meeting folders are reunited. Keep backups before migrating between computers. Installation cannot recover data that is absent from that computer.
 
 ## Development
 
-Node.js 24 is recommended. Run npm ci, then npm start. Check with npm test and npm run test:desktop. Build a local Windows installer with npm run dist.
+```sh
+npm ci
+npm test
+npm run test:desktop
+npm run test:shared
+npm run test:backup
+npm start
+```
 
-The original browser edition remains available via **Start ProMax.cmd** or npm run start:browser at http://127.0.0.1:4173. Its songs are stored in that browser. It does not receive desktop updates.
+`npm run verify` exercises native output and the original feature suite on a Windows desktop with Microsoft PowerPoint. Tests use separate profiles. `npm run start:browser` serves the browser UI at localhost:4173; native display, updater and shared-group access require the desktop app.
 
-Bible import/search, YouTube support, service playlists, native PowerPoint import and per-song backgrounds are future ideas. No copyrighted Bible text is bundled. Source redistribution rights have not yet been chosen (UNLICENSED).
+`npm run dist:release` builds a Windows installer with the GitHub update feed and all backgrounds. A version increase on `main` triggers a verified release; manually dispatched builds produce drafts. See [PUBLISERING.md](PUBLISERING.md).
 
-## Shared library
-
-Create a private group or join with an invitation in the Windows app. Choose **Off**, **Receive only**, or **Receive & share**. Uploading your existing songs always requires a separate choice. See [the shared library guide](SHARED-LIBRARY.md) for invitations, offline use, access recovery and service operation.
-
-## Visual backgrounds and theme
-
-Six original animated SVG backgrounds are in `visuals/`. Open `visuals/index.html` for a preview, then choose a background with **Add image or video background** in ProMax. Releases include a matching visual pack ZIP. Run `node scripts/build-visuals.cjs` to rebuild the gallery.
-
-The desktop app, sharing page and visual gallery use the same palette and controls from `theme.css`. The theme rules for future changes are recorded in [AGENTS.md](AGENTS.md).
-
+Private libraries, app profiles, transfer packages, tokens and imported Bible texts must never be committed or bundled. [SHARED-LIBRARY.md](SHARED-LIBRARY.md) documents group sharing. [ORIGINAL-FEATURES.md](ORIGINAL-FEATURES.md) preserves the original feature guide.

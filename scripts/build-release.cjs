@@ -15,6 +15,7 @@ function releaseSettings(env = process.env, local = {}) {
 }
 
 async function run() {
+  require('./build-bundled-visuals.cjs');
   const configFile = path.join(__dirname, '..', 'release-config.local.json');
   const defaultConfig = path.join(__dirname, '..', 'release-config.json');
   const local = JSON.parse(fs.readFileSync(fs.existsSync(configFile) ? configFile : defaultConfig, 'utf8'));
@@ -28,6 +29,9 @@ async function run() {
       publish: [{ provider: 'github', owner, repo, releaseType: 'draft' }]
     }
   });
+  for(const name of [`ProMax-Presenter-Setup-${version}.exe`,`ProMax-Presenter-Setup-${version}.exe.blockmap`,'latest.yml']){
+    if(!fs.existsSync(path.join(__dirname,'..','dist',name)))throw Error('Release build did not produce '+name);
+  }
 }
 if (require.main === module) run().catch(error => { console.error(error.message); process.exitCode = 1; });
 module.exports = { releaseSettings };
