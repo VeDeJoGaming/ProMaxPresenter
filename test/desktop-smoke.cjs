@@ -39,7 +39,9 @@ async function run() {
     const exited = child.exitCode !== null ? Promise.resolve() : new Promise(resolve => child.once('exit', resolve));
     try {
       await Promise.race([
-        Promise.all([closing.close(), exited]),
+        // Playwright also deletes its own Chromium artifacts during close. On Windows
+        // that cleanup can outlive the app; the process exit is the shutdown guarantee.
+        (closing.close().catch(() => {}), exited),
         new Promise((_resolve, reject) => { timeout = setTimeout(() => {
           try { child.kill(); } catch {}
           reject(new Error('Electron did not close within ten seconds'));
