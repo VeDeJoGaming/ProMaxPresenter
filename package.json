@@ -1,0 +1,52 @@
+{
+  "name": "promax-presenter",
+  "productName": "ProMax Presenter",
+  "version": "1.0.0",
+  "description": "Offline song and worship presentation workspace",
+  "author": "ProMax Presenter",
+  "private": true,
+  "license": "UNLICENSED",
+  "main": "desktop/main.cjs",
+  "scripts": {
+    "postinstall": "node node_modules/electron/install.js",
+    "start": "electron .",
+    "start:browser": "node server.js",
+    "test": "node --test test/*.test.cjs",
+    "test:desktop": "node test/desktop-smoke.cjs",
+    "dist": "electron-builder --win nsis --x64 --publish never",
+    "dist:release": "node scripts/build-release.cjs"
+  },
+  "dependencies": {
+    "electron-updater": "6.8.9"
+  },
+  "devDependencies": {
+    "electron": "44.9.1",
+    "electron-builder": "26.15.3",
+    "playwright": "1.64.1"
+  },
+  "overrides": {
+    "@electron/get": "5.1.0"
+  },
+  "build": {
+    "appId": "com.promax.presenter",
+    "productName": "ProMax Presenter",
+    "copyright": "Copyright © 2026 ProMax Presenter",
+    "asar": true,
+    "directories": { "output": "dist", "buildResources": "build" },
+    "files": ["desktop/**", "build/icon.ico", "index.html", "app.js", "style.css", "library.js", "updates-ui.js", "package.json"],
+    "win": {
+      "target": [{ "target": "nsis", "arch": ["x64"] }],
+      "icon": "build/icon.ico",
+      "artifactName": "ProMax-Presenter-Setup-${version}.${ext}"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "deleteAppDataOnUninstall": false,
+      "runAfterFinish": true
+    },
+    "publish": null
+  }
+}
