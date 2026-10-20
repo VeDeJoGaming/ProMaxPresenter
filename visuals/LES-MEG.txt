@@ -1,0 +1,11 @@
+PROMAX VISUALS — VOLUM 01
+
+Seks originale, animerte SVG-bakgrunner for ProMax Presenter.
+
+1. Åpne index.html for å se alle seks med eksempeltekst.
+2. I ProMax: velg Add image or video background.
+3. Velg en av SVG-filene. Åpne presentasjonsvinduet og vis en sang.
+
+Bakgrunnene fungerer uten internett og inneholder ingen lyd, skript eller eksterne ressurser. Bevegelsen går i langsomme løkker. Oppløsningen skaleres til skjermen (16:9). Filene kan brukes, endres og deles fritt som bakgrunn i presentasjoner.
+
+Disse er bakgrunner til presentasjoner, ikke en endring av sangbibliotekets utseende.
