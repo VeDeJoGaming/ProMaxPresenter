@@ -8,8 +8,18 @@ let state={text:'',black:false,pdf:null};
 function parseLyrics(text,maxLines){return ProMaxLyrics.parse(text,maxLines);}
 function notify(message){$('toast').textContent=message;$('toast').style.display='block';clearTimeout(notify.timeout);notify.timeout=setTimeout(()=>$('toast').style.display='none',3500);}
 function current(){return songs.find(s=>s.id===selected);}
-let lastSavedRaw=null,lastShadowAt=0,nativeSaveTimer=null;
+let lastSavedRaw=null,lastShadowAt=0,nativeSaveTimer=null,pendingSaveTimer=null,pendingSaveSince=0;
+// Typing updates the model immediately. Coalesce the full-library serialization,
+// localStorage write and undo snapshot instead of blocking every input event.
+function scheduleSave(){
+  if(!pendingSaveSince)pendingSaveSince=Date.now();
+  clearTimeout(pendingSaveTimer);
+  pendingSaveTimer=setTimeout(()=>save(),Math.max(0,Math.min(250,1000-(Date.now()-pendingSaveSince))));
+  $('status').textContent='Saving changes...';
+}
+function flushPendingSave(){if(pendingSaveTimer!==null)return save();return true;}
 function save(){
+  clearTimeout(pendingSaveTimer);pendingSaveTimer=null;pendingSaveSince=0;
   try{
     const raw=JSON.stringify({schemaVersion:1,savedAt:Date.now(),songs,selected,settings,meetingFolders,meetingSelected});
     localStorage.setItem('promax-library',raw);
@@ -19,7 +29,32 @@ function save(){
     $('status').textContent='All changes saved';return true;
   }catch(e){$('status').textContent='Save failed';notify('Could not save automatically. Your latest changes are not saved.');return false;}
 }
-function renderLibrary(){const term=$('search').value.toLowerCase();$('library').replaceChildren();for(const song of songs.filter(s=>s.title.toLowerCase().includes(term))){const b=document.createElement('button');b.className='song'+(song.id===selected?' active':'');b.dataset.songId=song.id;b.textContent=song.title||'Untitled song';const small=document.createElement('small');small.textContent=`${song.slides.length} slides`;b.append(small);b.onclick=()=>selectSong(song.id);$('library').append(b);}}
+const libraryRows=new Map();
+function renderLibrary(){
+  const term=$('search').value.toLowerCase(),list=$('library'),visible=[],ids=new Set();
+  for(const song of songs){
+    ids.add(song.id);
+    if(!song.title.toLowerCase().includes(term))continue;
+    let row=libraryRows.get(song.id);
+    if(!row){
+      const button=document.createElement('button'),title=document.createTextNode(''),count=document.createElement('small');
+      button.className='song';button.dataset.songId=song.id;button.append(title,count);button.onclick=()=>selectSong(song.id);
+      row={button,title,count};libraryRows.set(song.id,row);
+    }
+    const title=song.title||'Untitled song',count=`${song.slides.length} slides`,active=song.id===selected;
+    if(row.title.textContent!==title)row.title.textContent=title;
+    if(row.count.textContent!==count)row.count.textContent=count;
+    if(row.button.classList.contains('active')!==active)row.button.classList.toggle('active',active);
+    visible.push(row.button);
+  }
+  for(const id of libraryRows.keys())if(!ids.has(id))libraryRows.delete(id);
+  if(list.children.length!==visible.length||visible.some((row,i)=>list.children[i]!==row))list.replaceChildren(...visible);
+}
+let libraryRenderFrame=null;
+function scheduleLibraryRender(){
+  if(libraryRenderFrame!==null)return;
+  libraryRenderFrame=requestAnimationFrame(()=>{libraryRenderFrame=null;renderLibrary();});
+}
 function selectSong(id){selected=id;liveIndex=-1;const s=current();$('title').value=s.title;$('lyrics').value=s.lyrics;$('lines').value=s.lines;renderLibrary();renderSlides();save();}
 const backgroundPosters=new Map();
 function addBackgroundPoster(container,url){
@@ -54,7 +89,7 @@ function renderSlides(){
     const thumb=document.createElement('div');thumb.className='thumbnail';thumb.style.background=settings.color;addMedia(thumb,true,slide.section);
     const caption=document.createElement('div');caption.className='caption';ProMaxPlayback.renderText(caption,slide);thumb.append(caption);thumb.onclick=()=>goLive(i);
     const footer=document.createElement('div');footer.className='card-footer';const label=document.createElement('span');label.textContent=`${i+1} · ${slide.section}`;
-    const key=document.createElement('input');key.maxLength=1;key.value=slide.key;key.title='Custom shortcut for this slide';key.setAttribute('aria-label',`Shortcut for slide ${i+1}`);key.oninput=()=>{slide.key=key.value.toLowerCase().trim();save();};
+    const key=document.createElement('input');key.maxLength=1;key.value=slide.key;key.title='Custom shortcut for this slide';key.setAttribute('aria-label',`Shortcut for slide ${i+1}`);key.oninput=()=>{slide.key=key.value.toLowerCase().trim();scheduleSave();};
     const edit=document.createElement('button');edit.className='slide-edit-button';edit.textContent='Edit';edit.setAttribute('aria-label','Edit slide '+(i+1));edit.onclick=()=>openSlideEditor(i);
     footer.append(label,edit,key);card.append(thumb,footer);fragment.append(card);
   });$('slides').append(fragment);
@@ -144,12 +179,14 @@ async function openOutput(){
     }catch(error){closeOutput();notify('Could not open presentation. Please try again.');}
     finally{presentationBusy=false;syncOutputButton();}
 }
-window.addEventListener('beforeunload',()=>{if(lastSavedRaw)window.promaxDesktop?.saveLibrary?.(lastSavedRaw);closeOutput();});
+document.addEventListener('focusout',()=>flushPendingSave());
+document.addEventListener('visibilitychange',()=>{if(document.hidden)flushPendingSave();});
+window.addEventListener('beforeunload',()=>{flushPendingSave();if(lastSavedRaw)window.promaxDesktop?.saveLibrary?.(lastSavedRaw);closeOutput();});
 function handleKey(e){if(window.ProMaxFeatures?.handleKey(e))return;if(document.getElementById('visual-library')?.open||document.getElementById('slide-editor')?.open)return;if(/INPUT|TEXTAREA|SELECT/.test(e.target.tagName)||e.ctrlKey||e.altKey||e.metaKey)return;const key=e.key.toLowerCase();if(key==='arrowright'||key===' '){e.preventDefault();goLive(liveIndex+1);}else if(key==='arrowleft'){e.preventDefault();goLive(liveIndex-1);}else if(key==='escape'){e.preventDefault();toggleBlackout();}else{const matches=current().slides.map((s,i)=>s.key===key?i:-1).filter(i=>i>=0);if(matches.length){e.preventDefault();goLive(matches.find(i=>i>liveIndex)??matches[0]);}}}
 let dbPromise=new Promise((resolve,reject)=>{const request=indexedDB.open('promax-media',1);request.onupgradeneeded=()=>request.result.createObjectStore('assets');request.onsuccess=()=>resolve(request.result);request.onerror=()=>reject(request.error);});
 async function storedAsset(action,value,key='background'){const db=await dbPromise;return new Promise((resolve,reject)=>{const tx=db.transaction('assets',action==='get'?'readonly':'readwrite');const store=tx.objectStore('assets');const req=action==='get'?store.get(key):action==='delete'?store.delete(key):store.put(value,key);tx.oncomplete=()=>resolve(req.result);tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error);});}
 function setMedia(file){settings.visual=null;save();if(media)URL.revokeObjectURL(media.url);media=file?{url:URL.createObjectURL(file),type:file.type}:null;renderSlides();paint();if(typeof updateVisualName==='function')updateVisualName();}
-function bind(){ $('new-song').onclick=()=>{const s={id:uid(),title:'Untitled song',lyrics:'',lines:4,slides:[]};songs.push(s);selectSong(s.id);$('title').focus();};$('search').oninput=renderLibrary;$('quick-text').oninput=()=>{settings.quickText=$('quick-text').value;save();};$('minutes').oninput=()=>{settings.countdownMinutes=$('minutes').value;save();};for(const id of ['title','lyrics','lines'])$(id).oninput=()=>{const s=current();s.title=$('title').value;s.lyrics=$('lyrics').value;s.lines=Number($('lines').value);save();if(id==='title')renderLibrary();};$('build').onclick=()=>{const s=current();const old=s.slides;s.slides=parseLyrics(s.lyrics,s.lines).map((slide,i)=>({...slide,key:old[i]?.text===slide.text?old[i].key:slide.key}));liveIndex=-1;save();renderLibrary();renderSlides();notify(`${s.slides.length} slides ready`);};$('delete-song').onclick=()=>{if(window.ProMaxControls){ProMaxControls.remove({type:'song',songId:selected});return;}if(!confirm(`Delete “${current().title}”?`))return;songs=songs.filter(s=>s.id!==selected);if(!songs.length)songs.push({id:uid(),title:'Untitled song',lyrics:'',lines:4,slides:[]});selectSong(songs[0].id);};$('open-output').onclick=openOutput;$('previous').onclick=()=>goLive(liveIndex-1);$('next').onclick=()=>goLive(liveIndex+1);$('clear').onclick=()=>{stopTimer();state={text:'',black:false,pdf:null};paint();};$('blackout').onclick=toggleBlackout;for(const [id,prop]of [['color','color'],['font-size','fontSize'],['align','align']])$(id).oninput=()=>{settings[prop]=id==='font-size'?Number($(id).value):$(id).value;save();paint();if(id==='color')renderSlides();};$('background').onchange=async e=>{const file=e.target.files[0];if(!file)return;try{await storedAsset('put',file);setMedia(file);notify('Background saved for offline use');}catch(err){notify('Could not save this media. Try a smaller file.');}e.target.value='';};$('remove-background').onclick=async()=>{try{await storedAsset('delete');setMedia(null);}catch(e){notify('Could not remove the background.');}};$('show-text').onclick=()=>{stopTimer();state={text:$('quick-text').value,black:false,pdf:null};paint();$('live-label').textContent='Temporary text';};$('countdown').onclick=()=>{const min=Number($('minutes').value);if(!Number.isFinite(min)||min<=0||min>180){notify('Choose a duration between 0 and 180 minutes.');return;}stopTimer();deadline=Date.now()+min*60000;state={text:'',black:false,pdf:null};const tick=()=>{const seconds=Math.max(0,Math.ceil((deadline-Date.now())/1000));const formatted=`${Math.floor(seconds/60)}:${String(seconds%60).padStart(2,'0')}`;if(state.text!==formatted){state.text=formatted;paint();}if(!seconds)stopTimer();};tick();timer=setInterval(tick,200);$('live-label').textContent='Countdown';};$('stop-countdown').onclick=stopTimer;$('pdf').onchange=e=>{const file=e.target.files[0];if(!file)return;stopTimer();if(pdfUrl)URL.revokeObjectURL(pdfUrl);pdfUrl=URL.createObjectURL(file);state={text:'',black:false,pdf:pdfUrl};paint();$('live-label').textContent=file.name;e.target.value='';};document.addEventListener('keydown',handleKey);window.addEventListener('resize',paint);}
+function bind(){ $('new-song').onclick=()=>{const s={id:uid(),title:'Untitled song',lyrics:'',lines:4,slides:[]};songs.push(s);selectSong(s.id);$('title').focus();};$('search').oninput=scheduleLibraryRender;$('quick-text').oninput=()=>{settings.quickText=$('quick-text').value;scheduleSave();};$('minutes').oninput=()=>{settings.countdownMinutes=$('minutes').value;scheduleSave();};for(const id of ['title','lyrics','lines'])$(id).oninput=()=>{const s=current();s.title=$('title').value;s.lyrics=$('lyrics').value;s.lines=Number($('lines').value);scheduleSave();if(id==='title')scheduleLibraryRender();};$('build').onclick=()=>{const s=current();const old=s.slides;s.slides=parseLyrics(s.lyrics,s.lines).map((slide,i)=>({...slide,key:old[i]?.text===slide.text?old[i].key:slide.key}));liveIndex=-1;save();renderLibrary();renderSlides();notify(`${s.slides.length} slides ready`);};$('delete-song').onclick=()=>{if(window.ProMaxControls){ProMaxControls.remove({type:'song',songId:selected});return;}if(!confirm(`Delete “${current().title}”?`))return;songs=songs.filter(s=>s.id!==selected);if(!songs.length)songs.push({id:uid(),title:'Untitled song',lyrics:'',lines:4,slides:[]});selectSong(songs[0].id);};$('open-output').onclick=openOutput;$('previous').onclick=()=>goLive(liveIndex-1);$('next').onclick=()=>goLive(liveIndex+1);$('clear').onclick=()=>{stopTimer();state={text:'',black:false,pdf:null};paint();};$('blackout').onclick=toggleBlackout;for(const [id,prop]of [['color','color'],['font-size','fontSize'],['align','align']])$(id).oninput=()=>{settings[prop]=id==='font-size'?Number($(id).value):$(id).value;scheduleSave();paint();if(id==='color')renderSlides();};$('background').onchange=async e=>{const file=e.target.files[0];if(!file)return;try{await storedAsset('put',file);setMedia(file);notify('Background saved for offline use');}catch(err){notify('Could not save this media. Try a smaller file.');}e.target.value='';};$('remove-background').onclick=async()=>{try{await storedAsset('delete');setMedia(null);}catch(e){notify('Could not remove the background.');}};$('show-text').onclick=()=>{stopTimer();state={text:$('quick-text').value,black:false,pdf:null};paint();$('live-label').textContent='Temporary text';};$('countdown').onclick=()=>{const min=Number($('minutes').value);if(!Number.isFinite(min)||min<=0||min>180){notify('Choose a duration between 0 and 180 minutes.');return;}stopTimer();deadline=Date.now()+min*60000;state={text:'',black:false,pdf:null};const tick=()=>{const seconds=Math.max(0,Math.ceil((deadline-Date.now())/1000));const formatted=`${Math.floor(seconds/60)}:${String(seconds%60).padStart(2,'0')}`;if(state.text!==formatted){state.text=formatted;paint();}if(!seconds)stopTimer();};tick();timer=setInterval(tick,200);$('live-label').textContent='Countdown';};$('stop-countdown').onclick=stopTimer;$('pdf').onchange=e=>{const file=e.target.files[0];if(!file)return;stopTimer();if(pdfUrl)URL.revokeObjectURL(pdfUrl);pdfUrl=URL.createObjectURL(file);state={text:'',black:false,pdf:pdfUrl};paint();$('live-label').textContent=file.name;e.target.value='';};document.addEventListener('keydown',handleKey);window.addEventListener('resize',paint);}
 async function init(){
   let data=null,recovered=false,invalid=false;
   try{const raw=localStorage.getItem('promax-library');if(raw){data=ProMaxLibraryData.parse(raw);lastSavedRaw=raw;}}catch{invalid=true;}

@@ -27,7 +27,7 @@ function commitSlideEdit() {
     $('lyrics').value = song.lyrics;
     renderSlides();
   }
-  save();
+  scheduleSave();
   window.ProMaxMeetings?.render();
 }
 

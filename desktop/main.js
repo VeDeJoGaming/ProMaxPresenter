@@ -1,6 +1,9 @@
 const { app, BrowserWindow, ipcMain, screen, Menu, dialog, shell, powerSaveBlocker } = require('electron');
 const path = require('node:path');
 const fs = require('node:fs');
+// Prefer the discrete GPU (for example NVIDIA) before Chromium initializes.
+// Keep normal driver checks and hardware-acceleration fallbacks enabled.
+app.commandLine.appendSwitch('force_high_performance_gpu');
 app.setName('ProMax Presenter');
 app.setAppUserModelId('com.promax.presenter');
 if (!app.isPackaged && process.env.PROMAX_TEST_DATA) app.setPath('userData', process.env.PROMAX_TEST_DATA);

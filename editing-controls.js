@@ -3,20 +3,25 @@
   const clone=value=>structuredClone(value);
   const providers=[['features',ProMaxFeatures.history],['youtube',ProMaxYouTubeLibrary.history]];
   const undoStack=[],redoStack=[],bibleIds=new WeakMap(),backgroundIds=new WeakMap();let nextBible=1,nextBackground=1,backgroundFile=null;
-  let baseline=null,enabled=false,restoring=false,busy=false,hold=0,choice=null,action=0,group='initial',drag=null,liveSong=null;const pendingHistory=[];
+  let baseline=null,baselineKey=null,enabled=false,restoring=false,busy=false,hold=0,choice=null,action=0,group='initial',drag=null,liveSong=null;const pendingHistory=[];
   const originalGoLive=goLive;goLive=function(index){const result=originalGoLive(index);liveSong={songId:selected,slideId:current()?.slides[liveIndex]?.id,state};return result;};
   const editable=node=>!!node?.closest('textarea,input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color]):not([type=file]),[contenteditable=true]');
   function normalize(){for(const song of songs)for(const slide of song.slides)slide.id||=uid();for(const f of meetingFolders)for(const item of f.items)for(const slide of item.slides||[])slide.id||=uid();}
-  function take(){normalize();const value=clone({songs,meetingFolders,settings,selected,meetingSelected});value.background=backgroundFile;for(const [name,p]of providers)value[name]=p.take();return value;}
+  function take(copy=true){normalize();const content={songs,meetingFolders,settings,selected,meetingSelected},value=copy?clone(content):content;value.background=backgroundFile;for(const [name,p]of providers)value[name]=p.take();return value;}
+  function setBaseline(value){baseline=value;baselineKey=key(value);}
   function key(value){const f=clone(value.meetingFolders);f.forEach(entry=>delete entry.selectedItem);const bible=value.features.bible,bg=value.background;if(bible&&!bibleIds.has(bible))bibleIds.set(bible,nextBible++);if(bg&&!backgroundIds.has(bg))backgroundIds.set(bg,nextBackground++);return JSON.stringify([value.songs,f,value.settings,value.features.videos,value.features.documents,bible?bibleIds.get(bible):0,value.youtube,bg?backgroundIds.get(bg):0]);}
   function changed(beforeChoice=choice){
     if(!enabled||restoring||hold)return;
-    const after=take();if(key(after)===key(baseline)){baseline=after;return;}
+    // Navigation is not a content edit. Compare before cloning the whole library,
+    // and keep the last immutable snapshot's signature for the next comparison.
+    const view=take(false),afterKey=key(view);
+    if(afterKey===baselineKey){baseline={...baseline,selected,meetingSelected,meetingFolders:clone(meetingFolders)};return;}
+    const after={...view,...clone({songs:view.songs,meetingFolders:view.meetingFolders,settings:view.settings})};
     const last=undoStack.at(-1),now=performance.now();
     if(last&&last.group===group&&(group.startsWith('action:')||now-last.at<900)){last.after=after;last.at=now;last.afterChoice=clone(choice);}
     else{undoStack.push({before:baseline,after,group,at:now,beforeChoice:clone(beforeChoice),afterChoice:clone(choice)});if(undoStack.length>100)undoStack.shift();}
-    if(undoStack.at(-1)&&key(undoStack.at(-1).before)===key(after))undoStack.pop();
-    redoStack.length=0;baseline=after;toolbar();
+    if(undoStack.at(-1)&&key(undoStack.at(-1).before)===afterKey)undoStack.pop();
+    redoStack.length=0;baseline=after;baselineKey=afterKey;toolbar();
   }
   function descriptor(node){
     const e=node?.closest('[data-slide-id],[data-item-id],.document-slide,[data-youtube-id],[data-asset-id],[data-verse-index],.document-deck h3,[data-song-id],[data-folder-id]');if(!e)return null;
@@ -74,7 +79,7 @@
       meetingSelected=meetingFolders.some(f=>f.id===value.meetingSelected)?value.meetingSelected:null;liveIndex=-1;
       if(backgroundFile!==value.background){backgroundFile=value.background;if(media)URL.revokeObjectURL(media.url);media=backgroundFile?{url:URL.createObjectURL(backgroundFile),type:backgroundFile.type}:null;await storedAsset(backgroundFile?'put':'delete',backgroundFile,'background');}
       await Promise.all(providers.map(([name,p])=>p.apply(value[name])));ProMaxFeatures.syncDeck(live);
-      choice=selection;save();await refresh();baseline=take();
+      choice=selection;save();await refresh();setBaseline(take());
     }finally{restoring=false;toolbar();}
   }
   async function history(direction){
@@ -168,11 +173,12 @@
   const hints=document.createElement('small');hints.className='editing-hint';hints.textContent='Drag to reorder · Delete to remove';$('meeting-items').before(hints);
   function toolbar(){undo.disabled=busy||!undoStack.length;redo.disabled=busy||!redoStack.length;}
   document.addEventListener('pointerdown',event=>{
+    flushPendingSave();
     if(event.target.closest('#editing-tools'))return;group=editable(event.target)?'input:'+event.target.id:'action:'+ ++action;select(descriptor(event.target));
   },true);
   document.addEventListener('click',event=>{if(!editable(event.target))group='action:'+ ++action;},true);
   document.addEventListener('focusin',event=>{if(!editable(event.target)&&!event.target.closest('#editing-tools')){const value=descriptor(event.target);if(value)select(value);}});
-  document.addEventListener('input',event=>{group='input:'+event.target.id;},true);
+  document.addEventListener('input',event=>{const next='input:'+event.target.id;if(group!==next)flushPendingSave();group=next;},true);
   document.addEventListener('change',event=>{if(event.target.type==='file')group='action:'+ ++action;},true);
   document.addEventListener('keydown',event=>{
     const modifier=event.ctrlKey||event.metaKey,key=event.key.toLowerCase(),text=editable(event.target);
@@ -214,6 +220,6 @@
   const originalSetMedia=setMedia;setMedia=function(file){backgroundFile=file;const result=originalSetMedia(file);changed();return result;};
   const originalSelectVisual=selectVisual;selectVisual=function(id){if(id&&!ProMaxVisuals.presets.some(p=>p.id===id))return;backgroundFile=null;return originalSelectVisual(id);};
   new MutationObserver(scan).observe(document.querySelector('main'),{childList:true,subtree:true});
-  const ready=Promise.all([ProMaxFeatures.ready,ProMaxYouTubeLibrary.ready,storedAsset('get',null,'background')]).then(([, ,file])=>{if(!backgroundFile&&media&&!settings.visual)backgroundFile=file;normalize();originalSave();baseline=take();enabled=true;renderLibrary();renderSlides();scan();toolbar();});
+  const ready=Promise.all([ProMaxFeatures.ready,ProMaxYouTubeLibrary.ready,storedAsset('get',null,'background')]).then(([, ,file])=>{if(!backgroundFile&&media&&!settings.visual)backgroundFile=file;normalize();originalSave();setBaseline(take());enabled=true;renderLibrary();renderSlides();scan();toolbar();});
   window.ProMaxControls={ready,changed,undo:()=>history('undo'),redo:()=>history('redo'),remove,duplicate,move,drop,select,refresh,mutate,get busy(){return busy;}};toolbar();
 })();

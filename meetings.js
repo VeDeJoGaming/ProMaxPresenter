@@ -119,7 +119,7 @@
   $('meeting-plan').append(addMenu);
   const banner=node('div');banner.id='meeting-banner';banner.hidden=true;
   const name=node('input');name.id='meeting-name';name.setAttribute('aria-label','Meeting name');
-  name.oninput=()=>{const f=folder();if(f){f.name=name.value;save();render();}};
+  name.oninput=()=>{const f=folder();if(f){f.name=name.value;scheduleSave();render();}};
   banner.append(name,button('Delete folder',()=>{const f=folder();if(!f)return;if(window.ProMaxControls){ProMaxControls.remove({type:'folder',folderId:f.id});return;}if(!confirm(`Delete the folder “${f.name}”? Songs and media remain in your library.`))return;meetingFolders=meetingFolders.filter(entry=>entry!==f);meetingSelected=null;activeItem=null;save();ProMaxFeatures.showTab('songs');render();}));
   workspace.insertBefore(banner,workspace.firstChild);
   const overview=node('section');overview.id='meeting-overview';overview.hidden=true;workspace.append(overview);

@@ -38,6 +38,7 @@ app.whenReady().then(async()=>{
   await execute("ProMaxMeetings.open(ProMaxMeetings.folder().items[1]);document.querySelector('.slide-edit-button').click();document.getElementById('slide-edit-text').value='Automatically saved words';document.getElementById('slide-edit-text').dispatchEvent(new Event('input'))");
   assert.equal(await execute('state.text'),previousPassage,'Selecting a song preserves the live passage');
   assert.equal(await execute("!document.getElementById('slides').hidden && document.getElementById('meeting-overview').hidden"),true);
+  await execute('new Promise(resolve=>setTimeout(resolve,350))');
   assert.equal(await execute("JSON.parse(localStorage.getItem('promax-library')).songs.find(s=>s.id===selected).slides[0].text"),'Automatically saved words');
   await execute("document.getElementById('slide-edit-cancel').click();document.getElementById('meeting-name').value='Evening meeting';document.getElementById('meeting-name').dispatchEvent(new Event('input'))");
   await win.webContents.reload();

@@ -19,7 +19,8 @@
     "test:visuals": "node test/visual-library-desktop.cjs",
     "verify": "electron . --smoke-test --feature-test --release-test",
     "test:backup": "node tests/backup-roundtrip.cjs",
-    "test:private": "node test/private-content-browser.cjs"
+    "test:private": "node test/private-content-browser.cjs",
+    "test:ui": "node test/ui-performance-browser.cjs"
   },
   "dependencies": {
     "electron-updater": "6.8.9"
