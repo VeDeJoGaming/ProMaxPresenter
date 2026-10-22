@@ -1,4 +1,8 @@
 const { contextBridge, ipcRenderer } = require('electron');
+contextBridge.exposeInMainWorld('proMaxPrivate', Object.fromEntries(
+  ['getState','create','restore','copyKey','setEnabled','disconnect','sync','applied'].map(action=>[action,input=>ipcRenderer.invoke('private:'+action,input)])
+  .concat(['read','write'].map(action=>[action+'File',input=>ipcRenderer.invoke('private-file:'+action,input)]))
+));
 contextBridge.exposeInMainWorld('proMaxDesktop', {
   getUpdateState: () => ipcRenderer.invoke('updates:state'),
   checkForUpdates: () => ipcRenderer.invoke('updates:check'),

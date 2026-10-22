@@ -18,7 +18,8 @@
     "test:shared": "node test/shared-desktop.cjs",
     "test:visuals": "node test/visual-library-desktop.cjs",
     "verify": "electron . --smoke-test --feature-test --release-test",
-    "test:backup": "node tests/backup-roundtrip.cjs"
+    "test:backup": "node tests/backup-roundtrip.cjs",
+    "test:private": "node test/private-content-browser.cjs"
   },
   "dependencies": {
     "electron-updater": "6.8.9"

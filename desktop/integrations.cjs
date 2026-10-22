@@ -50,6 +50,19 @@ async function initializeIntegrations({ app, getControl, hasPresentation, flush 
   const shared = createSharedController({ origin, clipboard,
     vault: createSharedVault(path.join(app.getPath('userData'), 'shared-access.enc'), safeStorage) });
   let sharedError;
+  const privateSync=require('./private-controller.cjs').createPrivateController({origin,clipboard,
+    vault:createSharedVault(path.join(app.getPath('userData'),'private-access.enc'),safeStorage),
+    checkpointDir:path.join(app.getPath('userData'),'private-sync-checkpoints')});
+  let privateError;
+  try{await privateSync.init();}catch{privateError='Your protected private sync key could not be opened. Restore access after disconnecting.';}
+  const privateFiles=require('./private-files.cjs').createPrivateFiles(app.getPath('userData'));
+  for(const action of ['getState','create','restore','copyKey','setEnabled','disconnect','sync','applied'])ipcMain.handle('private:'+action,async(event,input)=>{
+    if(!trusted(event))throw Error('Untrusted request');
+    try{if(action==='getState'&&privateError)return {...privateSync.getState(),error:privateError};if(['sync','applied'].includes(action)&&hasPresentation())throw Error('Close the presentation before private sync.');const result=await privateSync[action](input);privateError=null;return result;}catch(error){return {error:error.message};}
+  });
+  for(const action of ['read','write'])ipcMain.handle('private-file:'+action,async(event,input)=>{
+    if(!trusted(event))throw Error('Untrusted request');try{return await privateFiles[action](input);}catch(error){return {error:error.message};}
+  });
   try { await shared.init(); } catch { sharedError = 'Your protected group access could not be opened. Restore your access key or reconnect to your group.'; }
   for (const action of ['getState','create','join','restore','setMode','sync','publish','unpublish','copyInvite','copyAccessKey','members','revoke','disconnect']) {
     ipcMain.handle('shared:' + action, async (event, input) => {

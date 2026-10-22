@@ -1,3 +1,4 @@
+import {handlePrivateRequest} from './private-api.mjs';
 // Shared by the hosted service and its SQLite integration tests. No credentials are logged.
 const modes = new Set(['none', 'receive', 'share']);
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -63,6 +64,7 @@ export async function handleLibraryRequest(request, db) {
   }
   try {
     const origin = request.headers.get('origin'); if (origin && origin !== url.origin) fail(403, 'Origin not allowed.');
+    if(route==='/private'||route.startsWith('/private/'))return handlePrivateRequest(request,db,body);
     if (route==='/health' && method==='GET') { await q('SELECT 1').first(); return json({ok:true,version:1}); }
     if (method==='POST' && (route==='/groups'||route==='/join')) {
       const ip = request.headers.get('cf-connecting-ip') || 'local';

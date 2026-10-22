@@ -1,5 +1,7 @@
 # Felles sangbibliotek
 
+Privat PC-/laptop-synkronisering er under utvikling som en separat funksjon i samme dialog. Se `PRIVATE-SYNC.md` for status, datatyper, grenser og nødvendig tjenesteoppdatering. Gruppevalgene nedenfor gjelder fortsatt bare sangdeling.
+
 Åpne **Shared library** i Windows-programmet. Velg navnet ditt og ett av tre valg:
 
 - **Off:** ingen automatisk kontakt med fellesbiblioteket.

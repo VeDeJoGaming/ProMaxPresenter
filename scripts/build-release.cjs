@@ -1,4 +1,3 @@
-const { build, Platform, Arch } = require('electron-builder');
 const fs = require('node:fs');
 const path = require('node:path');
 const packageInfo = require('../package.json');
@@ -15,6 +14,7 @@ function releaseSettings(env = process.env, local = {}) {
 }
 
 async function run() {
+  const { build, Platform, Arch } = require('electron-builder');
   require('./build-bundled-visuals.cjs');
   const configFile = path.join(__dirname, '..', 'release-config.local.json');
   const defaultConfig = path.join(__dirname, '..', 'release-config.json');

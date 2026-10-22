@@ -20,13 +20,14 @@
     </div>`;
   document.body.append(dialog);
   const el=id=>document.getElementById(id);let state={connected:false},busy=false,epoch=0;
+  window.proMaxSharedBusy=()=>busy;
   function message(text){el('shared-message').textContent=text;}
   function render(){el('shared-setup').hidden=state.connected;el('shared-connected').hidden=!state.connected;
     if(state.connected){el('shared-group').textContent=state.group.name;el('shared-person').textContent=state.self.name+(state.self.role==='owner'?' · Group owner':'');el('shared-mode').value=state.self.mode;
       el('shared-owner').hidden=state.self.role!=='owner';el('shared-publishing').hidden=state.self.mode!=='share';el('shared-sync').disabled=state.self.mode==='none';}
   }
   async function call(action,input){const result=await api[action](input);if(result.error)throw Error(result.error);return result;}
-  async function run(task){if(busy)return;busy=true;dialog.setAttribute('aria-busy','true');
+  async function run(task){if(busy||window.ProMaxPrivateBusy)return;busy=true;dialog.setAttribute('aria-busy','true');
     for(const b of dialog.querySelectorAll('button'))if(!['shared-close','shared-disconnect'].includes(b.id))b.disabled=true;
     try{await task();}catch(e){message(e.message);}finally{busy=false;dialog.removeAttribute('aria-busy');for(const b of dialog.querySelectorAll('button'))b.disabled=false;render();}}
   async function sync(){if(busy||!state.connected||state.self.mode==='none')return;const requestEpoch=epoch;

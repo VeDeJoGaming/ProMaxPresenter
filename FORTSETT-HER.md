@@ -4,13 +4,15 @@ Felles utviklingsgren: `work/pc-laptop` i https://github.com/VeDeJoGaming/ProMax
 
 Arbeid i denne grenen på begge maskiner. Hent siste endringer før du begynner, og send ferdig arbeid tilbake til GitHub før du bytter maskin. GitHub beholder en kopi uavhengig av om den andre maskinen er på. `AGENTS.md` instruerer Codex om å gjøre dette ved avslutning av oppgaver. Manuelle filendringer utenfor Codex må lagres med `Lagre prosjekt.cmd`.
 
-## Status 22. oktober 2026
+## Status etter arbeid 22. oktober 2026
 
-- Lokal 1.3.0 er ferdig bygd og testet: 42 visuals, raskt galleri, to rettelser i sangsynkronisering. Se `FORTSETT-1.3.0.md`.
-- Brukeren ønsker både videreføring av utviklingsprosjektet og privat synkronisering av hele appinnholdet mellom PC og laptop.
-- GitHub brukes til kildekode og disse notatene. Private appdata skal gå gjennom Shared library.
-- Shared library støtter foreløpig sanger. Full synkronisering av møtemapper, Bibelen, medier og innstillinger er ikke implementert eller aktivert. Den må bevare begge maskiners endringer, ha privat tilgang og konflikthåndtering, og aldri kopiere åpne Chromium-databaser direkte.
-- Den installerte appen på PC-en er fortsatt tidligere 1.2.0. En lokal installer er ikke det samme som en publisert GitHub-utgave.
+- Kildekoden fra `work/pc-laptop`, utgangspunkt `4327b64476758135b20d64fa97380a91edcb0f1b`, er hentet til prosjektroten. Alle 147 opprinnelige filer ble kontrollert byte for byte mot GitHub før redigering. Opprinnelige rotfiler er bevart i ignorert `workspace-before-fetch`. Ingen privat brukerprofil ble åpnet, endret eller lastet opp.
+- Ny privat synkronisering er implementert i klienten og den testbare tjenestekjernen: egen PMXP-nøkkel, ende-til-ende-kryptering, sanger, møter, Bibel, medier, YouTube, portable PowerPoint-PNG-er, innstillinger, treveis sammenligning og konfliktdialog. Se `PRIVATE-SYNC.md` for nøyaktig status og grenser. Den er manuelt utløst og krever uttrykkelig aktivering.
+- Den virkelige nettjenesten er IKKE oppdatert. Eksisterende Sites-prosjekt er `appgprj_6ad725d515548191a4a312921bd8405e`. Sites-kildehenting feilet fordi `git.chatgpt-team.site:443` er blokkert. Neste steg er å åpne eksisterende Sites-kilde, overføre API-filene og legge til `shared-service/private-schema.sql` som en additiv D1-/Drizzle-migrering. Bevar eksisterende sanggrupper og publikum. Instruksjoner i `PRIVATE-SYNC.md`.
+- Appen starter uten JavaScript-feil i isolert Chrome. Nettlesertest med to syntetiske profiler verifiserer alle overførte innholdstyper, bærbare filstier, omstart og konflikter. 47 enhetstester består. Enhetstestene omfatter også kryptering, tilgangsisolasjon, slettinger, revisjonsavvisning og avbryting ved pause.
+- Native Electron-oppstart og native integrasjonstester er IKKE verifisert her. Node 24.19 og Git finnes; npm finnes ikke i PATH. Tilgjengelig pnpm klarte verken nettinstallasjon (EACCES mot npm-registeret) eller offlineinstallasjon (Electron mangler i cache). Installer normale avhengigheter med `npm ci` på en maskin med nettilgang; kjør `npm test`, `npm run test:private`, `npm run test:desktop` og `npm run test:shared` før utgivelse.
+- Viktig lokalt: den opprinnelige `.git`-mappen er skrivebeskyttet av kjøremiljøet. Derfor kunne verken `git fetch` eller lokalt grenbytte utføres. Rotens lokale Git-metadata viser fremdeles `codex/new-visuals`, selv om arbeidsfilene er fra `work/pc-laptop` pluss endringene beskrevet her. Ikke bruk `Lagre prosjekt.cmd` før metadata er forent. Kildehenting og lagring på GitHub gjøres via GitHub-tilkoblingen med kontrollert foreldrecommit. På neste maskin: hent `work/pc-laptop` i en vanlig checkout. På denne maskinen: bevar `workspace-before-fetch` og gjennomgå arbeidsfilene før metadata repareres i et miljø med tillatt Git-skriving. Ikke reset eller force-push.
+- Versjon er fortsatt 1.3.0; ingen installer, main-merge eller release er publisert. Privat synkronisering er ikke aktivert i brukerens profiler. Se `FORTSETT-1.3.0.md` for tidligere utgivelsesarbeid.
 
 ## Laptop første gang
 

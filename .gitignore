@@ -1,4 +1,8 @@
 node_modules/
+.pnpm-store/
+pnpm-lock.yaml
+/service-work/
+/workspace-before-fetch/
 dist/
 .release/
 test-results/
@@ -18,5 +22,7 @@ artifacts/
 /recovery/
 /backups/
 /shared-access*
+/private-access*
+/private-sync-checkpoints/
 /pending-maintenance.json
 /restore-*/

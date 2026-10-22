@@ -31,3 +31,6 @@ dialog { background:var(--pm-panel);color:var(--pm-text);border-color:var(--pm-b
 .control { background:var(--pm-panel) }
 .updates-panel { padding:14px 0;margin-top:20px }
 .header-actions { flex-wrap:wrap }
+#private-enabled { width:auto; margin:0; }
+#private-connected > label { display:flex; align-items:center; gap:10px; }
+#private-conflicts pre { max-height:240px; overflow:auto; white-space:pre-wrap; overflow-wrap:anywhere; }
