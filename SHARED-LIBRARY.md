@@ -20,6 +20,8 @@ Under **Access & disconnect** kan alle kopiere sin personlige tilgangsnøkkel. O
 
 Tilgangsnøkkelen lagres kryptert av Windows, utenfor sangbiblioteket. Eksport og sikkerhetskopier inneholder ingen tilgangsnøkler. Nettjenesten lagrer hashverdier av tilgang og invitasjoner. Sangtekst lagres på tjenesten, og gruppemedlemmer kan lese og lagre den; dette er ikke ende-til-ende-kryptering.
 
+Fra versjon 1.3 mottar en ny maskin også sangene som samme medlem selv har delt tidligere. Gjenopprett tilgangsnøkkelen, velg mottak og trykk **Sync now**. Identiske lokale sanger dupliseres ikke. Hvis én automatisk oppdatering ikke kan lastes opp, fortsetter mottaket av andre sanger; dialogen viser hvilken opplasting som feilet.
+
 ## Drift og utvikling
 
 Nettjenesten er publisert med Sites, med privat gruppeinnhold bak invitasjons- og medlemskontroll. Den faste adressen finnes i `shared-config.json`. Klientens nettverkskall skjer i Electron-hovedprosessen og følger ikke videresendinger. Nettleserversjonen støtter fortsatt lokal import/eksport, mens grupper krever Windows-programmet.

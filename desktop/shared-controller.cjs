@@ -54,13 +54,23 @@ function createSharedController({origin,vault,fetchImpl=fetch,clipboard}) {
       const me=await api('/me');if(epoch!==generation)return {songs:[],...state()};
       // Local consent is authoritative; never accept a remote escalation of sharing mode.
       if(me.self.mode!==access.self.mode)throw Error('Sharing settings changed. Choose your mode again.');
-      if(access.self.mode==='share')for(const s of songs.slice(0,10000)){if(epoch!==generation)break;await publish(s,false,epoch);}
+      const publishFailures=[];
+      if(access.self.mode==='share')for(const s of songs.slice(0,10000)){
+        if(epoch!==generation)break;
+        try{await publish(s,false,epoch);}catch(error){
+          if(epoch!==generation)throw error;
+          // A rejected local edit must not prevent this member from receiving songs.
+          publishFailures.push({id:s.id,message:error.message});
+        }
+      }
       const incoming=[];let after=0;
       for(let page=0;page<101;page++) {if(epoch!==generation)return {songs:[],...state()};const r=await api('/songs?after='+after);
-        for(const row of r.songs){if(row.authorId!==access.self.id){normalizeLibrary({songs:[row.song]});incoming.push(row);}}
+        // Restoring the same access key on another computer must also receive
+        // this member's own songs. The merge already avoids identical local copies.
+        for(const row of r.songs){normalizeLibrary({songs:[row.song]});incoming.push(row);}
         if(incoming.length>1000)throw Error('The shared library is too large.');if(r.nextAfter===null)break;if(!Number.isSafeInteger(r.nextAfter)||r.nextAfter<=after)throw Error('Invalid shared library page.');after=r.nextAfter;
       }
-      return {songs:epoch===generation?incoming:[],...state()};}),
+      return {songs:epoch===generation?incoming:[],publishFailures,...state()};}),
     publish: songs=>serial(async()=>{ensure('share');if(paused)throw Error('Sharing settings are changing. Try again.');if(access.modePending)throw Error('Sync your sharing settings before publishing.');if(!Array.isArray(songs)||songs.length>1000)throw Error('Share up to 1,000 songs at a time.');const epoch=generation;let count=0;
       for(const s of songs){if(epoch!==generation)break;if(await publish(s,true,epoch))count++;}return {count,...state()};}),
     unpublish: localId=>serial(async()=>{ensure();const publication=access.publications[localId];if(!publication)throw Error('This song has not been shared from this computer.');await api('/songs/'+publication.id,'DELETE');delete access.publications[localId];await persist();return state();}),

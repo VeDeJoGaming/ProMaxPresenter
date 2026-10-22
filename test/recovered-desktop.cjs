@@ -18,11 +18,14 @@ async function run() {
     await page.waitForFunction(()=>window.ProMaxControls && window.proMaxSharedHost && document.querySelector('.song'));
     assert.equal(path.resolve(await app.evaluate(({app})=>app.getPath('userData'))).toLowerCase(),profile.toLowerCase());
     assert.equal(await page.evaluate(()=>typeof require),'undefined');
-    assert.equal(await page.evaluate(()=>ProMaxVisuals.presets.length),22);
+    const visualCount=await page.evaluate(()=>ProMaxVisuals.presets.length);
+    assert.equal(visualCount,42);
     await page.evaluate(()=>{ProMaxMeetings.create('Sunday');ProMaxMeetings.addSong();ProMaxMeetings.create('Youth');ProMaxMeetings.addSong();ProMaxMeetings.create('Prayer');ProMaxMeetings.addSong();});
     assert.equal((await page.evaluate(()=>proMaxPrepareUpdate())).meetingFolders.length,3);
-    // All six SVG loops load from the install directory and continue across cues.
-    for(const id of ['nordlys','blaa-tide','gyllent-lys','purpurdis','prisme','etterklang']) {
+    // Every installed SVG loop loads offline and continues across cues.
+    const bundledIds=await page.evaluate(()=>ProMaxBundledVisuals.presets.map(p=>p.id));
+    assert.equal(bundledIds.length,18);
+    for(const id of bundledIds) {
       stage='visual '+id; console.log('Desktop check: '+stage);
       await page.evaluate(id=>{selectVisual(id);state={text:'Bundled background',black:false};paint();},id);
       await page.waitForFunction(id=>{const img=document.querySelector('#preview img[data-bundled-visual]');return img?.dataset.bundledVisual===id&&img.complete&&img.naturalWidth>0;},id);
@@ -66,7 +69,7 @@ async function run() {
     await fs.mkdir(path.join(__dirname,'..','test-results'),{recursive:true});
     await page.screenshot({path:path.join(__dirname,'..','test-results','complete-app.png')});
     assert.deepEqual(errors,[]);
-    console.log('PASS: complete app, 3 meeting folders, Bible import, YouTube library, all 22 installed backgrounds, shared consent, update backup, restart and isolated profile.');
+    console.log(`PASS: complete app, 3 meeting folders, Bible import, YouTube library, all ${visualCount} installed backgrounds, shared consent, update backup, restart and isolated profile.`);
   } finally {
     clearTimeout(watchdog);
     if(app){const child=app.process();const exited=child.exitCode!==null?Promise.resolve():new Promise(r=>child.once('exit',r));app.close().catch(()=>{});const stop=setTimeout(()=>child.kill(),10000);await exited;clearTimeout(stop);}

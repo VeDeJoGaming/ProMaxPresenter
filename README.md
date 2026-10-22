@@ -1,12 +1,12 @@
 # ProMax Presenter
 
-Windows presentation software for worship meetings. Version 1.2 restores the complete original application and combines it with GitHub updates and optional private group sharing.
+Windows presentation software for worship meetings. Version 1.3 adds a larger visual collection, a searchable gallery and more reliable shared-library synchronization to the complete application.
 
 ## Install
 
-Download **ProMax-Presenter-Setup-1.2.0.exe** from [GitHub Releases](https://github.com/VeDeJoGaming/ProMaxPresenter/releases/latest). Node.js is not needed. Existing installations can use **Update**. Close the presentation window before updating.
+Download the published installer from [GitHub Releases](https://github.com/VeDeJoGaming/ProMaxPresenter/releases/latest). Locally built installers are in `dist/`. Node.js is not needed. Existing installations can use **Update** after a release is published. Close the presentation window before updating.
 
-Your songs, folders, imported Bible and media stay local. Installation includes all **22 motion backgrounds**: the 16 original procedural styles and Nordlys, Blå tide, Gyllent lys, Purpurdis, Prisme and Etterklang. Open **Look & feel → Browse motion backgrounds**. No separate visual download is needed.
+Your songs, folders, imported Bible and media stay local. Installation includes all **42 motion backgrounds**: 24 procedural styles with A/B/C looks and 18 animated SVG loops. The original 22 remain available. New scenes include mountain ridges, water caustics, petals, mist, celestial arcs, a lunar eclipse, dunes and luminous vaults. Open **Look & feel → Browse motion backgrounds** to search, filter categories, star favorites and compare backgrounds with sample lyrics. No separate visual download is needed.
 
 ## Features
 
@@ -28,11 +28,12 @@ npm ci
 npm test
 npm run test:desktop
 npm run test:shared
+npm run test:visuals
 npm run test:backup
 npm start
 ```
 
-`npm run verify` exercises native output and the original feature suite on a Windows desktop with Microsoft PowerPoint. Tests use separate profiles. `npm run start:browser` serves the browser UI at localhost:4173; native display, updater and shared-group access require the desktop app.
+`npm run verify` exercises native output and the original feature suite on a Windows desktop with Microsoft PowerPoint. Tests use separate profiles. The shared-library test covers three computers, including restoring the owner's access and downloading their own previously shared songs. `npm run start:browser` serves the browser UI at localhost:4173; native display, updater and shared-group access require the desktop app.
 
 `npm run dist:release` builds a Windows installer with the GitHub update feed and all backgrounds. A version increase on `main` triggers a verified release; manually dispatched builds produce drafts. See [PUBLISERING.md](PUBLISERING.md).
 

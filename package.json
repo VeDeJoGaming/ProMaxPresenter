@@ -1,7 +1,7 @@
 {
   "name": "promax-presenter",
   "productName": "ProMax Presenter",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "description": "Complete worship presentation app with meetings, Bible, YouTube and offline motion backgrounds",
   "author": "ProMax Presenter",
   "private": true,
@@ -16,6 +16,7 @@
     "dist": "electron-builder --win nsis --x64 --publish never",
     "dist:release": "node scripts/build-release.cjs",
     "test:shared": "node test/shared-desktop.cjs",
+    "test:visuals": "node test/visual-library-desktop.cjs",
     "verify": "electron . --smoke-test --feature-test --release-test",
     "test:backup": "node tests/backup-roundtrip.cjs"
   },

@@ -17,3 +17,24 @@ test('received songs cannot be published and selecting share does not upload any
   const urls=[];const s=setup(async(url,options)=>{urls.push(url.pathname);return Response.json({self:{id:'member',name:'Me',role:'owner',mode:'share'}});});await s.controller.init();await s.controller.setMode('share');
   assert.deepEqual(urls,['/api/v1/me']);assert.equal((await s.controller.publish([{shared:{groupId:'other'}}])).count,0);
 });
+const sharedSong={id:'local-song',title:'Synthetic sync song',lyrics:'Test words',lines:4,slides:[{text:'Test words',section:'Verse',key:'v'}]};
+test('restored member receives its own shared songs on another computer',async()=>{
+  const row={id:'remote-song',authorId:'member',revision:1,song:sharedSong};
+  const s=setup(async url=>url.pathname==='/api/v1/me'?Response.json({self:{mode:'receive'}}):Response.json({songs:[row],nextAfter:null}),'receive');
+  await s.controller.init();
+  assert.deepEqual((await s.controller.sync([])).songs,[row]);
+});
+test('failed automatic publication does not block incoming songs and is reported',async()=>{
+  const calls=[],row={id:'remote-song',authorId:'friend',revision:1,song:sharedSong};
+  const s=setup(async(url,options)=>{
+    calls.push([url.pathname,options.method]);
+    if(options.method==='PUT')return Response.json({error:'This song is too large or invalid.'},{status:400});
+    return url.pathname==='/api/v1/me'?Response.json({self:{mode:'share'}}):Response.json({songs:[row],nextAfter:null});
+  },'share');
+  s.saved().publications[sharedSong.id]={revision:1,hash:'previous-content'};
+  await s.controller.init();const result=await s.controller.sync([sharedSong]);
+  assert.deepEqual(result.songs,[row]);
+  assert.deepEqual(result.publishFailures,[{id:sharedSong.id,message:'This song is too large or invalid.'}]);
+  assert.ok(calls.some(([route,method])=>route==='/api/v1/songs'&&method==='GET'));
+  assert.equal(s.saved().publications[sharedSong.id].revision,1,'Rejected upload remains pending');
+});

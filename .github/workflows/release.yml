@@ -9,7 +9,7 @@ on:
       version:
         description: 'New stable version, without v'
         required: true
-        default: '1.2.0'
+        default: '1.3.0'
       require_signing:
         description: 'Require the configured Windows signing certificate'
         type: boolean
@@ -60,6 +60,9 @@ jobs:
         run: npm run test:desktop
         timeout-minutes: 3
       - if: steps.version.outputs.build == 'true'
+        run: npm run test:visuals
+        timeout-minutes: 3
+      - if: steps.version.outputs.build == 'true'
         run: npm run test:shared
         timeout-minutes: 3
       - if: steps.version.outputs.build == 'true'
@@ -78,6 +81,8 @@ jobs:
         run: |
           node test/recovered-desktop.cjs "dist/win-unpacked/ProMax Presenter.exe"
           if ($LASTEXITCODE -ne 0) { throw 'Packaged app verification failed.' }
+          node test/visual-library-desktop.cjs "dist/win-unpacked/ProMax Presenter.exe"
+          if ($LASTEXITCODE -ne 0) { throw 'Packaged visual library verification failed.' }
       - name: Create checksums
         if: steps.version.outputs.build == 'true'
         shell: pwsh

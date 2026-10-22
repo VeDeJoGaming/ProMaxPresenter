@@ -11,3 +11,12 @@ test-results/
 release-config.local.json
 artifacts/
 *.promax-backup/
+/ProMaxPresenter-Transfer/
+/ProMaxPresenter-Backups/
+/Local Storage/
+/IndexedDB/
+/recovery/
+/backups/
+/shared-access*
+/pending-maintenance.json
+/restore-*/

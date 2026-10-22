@@ -1,14 +1,12 @@
-ProMax Presenter 1.2.0 gjenoppretter den komplette appen og samler den med oppdatering og fellesbibliotek.
+ProMax Presenter 1.3.0 utvider visualbiblioteket og retter feil i synkroniseringen av fellesbiblioteket.
 
-- Møtemapper og kjøreplaner, dra/slipp, lysbilderedigering og angre/gjør om er tilbake.
-- Bibelimport og søk, YouTube, lokale videoer, PowerPoint, PDF, hurtigtekst og nedtelling er med.
-- Naturlig fullskjermvisning på valgt ekstern skjerm, blackout og skjermbeskyttelse er bevart.
-- Alle 22 animerte bakgrunner følger med installasjonen: 16 originale og de seks nye Nordlys, Blå tide, Gyllent lys, Purpurdis, Prisme og Etterklang. Ingen separat ZIP trengs.
-- Update-knappen og det lukkede fellesbiblioteket er integrert i den komplette appen. Deling er fortsatt frivillig; å bli med laster ikke opp sanger.
-- Sikkerhetskopi før oppdatering bevarer også møtemapper og presentasjonsinnstillinger. Full sikkerhetskopi og gjenoppretting finnes i Settings.
-- Gamle møtemapper fra en lokal gjenopprettingskopi kan forenes med sanger fra den reduserte GitHub-utgaven. Data som bare finnes på en annen PC må fortsatt overføres fra sikkerhetskopi.
-- Varmt mørkt tema med røde og oransje aksenter.
+- 20 nye visuals gir totalt 42 bakgrunner uten nett: 24 prosedyrestiler med A/B/C og 18 animerte SVG-løkker. Alle de opprinnelige 22 er bevart.
+- Åtte nye scenetyper: fjell i skumring, lysbrytning i vann, blomsterblader, nordlysdis, himmelbuer, måneformørkelse, sanddyner og lysende hvelv. Farger, bevegelse og sangseksjoner kan styres som før.
+- Tolv nye SVG-motiver: Fjordlys, Stjernebris, Morgengry, Skogro, Lyskapell, Stille hav, Ildglød, Silkeløp, Fjellnatt, Regnglass, Kobberhvelv og Måneskog.
+- Galleriet får søk, kategorier, favoritter, eksempeltekst og tastaturnavigering. Bare synlige forhåndsvisninger lastes, og bare én bakgrunn animeres om gangen i galleriet.
+- Samme tilgangsnøkkel på en annen PC mottar nå også sangene du selv har delt. Identiske lokale kopier beholdes uten duplikater.
+- En mislykket automatisk opplasting stopper ikke lenger mottak av andre sanger. Opplastingsfeilen vises i delingsdialogen.
 
-Last ned **ProMax-Presenter-Setup-1.2.0.exe**, eller bruk **Update** i en installert GitHub-utgave. Ta vare på sikkerhetskopiene dine. PowerPoint-import krever Microsoft PowerPoint på Windows; YouTube krever nett. Installasjonsfilen er foreløpig usignert.
+Møtemapper, Bibelen, PowerPoint, YouTube, sikkerhetskopier, skjermvalg og det varme mørke temaet med rødt og oransje er videreført. Deling er fortsatt frivillig. Ingen private sanger, bibeldata, medier eller brukerprofiler følger med programmet.
 
-Kontrollert med enhetstester, oppstart/omstart, alle medfølgende bakgrunner, to separate delingsprofiler, sikkerhetskopi/gjenoppretting og den originale funksjonstesten på Windows. Ingen private sanger eller bibeldata følger med installasjonsfilen.
+Lokal installasjonsfil: **ProMax-Presenter-Setup-1.3.0.exe**. En lokal bygging publiserer ikke automatisk en oppdatering på GitHub.

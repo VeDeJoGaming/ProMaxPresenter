@@ -2,6 +2,7 @@
    Every motion term is periodic. No external media or page content is used. */
 (() => {
   const families={'golden-hour':0,'amber-silk':1,'floating-gold':2,'starlit-warmth':3,'gentle-halo':4,'molten-glass':5,'dynamic-glass':5,'prism-columns':5,'liquid-cathedral':5,'midnight-facets':5,'velocity-streams':6,'bloom-rays':7,'neon-depth':8,'sacred-light':9,'orbital-dust':10,'still-waters':11};
+  Object.assign(families,{'dusk-ridges':12,'tidal-caustics':13,'petal-canopy':14,'boreal-mist':15,'celestial-arcs':16,'lunar-eclipse':17,'contour-dunes':18,'luminous-vault':19});
   families.solid=-1;
   const vertex=`attribute vec2 position;void main(){gl_Position=vec4(position,0.,1.);}`;
   const fragment=`
@@ -216,6 +217,185 @@ vec3 ocean(vec2 uv){
   water=mix(water,primary*.55,exp(-(uv.y-horizon)*45.)*.7);
   return water*at(vec3(1.,1.,.78));
 }
+// New families share only palette and exposure; each has its own spatial grammar.
+vec3 ridges(vec2 uv){
+  float horizon=at(vec3(.61,.58,.64));
+  vec3 color=mix(depth*.18,primary*.23,gaussian(uv.y-horizon,.3));
+  vec2 sun=vec2(at(vec3(.78,.23,.79)),at(vec3(.24,.31,.22))+.006*sin(time));
+  float solar=length((uv-sun)*vec2(resolution.x/resolution.y,1.));
+  color+=primary*gaussian(solar,.22)*.14+highlight*gaussian(solar,.08)*.06;
+  color+=highlight*(1.-smoothstep(.026,.0275,solar))*at(vec3(.3,.4,.48));
+  for(int i=0;i<6;i++){
+    float id=float(i),base=horizon+id*.075;
+    float amplitude=.034+id*.007;
+    float ridge=base+sin(uv.x*9.+id*1.8)*amplitude+sin(uv.x*22.+id*.7)*amplitude*.28;
+    ridge+=sin(uv.x*4.+id+time)*.006;
+    float cover=smoothstep(ridge-.001,ridge+.001,uv.y);
+    vec3 mountain=mix(primary,depth,.38+id*.105)*(.27-id*.027);
+    color=mix(color,mountain,cover);
+    float fog=gaussian(uv.y-ridge-.026,.018+id*.004);
+    float mist=.6+.4*sin(uv.x*5.+time+id);
+    color+=primary*fog*mist*at(vec3(.018,.045,.085));
+    color+=highlight*gaussian(uv.y-ridge,.0012)*at(vec3(.005,.012,.024));
+  }
+  return color;
+}
+vec3 caustics(vec2 uv){
+  vec2 drift=vec2(sin(time),cos(time));
+  vec2 p=(uv-.5)*vec2(resolution.x/resolution.y,1.);
+  float angle=at(vec3(-.3,.4,-.6));p=mat2(cos(angle),sin(angle),-sin(angle),cos(angle))*p;
+  p*=at(vec3(5.,8.,12.));
+  vec2 warp=vec2(sin(p.y*.8+time)+sin(p.x*.53-time),cos(p.x*.7-time)+cos(p.y*.61+time));
+  vec2 q=p+warp*.8;
+  float cell=sin(q.x*1.5+sin(q.y*.8+time)*.8)*sin(q.y*1.8+sin(q.x*.7-time)*.7);
+  float ridge=pow(max(0.,1.-abs(cell)*2.8),4.5);
+  float fine=pow(max(0.,1.-abs(sin(q.x*2.1+q.y*.9+sin(time))*sin(q.y*1.7-q.x*.5+cos(time)))*4.),12.);
+  float edge=smoothstep(.08,.63,length((uv-.5)*vec2(1.,.86)));
+  float depthLight=.3+.7*gaussian(length(uv-vec2(.13,.95)),.65);
+  vec3 color=depth*.085+primary*depthLight*.09;
+  color+=primary*ridge*edge*depthLight*at(vec3(.18,.4,.65));
+  color+=highlight*(ridge*.28+fine*.12)*edge*depthLight*at(vec3(.4,.75,1.1));
+  color+=primary*gaussian(uv.y-.92-.018*sin(uv.x*8.+time),.12)*.1;
+  return color;
+}
+vec3 petals(vec2 uv){
+  float aspect=resolution.x/resolution.y;
+  vec3 color=depth*.055+primary*gaussian(length((uv-vec2(.05,.12))*vec2(1.,.8)),.55)*.06;
+  float branch=at(vec3(.035,.09,.16))+.08*sin(uv.y*3.)+.005*sin(time+uv.y*4.);
+  color+=primary*gaussian(uv.x-branch,.0012)*.1;
+  color+=primary*gaussian(uv.x-(1.-branch),.0012)*at(vec3(.01,.08,.14));
+  for(int i=0;i<42;i++){
+    float id=float(i),side=mod(id,2.),row=floor(id*.5),f=row/20.;
+    float presence=side<.5?1.:at(vec3(.1,.72,1.));
+    vec2 center=vec2(at(vec3(.035,.09,.16))+.08*sin(f*3.),.015+f*1.03);
+    if(side>.5)center.x=1.-center.x;
+    center+=vec2(sin(time+id*.6),cos(time+id*.4))*.005;
+    float direction=(side*2.-1.)*(.4+mod(row,2.)*1.2)+.035*sin(time+id);
+    vec2 p=(uv-center)*vec2(aspect,1.);
+    float size=.045+hash(vec2(id,seed))*at(vec3(.03,.055,.08));
+    if(dot(p,p)>size*size*5.)continue;
+    p=mat2(cos(direction),sin(direction),-sin(direction),cos(direction))*p;
+    float shape=length(p/vec2(size,size*.34));
+    float leaf=1.-smoothstep(.86,1.02,shape);
+    float grain=.9+.1*sin(p.x/size*12.+sin(p.y/size*7.));
+    vec3 tint=mix(primary,highlight,.16+.2*hash(vec2(id+3.,seed)));
+    color+=tint*leaf*grain*presence*.65;
+    color+=highlight*gaussian(p.y,.00045)*(1.-smoothstep(size*.2,size,abs(p.x)))*leaf*presence*.11;
+    color+=primary*gaussian(shape,1.4)*presence*.04;
+    color+=highlight*gaussian(shape-1.,.045)*presence*.09;
+  }
+  return color;
+}
+vec3 mist(vec2 uv){
+  vec3 color=depth*.075;
+  vec2 drift=vec2(sin(time),cos(time))*.14;
+  float haze=noise(uv*vec2(4.,7.)+drift+seed);
+  for(int i=0;i<4;i++){
+    float id=float(i),base=at(vec3(.13,.18,.12))+id*.025;
+    float ribbon=base+.055*sin(uv.x*5.+sin(time)*.5+id*.16)+.021*sin(uv.x*11.+cos(time)+id*.27);
+    float veil=gaussian(uv.y-ribbon,at(vec3(.018,.028,.043)));
+    float core=gaussian(uv.y-ribbon,.0035);
+    float folds=.35+.65*noise(vec2(uv.x*12.+sin(time)*.2,id*2.+cos(time)*.1));
+    color+=primary*veil*folds*at(vec3(.1,.18,.25));
+    color+=highlight*core*folds*at(vec3(.02,.045,.08));
+  }
+  float low=.88+.018*sin(uv.x*6.+sin(time)*.7)+.012*cos(uv.x*13.+cos(time));
+  color+=primary*gaussian(uv.y-low,.045)*haze*at(vec3(.025,.06,.11));
+  vec2 cells=uv*vec2(75.,42.),cell=floor(cells),f=fract(cells);
+  vec2 star=vec2(hash(cell+seed),hash(cell+seed+9.));
+  float dotStar=gaussian(length(f-star),.045);
+  color+=highlight*dotStar*step(.97,hash(cell+4.))*(1.-smoothstep(.15,.52,uv.y))*(.13+.04*sin(time+cell.x));
+  return color;
+}
+vec3 constellations(vec2 uv){
+  vec2 p=(uv-.5)*vec2(resolution.x/resolution.y,1.);
+  float tilt=at(vec3(-.38,.18,-.24));
+  p=mat2(cos(tilt),sin(tilt),-sin(tilt),cos(tilt))*p;
+  p.x-=at(vec3(-.17,.05,.14))+.006*sin(time);
+  vec2 q=p/vec2(1.,.64);float radius=length(q),angle=atan(q.y,q.x);
+  vec3 color=depth*.06;
+  for(int i=0;i<7;i++){
+    float id=float(i),r=.37+id*.066;
+    float start=-PI+.3+id*.2,end=start+at(vec3(1.7,2.5,3.5));
+    float a=angle;
+    if(a<start)a+=TAU;
+    float visible=smoothstep(start,start+.08,a)*(1.-smoothstep(end-.08,end,a));
+    float d=radius-r;
+    float band=gaussian(d,.0014)*visible;
+    color+=primary*band*at(vec3(.3,.5,.75));
+    float nodes=(a-start)/(end-start)*8.;
+    float node=gaussian((fract(nodes+.5)-.5)*(end-start)*r/8.,.0025)*gaussian(d,.0025)*visible;
+    float shimmer=.82+.18*sin(time+floor(nodes+.5)+id);
+    color+=highlight*node*shimmer*1.2;
+    color+=primary*gaussian(d,.035)*visible*at(vec3(.04,.08,.14));
+  }
+  float nebula=gaussian(uv.y-.12-uv.x*.18,.11);
+  color+=primary*nebula*noise(uv*6.+vec2(sin(time),cos(time))*.07)*.08;
+  return color;
+}
+vec3 eclipse(vec2 uv){
+  vec2 center=vec2(at(vec3(.22,.77,.79))+.006*sin(time),at(vec3(.24,.27,.72)));
+  vec2 p=(uv-center)*vec2(resolution.x/resolution.y,1.);
+  float r=at(vec3(.13,.18,.22)),d=length(p),angle=atan(p.y,p.x);
+  vec3 color=depth*.055;
+  float corona=exp(-abs(d-r)/(.025+.005*sin(angle*7.+time)));
+  color+=primary*corona*.35+highlight*exp(-abs(d-r)/.0014)*.25;
+  float disc=1.-smoothstep(r-.001,r+.001,d);
+  float texture=noise(p*130.+seed)*.35+.65;
+  vec3 surface=mix(primary,highlight,.45-.3*p.y/r)*texture*.75;
+  vec2 shadow=p-vec2(r*at(vec3(.25,.12,.5))+.003*cos(time),-r*.16);
+  float occult=1.-smoothstep(r*.97,r*1.01,length(shadow));
+  surface=mix(surface,depth*.004,occult);
+  color=mix(color,surface,disc);
+  color+=primary*gaussian(d,r*2.4)*.018;
+  vec2 grid=uv*vec2(90.,50.),cell=floor(grid),f=fract(grid);
+  vec2 location=vec2(hash(cell+seed),hash(cell+seed+7.));
+  float star=gaussian(length(f-location),.035)*step(.988,hash(cell+3.));
+  color+=highlight*star*(1.-disc)*(.13+.025*sin(time+cell.x));
+  return color;
+}
+vec3 dunes(vec2 uv){
+  float y=uv.y;
+  float drift=.16*sin(time),breath=.2*cos(time);
+  float field=y+at(vec3(.045,.085,.125))*sin(uv.x*6.+y*3.+drift)+.025*sin(uv.x*12.-y*4.+breath);
+  float contours=field*at(vec3(55.,68.,83.));
+  float line=gaussian(fract(contours)-.5,.055);
+  float major=gaussian(fract(contours/7.)-.5,.012);
+  float bank=smoothstep(at(vec3(.62,.57,.51)),.96,uv.y);
+  float reverse=smoothstep(.84,1.15,uv.x-uv.y*.24)*at(vec3(.12,.55,.9));
+  float coverage=max(bank,reverse);
+  float sand=.5+.5*sin(field*9.+uv.x*.7);
+  vec3 color=depth*.065+primary*coverage*sand*.075;
+  color+=primary*line*coverage*at(vec3(.2,.42,.7));
+  color+=highlight*major*coverage*at(vec3(.25,.4,.6));
+  color+=primary*gaussian(field-.84,.15)*coverage*.04;
+  return color;
+}
+float arch(vec2 p,float width,float rise,float spring){
+  vec2 q=vec2(p.x,(p.y-spring)*width/rise);
+  float top=abs(length(q)-width)/max(.1,length(q*vec2(1.,width/rise))/max(length(q),.0001));
+  float sides=abs(abs(p.x)-width);
+  return p.y<spring?top:sides;
+}
+vec3 vault(vec2 uv){
+  vec2 p=uv-vec2(.5,0.);
+  vec3 color=depth*.065;
+  for(int i=0;i<9;i++){
+    float id=float(i),width=at(vec3(.34,.26,.18))+id*.045+.003*sin(time+id*.3),spring=at(vec3(.64,.65,.69))+id*.012;
+    float rise=width*at(vec3(.95,1.2,1.45));
+    float d=arch(p,width,rise,spring);
+    float visibility=1.-smoothstep(at(vec3(3.5,6.5,9.))-1.,at(vec3(3.5,6.5,9.)),id);
+    float pulse=.8+.2*sin(time+uv.y*3.+id*.5);
+    color+=primary*gaussian(d,.012)*.15*visibility;
+    color+=mix(primary,highlight,mod(id,3.)<.5?.6:.05)*gaussian(d,.0015)*.8*visibility*pulse;
+    float glass=gaussian(d-.018,.009)*(.35+.65*noise(uv*vec2(17.,8.)+id));
+    color+=primary*glass*.15*visibility;
+    float joints=gaussian(fract((uv.y-spring)*10.)-.5,.025)*gaussian(d,.02)*step(spring,uv.y);
+    color+=highlight*joints*.035*visibility;
+  }
+  color+=primary*(gaussian(uv.x-.08,.09)+gaussian(uv.x-.92,.09))*gaussian(uv.y-.7-.02*sin(time),.7)*.1;
+  return color;
+}
 vec3 scene(vec2 uv){
   if(family< -1.5)return texture2D(previousFrame,vec2(uv.x,1.-uv.y)).rgb;
   if(family< -.5)return primary;
@@ -225,7 +405,12 @@ vec3 scene(vec2 uv){
   else if(family<4.5)color=halo(uv);else if(family<5.5)color=glass(uv);
   else if(family<6.5)color=streams(uv);else if(family<7.5)color=rays(uv);
   else if(family<8.5)color=neon(uv);else if(family<9.5)color=cross(uv);
-  else if(family<10.5)color=orbit(uv);else color=ocean(uv);
+  else if(family<10.5)color=orbit(uv);else if(family<11.5)color=ocean(uv);
+  else if(family<12.5)color=ridges(uv);else if(family<13.5)color=caustics(uv);
+  else if(family<14.5)color=petals(uv);else if(family<15.5)color=mist(uv);
+  else if(family<16.5)color=constellations(uv);else if(family<17.5)color=eclipse(uv);
+  else if(family<18.5)color=dunes(uv);else color=vault(uv);
+  if(family>11.5)color*=.45+.55*smoothstep(.12,.62,length((uv-.5)*vec2(1.1,.9)));
   // Exposure shoulder and restrained edge falloff preserve bloom without flat clipping.
   color=1.-exp(-max(color,vec3(0.))*1.5);
   float vignette=1.-.24*smoothstep(.25,.85,length(uv-.5));

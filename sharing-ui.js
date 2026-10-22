@@ -35,7 +35,8 @@
       const latest=await call('getState');if(latest.generation!==result.generation||latest.self?.mode==='none')return;
       state=latest;const merged=await host.receive(result.songs,state.group.id,()=>requestEpoch===epoch&&state.self?.mode!=='none');
       if(!merged)return;const time=new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});el('shared-last').textContent='Last synced '+time;
-      message(`${merged.added} added · ${merged.updated} updated`+(merged.conflicts?' · Your edits were kept; newer shared versions were added separately.':'. Your local songs are saved.'));
+      const failures=result.publishFailures||[];
+      message(`${merged.added} added · ${merged.updated} updated`+(merged.conflicts?' · Your edits were kept; newer shared versions were added separately.':'. Your local songs are saved.')+(failures.length?` ${failures.length} shared update${failures.length===1?'':'s'} could not upload: ${failures[0].message} Incoming songs were still received.`:''));
     });
   }
   el('shared-open').onclick=async()=>{dialog.showModal();if(!api){el('shared-setup').hidden=true;message('Shared groups are available in the installed Windows app. You can still import and export libraries here.');return;}

@@ -197,7 +197,7 @@ else {
         await control.webContents.executeJavaScript("document.getElementById('blackout').click();setMedia(null)");
         await new Promise(resolve => setTimeout(resolve, 100));
         await control.webContents.executeJavaScript("document.getElementById('browse-visuals').click()");
-        assert.equal(await control.webContents.executeJavaScript("document.querySelectorAll('.visual-option').length"), 22);
+        assert.equal(await control.webContents.executeJavaScript("document.querySelectorAll('.visual-option').length===ProMaxVisuals.presets.length"), true);
         const loopChecks = await control.webContents.executeJavaScript(`(() => {
           const canvas=document.createElement('canvas');canvas.width=160;canvas.height=90;
           return ProMaxVisuals.presets.filter(p=>p.kind!=='bundled-svg').map(p=>{
@@ -215,17 +215,17 @@ else {
         assert.equal(await presentation.webContents.executeJavaScript("window.testCanvas===document.querySelector('canvas')"), true);
         assert.equal(await control.webContents.executeJavaScript("JSON.parse(localStorage.getItem('promax-library')).settings.visual"), 'golden-hour');
         await control.webContents.executeJavaScript("[...document.querySelectorAll('#visual-filters button')].find(b=>b.textContent==='Atmosphere').click()");
-        assert.equal(await control.webContents.executeJavaScript("document.querySelectorAll('.visual-option').length"), 2);
+        assert.equal(await control.webContents.executeJavaScript("document.querySelectorAll('.visual-option').length===ProMaxVisuals.presets.filter(p=>p.category==='Atmosphere').length"), true);
         await control.webContents.executeJavaScript("document.querySelectorAll('#visual-filters button')[0].click()");
         await control.webContents.executeJavaScript("[...document.querySelectorAll('#visual-filters button')].find(b=>b.textContent==='Cinematic').click();selectVisual('molten-glass')");
-        assert.equal(await control.webContents.executeJavaScript("document.querySelectorAll('.visual-option').length"), 1);
+        assert.equal(await control.webContents.executeJavaScript("document.querySelectorAll('.visual-option').length===ProMaxVisuals.presets.filter(p=>p.category==='Cinematic').length"), true);
         await control.webContents.executeJavaScript("document.querySelector('.visual-option').dispatchEvent(new Event('pointerenter'))");
         await new Promise(resolve => setTimeout(resolve, 150));
         assert.ok(await control.webContents.executeJavaScript("document.querySelector('.visual-option canvas').width>=640"));
         await control.webContents.executeJavaScript("document.querySelector('.visual-option').dispatchEvent(new Event('pointerleave'))");
         assert.equal(await control.webContents.executeJavaScript("document.querySelector('.visual-option canvas').width"), 320);
         await control.webContents.executeJavaScript("document.getElementById('close-visuals').click()");
-        for(const visual of ['nordlys','blaa-tide','gyllent-lys','purpurdis','prisme','etterklang']){
+        for(const visual of await control.webContents.executeJavaScript('ProMaxBundledVisuals.presets.map(p=>p.id)')){
           await control.webContents.executeJavaScript(`selectVisual(${JSON.stringify(visual)});goLive(0)`);
           await new Promise(resolve=>setTimeout(resolve,150));
           assert.equal(await presentation.webContents.executeJavaScript("document.querySelector('img[data-bundled-visual]')?.naturalWidth"),1920,visual+' must load in native output');
@@ -304,7 +304,7 @@ else {
         closePresentation();
         await new Promise(resolve => setTimeout(resolve, 200));
         assert.equal(presentation, null);
-        require('node:fs').writeFileSync(path.join(app.getPath('temp'), 'promax-smoke-result.txt'), 'PASSED: UI, IPC, native fullscreen, media, blackout, 16 moving seamless backgrounds, gallery filters, saved choice, continuous motion between slides, close.' + (process.argv.includes('--feature-test') ? ' Bible import/search/passages, XML, offline video library, native video playback/mute/pause/restart/blackout, PowerPoint conversion/navigation, persistence after reload.' : ''));
+        require('node:fs').writeFileSync(path.join(app.getPath('temp'), 'promax-smoke-result.txt'), 'PASSED: UI, IPC, native fullscreen, media, blackout, all installed moving seamless backgrounds, gallery filters, saved choice, continuous motion between slides, close.' + (process.argv.includes('--feature-test') ? ' Bible import/search/passages, XML, offline video library, native video playback/mute/pause/restart/blackout, PowerPoint conversion/navigation, persistence after reload.' : ''));
         app.exit(0);
       } catch (error) { require('node:fs').writeFileSync(path.join(app.getPath('temp'), 'promax-smoke-result.txt'), error.stack); app.exit(1); }
     } else control.show();
