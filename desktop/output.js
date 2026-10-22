@@ -21,6 +21,7 @@ function renderOutput(value) {
   if (ProMaxPlayback.render(document, stage, value, true)) { previous = value;return; }
   stage.style.background = value.black ? '#000' : value.settings.color;
   const rebuild = !previous || previous.youtube || previous.image || previous.video || previous.black !== value.black || previous.pdf !== value.pdf || previous.media?.url !== value.media?.url || previous.settings.visual !== value.settings.visual || !!stage.querySelector('canvas[data-glass]');
+  const previousText=stage.querySelector('.screen-text');
   if (rebuild) {
     ProMaxPlayback.clear(document,stage);
     stage.replaceChildren();
@@ -33,11 +34,11 @@ function renderOutput(value) {
         if (element.tagName === 'VIDEO') { element.muted = true; element.loop = true; element.autoplay = true; element.preload = 'auto'; }
         const shade = document.createElement('div'); shade.className = 'shade'; stage.append(element, shade);
       }
-      const text = document.createElement('div'); text.className = 'screen-text'; stage.append(text);
+      const text = previousText || document.createElement('div'); text.className = 'screen-text'; stage.append(text);
     }
   }
   const text = stage.querySelector('.screen-text');
-  if (text) { ProMaxPlayback.renderText(text,value); text.style.textAlign = value.settings.align; text.style.fontSize = value.settings.fontSize + 'vw'; }
+  if (text) { ProMaxPlayback.renderLiveText(text,value); text.style.textAlign = value.settings.align; text.style.fontSize = value.settings.fontSize + 'vw'; }
   ProMaxPlayback.fit(stage);
   previous = value;
 }

@@ -39,14 +39,11 @@
       for (const canvas of container.querySelectorAll('canvas')) canvas.stop?.();
       ProMaxPlayback.clear(doc,container); container.replaceChildren();
       image = mount(container,preset,true);
-      text = doc.createElement('div'); text.className = 'screen-text'; text.style.zIndex = 2;
+      text ||= doc.createElement('div'); text.className = 'screen-text'; text.style.zIndex = 2;
       container.append(text);
     }
     container.dataset.mediaKey = preset.id; container.style.background = '#000';
-    if (ProMaxPlayback.renderText(text,value)) {
-      text.getAnimations?.().forEach(a => a.cancel());
-      text.animate?.([{opacity:0},{opacity:1}],{duration:180});
-    }
+    ProMaxPlayback.renderLiveText(text,value);
     text.style.textAlign = value.settings.align;
     text.style.fontSize = isOutput ? value.settings.fontSize+'vw' : container.clientWidth*value.settings.fontSize/100+'px';
     return true;

@@ -17,6 +17,8 @@ jobs:
       - run: npx playwright install chromium
       - run: npm run test:ui
         timeout-minutes: 3
+      - run: npm run test:text
+        timeout-minutes: 3
       - run: npm run test:private
         timeout-minutes: 3
       - run: npm run test:desktop

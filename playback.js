@@ -81,5 +81,20 @@
     text.append(doc.createTextNode('\n\n'+passage.reference));
     return true;
   }
-  window.ProMaxPlayback={warm,render,fit,renderText,release,clear};
+  const entrances=new WeakMap();
+  function renderLiveText(text,state){
+    const hadText=!!text.textContent.trim();
+    if(!renderText(text,state))return false;
+    if(!text.textContent.trim()){
+      entrances.get(text)?.cancel();entrances.delete(text);
+    }else if(!hadText){
+      // Only fade up from an empty screen. Never dim each incoming lyric.
+      entrances.get(text)?.cancel();
+      const animation=text.animate?.([{opacity:0},{opacity:1}],{duration:650,easing:'ease-in-out'});
+      if(animation)entrances.set(text,animation);
+    }
+    // A fast advance during entrance keeps the running fade, without restarting it.
+    return true;
+  }
+  window.ProMaxPlayback={warm,render,fit,renderText,renderLiveText,release,clear};
 })();

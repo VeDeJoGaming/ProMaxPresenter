@@ -342,7 +342,7 @@
     if(!canvas){const solidStart=!!text&&!container.querySelector('.media');ProMaxPlayback.clear(doc,container);container.replaceChildren();canvas=mount(container,solidStart?'solid':id,true,options);canvas.dataset.glass='true';canvas.dataset.visualId=solidStart?'solid':id;text||=doc.createElement('div');text.className='screen-text';text.style.zIndex=2;container.append(text);}
     if(canvas.dataset.visualId!==id)canvas.setPreset(id,options);
     canvas.setLook({...value.settings,section:value.section});container.dataset.mediaKey=value.settings.visual;container.style.background='#000';
-    if(ProMaxPlayback.renderText(text,value)){text.getAnimations?.().forEach(a=>a.cancel());text.animate?.([{opacity:0},{opacity:1}],{duration:180});}
+    ProMaxPlayback.renderLiveText(text,value);
     text.style.textAlign=value.settings.align;text.style.fontSize=isOutput?value.settings.fontSize+'vw':container.clientWidth*value.settings.fontSize/100+'px';return true;
   }
   const backgroundStates=new WeakMap();
