@@ -158,6 +158,14 @@
       row.append(title);
       if(!focused)row.append(button('＋ Meeting',()=>window.ProMaxMeetings?.add({type:'video',assetId:asset.id,title:asset.name})));
       row.append(button(focused?'Show on presentation':activeVideo===asset.id?'Play from start':'Play',()=>playVideo(asset),'primary'));
+      row.append(button('Use as background',async()=>{
+        try {
+          const file=await storedAsset('get',null,`video:${asset.id}`);
+          if(!file)throw Error('The saved video is missing.');
+          await storedAsset('put',file);setMedia(file);
+          notify(`${asset.name} selected as offline background`);
+        }catch(error){notify(error.message||'Could not select this background.');}
+      }));
       if(!focused)row.append(button('Remove',async()=>{
         try{await removeVideo(asset.id);}catch{notify('Could not remove the saved video.');}
       }));list.append(row);

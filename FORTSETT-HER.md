@@ -1,3 +1,11 @@
+## Fullført lokalt 23. oktober 2026
+
+- Tidligere tilgangsblokkeringer er løst i lokal Windows-økt. Git fetch, Computer Use, bygg og installasjon fungerer. Windows-verktøyets filvelger var upålitelig; import er fullført gjennom appens filinput med Playwright.
+- Alle ti CMG Paint Sweeps-videoer er dekodet og vurdert med bilder fra start, midt og slutt: 1920x1080, 30 sekunder, avspilling verifisert. De er importert i brukerens lokale videobibliotek; Strong er valgt som bakgrunn. Bibliotek og bakgrunn er verifisert etter omlasting. Originalmedier og brukerdata er ikke lagt i Git.
+- Ny knapp «Use as background» ved hver lokal video gjør alle importerte videoer gjenbrukbare som bakgrunn. Bruk eksisterende Videos-bibliotek via Add content. Bakgrunnsavspilling er dempet og gjentas av eksisterende bakgrunnsspiller.
+- Siste origin/work/pc-laptop er hentet og bygget i separat worktree C:\ProMaxPresenter\artifacts\local-update. Rotens eldre uforente filer og codex/new-visuals-metadata er bevart; ikke bruk rotens Lagre prosjekt.cmd før dette er forent. Den nye knappendringen er også lagt i rotens features.js.
+- Kontroller: 47 enhetstester, native komplett-app-test både fra kilde og installert exe med isolert testprofil, privat nettlesersynkronisering, deling med tre profiler, og særskilt bakgrunnsvalg/omstart består. Import i faktisk profil bestod for alle ti filer. Ingen aktiv presentasjon ble avbrutt; innhold og innstillinger er bevart.
+- Installert lokalt bygg bruker fortsatt versjonsnummer 1.3.0; ingen release er publisert og main er ikke endret. Tidligere notater nedenfor beskriver historiske blokkeringer. Produksjonstjenesten for privat synkronisering er fortsatt ikke oppdatert, utenfor denne oppgaven.
 # Fortsett ProMax på PC eller laptop
 
 Felles utviklingsgren: `work/pc-laptop` i https://github.com/VeDeJoGaming/ProMaxPresenter.
