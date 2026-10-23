@@ -40,3 +40,10 @@ git clone --branch work/pc-laptop https://github.com/VeDeJoGaming/ProMaxPresente
 Senere: bruk `Hent prosjekt.cmd` før du begynner, og `Lagre prosjekt.cmd` etter manuelle endringer. Hvis begge maskinene har endret prosjektet, stopper hjelpen og ber om at endringene forenes. Den overskriver ikke den andre maskinens arbeid.
 
 Installasjonsfiler og testresultater er ikke med i Git. En annen maskin bygger dem fra koden, eller henter en faktisk publisert utgave fra GitHub Releases.
+
+## Visuals og lokal oppdatering 23. oktober 2026
+
+- Brukeren ber om at den installerte lokale appen oppdateres etter hver ferdige appendring. Dette er nå en fast regel i AGENTS.md; bevar innhold/innstillinger og verifiser installasjonen før oppgaven regnes som ferdig.
+- Ny fil i Nedlastinger: CMG-Paint-Sweeps-Motion-Graphics.zip. Arkivet inneholder ti bakgrunnsvideoer, tre tittelskjermer og én nedtelling med musikk. Bare de ti bakgrunnene er pakket ut til ignorert artifacts/cmg-preview for vurdering. Ingen er importert eller kvalitetsgodkjent ennå. Ingen nedlastede medier er sendt til GitHub.
+- Blokkeringer: tilgang til installasjonsmappen i LocalAppData er avvist. Windows-automatisering kunne ikke starte (codex app-server mangler). Nettleserens sikkerhetspolicy avviste lokal videoforhåndsvisning. Git fetch feiler fordi .git/FETCH_HEAD er skrivebeskyttet. Ikke omgå disse begrensningene.
+- Gjenstår: forhåndsvis de ti MP4-filene, vurder bevegelse/lesbarhet/loop og importer egnede filer gjennom appens medieimport/bakgrunnsvelger. Bygg og installer siste utviklingskode lokalt med nødvendig tilgang; den installerte appen er ikke oppdatert i denne oppgaven.
