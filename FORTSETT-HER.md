@@ -1,3 +1,10 @@
+## 1.3.1 ferdig publisert og installert — 23. oktober 2026
+
+- Stabil utgave er publisert: https://github.com/VeDeJoGaming/ProMaxPresenter/releases/tag/v1.3.1. Tagg og utgivelse peker på fa8bacfbd2d8ea7648ee01ecd0088a6252e7bcf0 fra work/pc-laptop. Main er uendret. De fire utgivelsesfilene (installer, blockmap, latest.yml og SHA256SUMS.txt) er kontrollert mot GitHubs SHA256-digester og lokale filstørrelser. Manifestets versjon og SHA512 er verifisert. Gamle utgaver er ikke overskrevet.
+- Hele den utvidede native kontrollen består både fra kilde og fra den endelige pakken: fullskjerm, Bibel, video, PowerPoint-import, bakgrunner og lagring. Sluttpakken målte ca. 60,3 fps. Se øvrige kontroller og vedlikeholdet av testvideoen nedenfor.
+- Den faktisk installerte 1.3.0-appen fant den nye utgaven via «Check for updates». Deretter ble den samme kontrollerte installasjonsfilen installert lokalt, uten aktiv presentasjon. Native kontroll av virkelig brukerprofil bekrefter runtime 1.3.1, identiske sanger, møtemapper, innstillinger og valg, 29 visualer, lastet vinterbilde og PPTX-editor. App.asar matcher sluttbygget: CEA7027ED61B804DFE87004E08EA91BB316B49C909DB21316552B88040C3ABC6. En ny oppdateringssjekk fra 1.3.1 bekrefter «current».
+- På hjemme-PC-en kan brukeren trykke «Check for updates» og deretter «Update». Installasjonen der er ikke kontrollert herfra. Utgivelsen er tilgjengelig også når denne maskinen er av. Ingen private bibliotek, medier, nøkler eller sikkerhetskopier er publisert. Brukeren vil selv forsøke å sette opp sitt Shared library; denne oppgaven har ikke publisert private sanger til en gruppe.
+
 ## Vanlig appoppdatering 1.3.1 klargjort — 23. oktober 2026
 
 - Brukeren valgte en vanlig appoppdatering for å få de nye visualene også på hjemme-PC-en. Versjonen er økt i package.json og bare rotoppføringene i package-lock.json; RELEASE-NOTES.md beskriver det faktiske biblioteket med 29 visualer, myke tekstskifter og PPTX-redigering med tydelige begrensninger. Main skal ikke endres. Oppdateringspakken skal publiseres fra den kontrollerte commiten på work/pc-laptop som en ny stabil utgave, uten å overskrive 1.3.0.
