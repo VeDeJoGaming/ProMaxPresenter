@@ -25,20 +25,19 @@ module.exports = async function featureSmoke({ app, control, getPresentation }) 
   assert.equal(await execute(`ProMaxBible.parse('<osis><verse osisID="John.3.16">Synthetic OSIS.</verse></osis>','test.xml').verses.length`), 1);
   await execute(`[...document.querySelectorAll('#feature-view button')].find(b=>b.textContent==='Add passage to song library').click()`);
   assert.match(await execute('current().slides[0].text'), /Synthetic first verse/);
+  const fixtureVideo=fs.readFileSync(path.join(__dirname,'smoke-video.webm')).toString('base64');
   await execute(`(async()=>{
     ProMaxFeatures.showTab('videos');
-    const canvas=document.createElement('canvas');canvas.width=160;canvas.height=90;
-    const stream=canvas.captureStream(15);const recorder=new MediaRecorder(stream,{mimeType:'video/webm'});const chunks=[];
-    recorder.ondataavailable=e=>chunks.push(e.data);
-    const complete=new Promise(resolve=>recorder.onstop=resolve);
-    recorder.start();let frame=0;
-    const interval=setInterval(()=>{const ctx=canvas.getContext('2d');ctx.fillStyle=frame++%2?'#ffb35c':'#181818';ctx.fillRect(0,0,160,90);},60);
-    await new Promise(resolve=>setTimeout(resolve,1600));recorder.stop();await complete;clearInterval(interval);stream.getTracks().forEach(t=>t.stop());
-    await ProMaxFeatures.addVideos([new File(chunks,'synthetic-test.webm',{type:'video/webm'})]);
+    const bytes=Uint8Array.from(atob(${JSON.stringify(fixtureVideo)}),c=>c.charCodeAt(0));
+    await ProMaxFeatures.addVideos([new File([bytes],'synthetic-test.webm',{type:'video/webm'})]);
     document.getElementById('video-loop').checked=true;
     await ProMaxFeatures.playVideo(ProMaxFeatures.getVideos()[0]);
   })()`);
-  await new Promise(resolve => setTimeout(resolve, 600));
+  for(let attempt=0;attempt<100;attempt++){
+    const ready=await execute('document.querySelector("#preview video")?.readyState>=2')&&await getPresentation().webContents.executeJavaScript('document.querySelector("#stage video")?.readyState>=2');
+    if(ready)break;
+    await new Promise(resolve=>setTimeout(resolve,100));
+  }
   assert.equal(await execute('document.querySelector("#preview video").readyState>=2'), true);
   assert.equal(await getPresentation().webContents.executeJavaScript('document.querySelector("#stage video").readyState>=2'), true);
   assert.equal(await execute('document.querySelector("#preview video").muted'), true);

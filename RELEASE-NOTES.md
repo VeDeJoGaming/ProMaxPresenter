@@ -1,12 +1,9 @@
-ProMax Presenter 1.3.0 utvider visualbiblioteket og retter feil i synkroniseringen av fellesbiblioteket.
+ProMax Presenter 1.3.1 gir det oppdaterte visualbiblioteket, myke tekstskifter og grunnleggende PPTX-redigering som vanlig appoppdatering.
 
-- 20 nye visuals gir totalt 42 bakgrunner uten nett: 24 prosedyrestiler med A/B/C og 18 animerte SVG-løkker. Alle de opprinnelige 22 er bevart.
-- Åtte nye scenetyper: fjell i skumring, lysbrytning i vann, blomsterblader, nordlysdis, himmelbuer, måneformørkelse, sanddyner og lysende hvelv. Farger, bevegelse og sangseksjoner kan styres som før.
-- Tolv nye SVG-motiver: Fjordlys, Stjernebris, Morgengry, Skogro, Lyskapell, Stille hav, Ildglød, Silkeløp, Fjellnatt, Regnglass, Kobberhvelv og Måneskog.
-- Galleriet får søk, kategorier, favoritter, eksempeltekst og tastaturnavigering. Bare synlige forhåndsvisninger lastes, og bare én bakgrunn animeres om gangen i galleriet.
-- Samme tilgangsnøkkel på en annen PC mottar nå også sangene du selv har delt. Identiske lokale kopier beholdes uten duplikater.
-- En mislykket automatisk opplasting stopper ikke lenger mottak av andre sanger. Opplastingsfeilen vises i delingsdialogen.
+- 29 kuraterte bevegelsesbakgrunner. De tidligere 18 SVG-bakgrunnene fra Nordlys og nedover er fjernet. Paint Sweeps, Signal Weave, Chromatic Current, Winter Reverie og Stellar Awakening inngår i biblioteket.
+- Tydeligere A/B/C-varianter på de abstrakte referansevisualene, naturligere snøfall i vinterlandskapet og en blå stjerne som gradvis bygger opp lyset.
+- Raskere visualbibliotek med én delt GPU-kontekst, mindre forhåndsvisninger og gjenbruk av shaderprogrammer. Kvaliteten i presentasjonsutgangen beholdes.
+- Tekstskifter toner gammel og ny tekst over hverandre, også ved raske skift. Bakgrunnen fortsetter uavbrutt.
+- Rediger tekst, skrift, tekstfarge og objekters størrelse/plassering inne i PowerPoint-fanen. Sett inn tekstbokser, bilder og figurer, håndter lysbilder, angre endringer og lagre en ekte PPTX-kopi. Microsoft PowerPoint må være installert. Eldre importer med bare lysbildebilder må importeres på nytt for redigering. Avanserte PowerPoint-verktøy er ikke inkludert; ProMax-fremvisningen bruker fortsatt lysbildebilder uten PowerPoint-animasjon, video og lyd.
 
-Møtemapper, Bibelen, PowerPoint, YouTube, sikkerhetskopier, skjermvalg og det varme mørke temaet med rødt og oransje er videreført. Deling er fortsatt frivillig. Ingen private sanger, bibeldata, medier eller brukerprofiler følger med programmet.
-
-Lokal installasjonsfil: **ProMax-Presenter-Setup-1.3.0.exe**. En lokal bygging publiserer ikke automatisk en oppdatering på GitHub.
+Sanger, møtemapper og innstillinger bevares ved oppdatering. Personlige bibliotek følger ikke med installasjonsfilen og publiseres ikke på GitHub. Deling og privat synkronisering er separate funksjoner. Oppdateringen endrer ikke deres tilkobling eller samtykke.

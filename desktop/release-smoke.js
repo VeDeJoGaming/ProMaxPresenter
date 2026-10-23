@@ -22,12 +22,13 @@ module.exports=async function({app,control,getPresentation,recovery}){
   assert.equal(await run("document.getElementById('app-settings-dialog').open"),true);
   assert.equal(await run("document.getElementById('output-display').options.length>1"),true);
   fs.writeFileSync(path.join(artifacts,'settings-preview.png'),(await control.webContents.capturePage()).toPNG());await run("document.getElementById('settings-close').click()");
+  const fixtureVideo=fs.readFileSync(path.join(__dirname,'smoke-video.webm')).toString('base64');
   await run(`(async()=>{
-    ProMaxFeatures.showTab('videos');const canvas=document.createElement('canvas');canvas.width=160;canvas.height=90;const stream=canvas.captureStream(15),recorder=new MediaRecorder(stream,{mimeType:'video/webm'}),chunks=[];
-    recorder.ondataavailable=e=>chunks.push(e.data);const finished=new Promise(resolve=>recorder.onstop=resolve);recorder.start();let n=0;const draw=setInterval(()=>{const ctx=canvas.getContext('2d');ctx.fillStyle=n++%2?'#ffb35c':'#242424';ctx.fillRect(0,0,160,90);},60);
-    await new Promise(resolve=>setTimeout(resolve,3000));recorder.stop();await finished;clearInterval(draw);stream.getTracks().forEach(t=>t.stop());await ProMaxFeatures.addVideos([new File(chunks,'release-test.webm',{type:'video/webm'})]);await ProMaxFeatures.playVideo(ProMaxFeatures.getVideos().at(-1));
+    ProMaxFeatures.showTab('videos');const bytes=Uint8Array.from(atob(${JSON.stringify(fixtureVideo)}),c=>c.charCodeAt(0));
+    await ProMaxFeatures.addVideos([new File([bytes],'release-test.webm',{type:'video/webm'})]);await ProMaxFeatures.playVideo(ProMaxFeatures.getVideos().at(-1));
   })()`);
-  await wait(600);const position=await run("document.getElementById('preview').querySelector('video').currentTime");
+  for(let attempt=0;attempt<100;attempt++){if(await run("document.getElementById('preview').querySelector('video').readyState>=2"))break;await wait(100);}
+  const position=await run("document.getElementById('preview').querySelector('video').currentTime");
   await run("document.getElementById('blackout').click()");await wait(1000);
   assert.equal(await output().executeJavaScript('document.getElementById("stage").children.length'),0);
   await run("document.getElementById('blackout').click()");await wait(150);

@@ -249,9 +249,9 @@ else {
         assert.equal(await control.webContents.executeJavaScript("document.querySelectorAll('.visual-option').length===ProMaxVisuals.presets.filter(p=>p.category==='Cinematic').length"), true);
         await control.webContents.executeJavaScript("document.querySelector('.visual-option').dispatchEvent(new Event('pointerenter'))");
         await new Promise(resolve => setTimeout(resolve, 150));
-        assert.ok(await control.webContents.executeJavaScript("document.querySelector('.visual-option canvas').width>=640"));
+        assert.ok(await control.webContents.executeJavaScript("(()=>{const c=document.querySelector('.visual-option canvas');return c.width>=192&&c.width<=384;})()"), 'Gallery previews keep their optimized resolution budget');
         await control.webContents.executeJavaScript("document.querySelector('.visual-option').dispatchEvent(new Event('pointerleave'))");
-        assert.equal(await control.webContents.executeJavaScript("document.querySelector('.visual-option canvas').width"), 320);
+        assert.equal(await control.webContents.executeJavaScript("document.querySelector('.visual-option canvas').width"), 192);
         await control.webContents.executeJavaScript("document.getElementById('close-visuals').click()");
         for(const visual of await control.webContents.executeJavaScript('ProMaxBundledVisuals.presets.map(p=>p.id)')){
           await control.webContents.executeJavaScript(`selectVisual(${JSON.stringify(visual)});goLive(0)`);
@@ -275,6 +275,7 @@ else {
         assert.equal(await control.webContents.executeJavaScript('state.text'), beforeEdit, 'Saving must not change live output');
         assert.equal(await control.webContents.executeJavaScript('current().slides[0].section'), 'Bro');
         assert.equal(await control.webContents.executeJavaScript('current().slides[0].key'), 'x');
+        await new Promise(resolve=>setTimeout(resolve,350)); // Let the coalesced autosave reach storage.
         assert.equal(await control.webContents.executeJavaScript("JSON.parse(localStorage.getItem('promax-library')).songs.find(s=>s.id===selected).slides[0].text"), 'Edited line one\nEdited line two');
         assert.ok(await control.webContents.executeJavaScript("document.getElementById('lyrics').value.includes('Edited line one')"));
         await control.webContents.executeJavaScript("document.querySelector('.slide-edit-button').click();document.getElementById('slide-edit-text').value='Canceled edit';document.getElementById('slide-edit-cancel').click()");
