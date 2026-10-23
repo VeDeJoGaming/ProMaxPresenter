@@ -78,7 +78,7 @@ async function run(){
     assert.equal(await page.evaluate(()=>document.activeElement.dataset.visualId),await page.locator('.visual-option').last().getAttribute('data-visual-id'));
 
     await page.evaluate(()=>{
-      window.galleryLive=new Set();
+      window.galleryLive=new Set();window.galleryGpuContexts=0;const createSurface=ProMaxOptics.surface;ProMaxOptics.surface=(...args)=>{galleryGpuContexts++;return createSurface(...args);};
       const mount=ProMaxVisuals.mount;
       ProMaxVisuals.mount=function(container,id,animated,options){
         const surface=mount(container,id,animated,options);
@@ -93,7 +93,7 @@ async function run(){
     await page.locator('.visual-option').first().hover();
     assert.equal(await page.evaluate(()=>galleryLive.size),3);
     await page.locator('.visual-option').nth(1).hover();
-    assert.equal(await page.evaluate(()=>galleryLive.size),3,'One triptych animates at a time');
+    assert.equal(await page.evaluate(()=>galleryLive.size),3,'One triptych animates at a time');assert.equal(await page.evaluate(()=>galleryGpuContexts),0,'Hovering must reuse the shared preview renderer instead of compiling new GPU contexts');
     await page.emulateMedia({reducedMotion:'reduce'});
     await page.waitForFunction(()=>galleryLive.size===0);
     assert.equal(await page.evaluate(()=>galleryLive.size),0,'Reduced motion stops animated gallery previews');

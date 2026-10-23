@@ -239,14 +239,14 @@
     if(preset.kind==='bundled-svg')return window.ProMaxBundledVisuals.mount(container,preset,animated);
     let canvas=container.ownerDocument.createElement('canvas');
     const isOutput=container.id==='stage',isGallery=!!container.closest('.visual-option');
-    let dirty=true,quality=options.renderQuality||'auto',maxWidth=isOutput?(quality==='performance'?1280:quality==='quality'?1920:1600):isGallery?640:480;
-    const size=()=>{const width=animated?Math.max(isGallery?640:320,Math.min(maxWidth,container.clientWidth||960)):320;const height=Math.max(1,Math.round(width*(isOutput?(container.clientHeight||width*9/16)/(container.clientWidth||width):9/16)));if(canvas.width!==width||canvas.height!==height){canvas.width=width;canvas.height=height;dirty=true;}};
+    let dirty=true,quality=options.renderQuality||'auto',maxWidth=isOutput?(quality==='performance'?1280:quality==='quality'?1920:1600):isGallery?384:480;
+    const size=()=>{const width=animated?Math.max(isGallery?384:320,Math.min(maxWidth,container.clientWidth||960)):isGallery?192:320;const height=Math.max(1,Math.round(width*(isOutput?(container.clientHeight||width*9/16)/(container.clientWidth||width):9/16)));if(canvas.width!==width||canvas.height!==height){canvas.width=width;canvas.height=height;dirty=true;}};
     size();container.prepend(canvas);
     let surface=null;
-    if(animated&&window.ProMaxOptics?.families[preset.id]!==undefined){try{surface=window.ProMaxOptics.surface(canvas,preset);}catch{const replacement=container.ownerDocument.createElement('canvas');replacement.width=canvas.width;replacement.height=canvas.height;canvas.replaceWith(replacement);canvas=replacement;}}
+    if(animated&&!isGallery&&window.ProMaxOptics?.families[preset.id]!==undefined){try{surface=window.ProMaxOptics.surface(canvas,preset);}catch{const replacement=container.ownerDocument.createElement('canvas');replacement.width=canvas.width;replacement.height=canvas.height;canvas.replaceWith(replacement);canvas=replacement;}}
     canvas.className='media visual-canvas';canvas.setAttribute('aria-hidden','true');
     let stopped=false,frame=0,last=0,rendered=0,windowFrames=0,windowStarted=performance.now(),slowWindows=0,fastWindows=0;
-    const fps=isOutput?60:isGallery?24:30,interval=1000/fps;
+    const fps=isOutput?60:isGallery?18:30,interval=1000/fps;
     const getLook=options=>{
       const selected=options.visualPalette||(['dynamic-glass','prismatic-glass'].includes(preset.kind)?options.glassPalette:'original')||'original';
       const valid=value=>/^#[0-9a-f]{6}$/i.test(value);
