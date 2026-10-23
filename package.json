@@ -51,6 +51,7 @@
       "*.css",
       "shared-config.json",
       "visuals/*.svg",
+      "visuals/*.png",
       "package.json"
     ],
     "win": {

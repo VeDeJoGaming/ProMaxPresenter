@@ -41,6 +41,9 @@
   for(let i=presets.length-1;i>=0;i--)if(aliases[presets[i].id])presets.splice(i,1);
   presets.push(...(window.ProMaxScenes?.presets||[]).filter(p=>!aliases[p.id]));
   presets.push({id:'paint-sweeps',name:'Paint Sweeps',category:'Paint',kind:'paint',colors:['#2969a0','#c7a6da','#101b35'],seed:201,mood:'Calm',tags:['brush','pigment','paint','sweeps','texture']});
+  presets.push({id:'signal-weave',name:'Signal Weave',category:'Energy',kind:'signal',colors:['#fa2009','#ff4b10','#170400'],seed:202,mood:'Energetic',tags:['red','led','matrix','lights']});
+  presets.push({id:'chromatic-current',name:'Chromatic Current',category:'Glass',kind:'chromatic',colors:['#ec2509','#1809fa','#060414'],seed:203,mood:'Calm',tags:['red','blue','reflections','liquid']});
+  presets.push({id:'winter-reverie',name:'Winter Reverie',category:'Nature',kind:'winter',colors:['#8c7caa','#ffd0de','#20233e'],seed:204,mood:'Calm',fixedPalette:true,tags:['winter','snow','river','realistic','landscape']});
   presets.sort((a,b)=>Number(b.kind==='scene')-Number(a.kind==='scene'));
   const resolveId=id=>{let result=id;for(let i=0;i<4&&aliases[result];i++)result=aliases[result];return result;};
   const palettes={gold:['#e87b08','#ffd35a','#6c2500'],blue:['#157dd0','#7ddfff','#082558'],purple:['#8249c9','#e2acff','#35105e'],rose:['#d64277','#ffadc9','#64152d'],green:['#159c79','#a2f9c7','#084536'],white:['#9baaba','#f4f8ff','#3c4857']};
@@ -229,6 +232,7 @@
     ctx.putImageData(pixels,0,0);textures.set(doc,tile);return tile;
   }
   const stillFrames=new Map();
+  window.addEventListener?.('promax-visual-assets-ready',()=>{stillFrames.clear();for(const canvas of document.querySelectorAll('canvas.visual-canvas'))canvas.drawFrame?.();});
   const findPreset=(id,options={})=>id==='solid'?{id:'solid',kind:'solid',colors:[options.color||'#181818',options.color||'#181818',options.color||'#181818'],seed:0,mood:'Calm'}:presets.find(p=>p.id===id);
   function mount(container,id,animated=true,options={}){
     let preset=findPreset(id,options);if(!preset)return null;
@@ -247,6 +251,7 @@
       const selected=options.visualPalette||(['dynamic-glass','prismatic-glass'].includes(preset.kind)?options.glassPalette:'original')||'original';
       const valid=value=>/^#[0-9a-f]{6}$/i.test(value);
       let colors=palettes[selected]||preset.colors;
+      if(preset.fixedPalette)colors=preset.colors;
       if(selected==='custom'&&Array.isArray(options.visualColors)&&options.visualColors.length===3&&options.visualColors.every(valid))colors=options.visualColors;
       if(selected==='solid'&&valid(options.visualColor)){
         const rgb=[1,3,5].map(i=>parseInt(options.visualColor.slice(i,i+2),16));

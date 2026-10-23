@@ -7,8 +7,8 @@ async function run(){
   const server=http.createServer(async(req,res)=>{
     try{
       const relative=new URL(req.url,'http://localhost').pathname.slice(1)||'index.html';
-      if(!/^[\w.-]+\.(js|css|html)$/.test(relative)&&!/^visuals\/[\w.-]+\.svg$/.test(relative))throw Error();
-      const types={'.js':'application/javascript','.css':'text/css','.html':'text/html','.svg':'image/svg+xml'};
+      if(!/^[\w.-]+\.(js|css|html)$/.test(relative)&&!/^visuals\/[\w.-]+\.(svg|png)$/.test(relative))throw Error();
+      const types={'.js':'application/javascript','.css':'text/css','.html':'text/html','.svg':'image/svg+xml','.png':'image/png'};
       res.setHeader('Content-Type',types[path.extname(relative)]);res.end(await fs.readFile(path.join(root,relative)));
     }catch{res.writeHead(404);res.end();}
   });

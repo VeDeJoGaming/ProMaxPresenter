@@ -5,12 +5,21 @@
   Object.assign(families,{'dusk-ridges':12,'tidal-caustics':13,'petal-canopy':14,'boreal-mist':15,'celestial-arcs':16,'lunar-eclipse':17,'contour-dunes':18,'luminous-vault':19});
   families.solid=-1;
   families['paint-sweeps']=20;
+  families['signal-weave']=21;families['chromatic-current']=22;
+  families['winter-reverie']=23;
+  let landscape=null;
+  if(typeof Image!=='undefined'){
+    landscape=new Image();
+    window.ProMaxWinter={ready:new Promise((resolve,reject)=>{landscape.onload=()=>{resolve();setTimeout(()=>window.dispatchEvent(new Event('promax-visual-assets-ready')),0);};landscape.onerror=()=>reject(Error('Winter landscape could not load.'));})};
+    landscape.src=new URL('visuals/winter-reverie.png',document.currentScript.src).href;
+  }
   const vertex=`attribute vec2 position;void main(){gl_Position=vec4(position,0.,1.);}`;
   const fragment=`
 precision highp float;
 uniform vec2 resolution;
 uniform float families[4],seeds[4];
 uniform sampler2D previousFrame;
+uniform sampler2D landscapeImage;
 uniform float times[4],looks[4],weights[4];
 uniform vec3 primaries[4],highlights[4],depths[4];
 float time,look,family,seed;
@@ -427,9 +436,66 @@ vec3 paintSweeps(vec2 uv){
   float grain=noise(uv*resolution*.63);
   return color*(.94+.06*grain);
 }
+vec3 signalWeave(vec2 uv){
+  vec2 grid=vec2(90.,52.);vec2 cell=floor(uv*grid),local=fract(uv*grid)-.5;
+  float sweep=sin(cell.x*.095+sin(time)*1.4+sin(cell.y*.19+cos(time))*.9);
+  float braid=sin(cell.y*.29+cos(time)*1.1+cell.x*.027);
+  float field=smoothstep(.12,.85,sweep*braid*.5+.5);
+  float dash=(1.-smoothstep(.11,.24,abs(local.x)))*(1.-smoothstep(.31,.48,abs(local.y)));
+  float ribs=.58+.42*cos(local.y*24.);
+  float core=pow(field,3.5)*dash*ribs;
+  float halo=exp(-dot(local*vec2(2.8,1.),local*vec2(2.8,1.))*4.)*pow(field,5.)*.17;
+  vec3 tint=mix(primary,highlight,.18*field);
+  return depth*.018+tint*(core*at(vec3(.8,1.2,1.7))+halo);
+}
+vec3 chromaticCurrent(vec2 uv){
+  vec2 p=(uv-.5)*vec2(resolution.x/resolution.y,1.);
+  float angle=-.43+.045*sin(time);p=mat2(cos(angle),-sin(angle),sin(angle),cos(angle))*p;
+  float x=p.x,y=p.y;
+  float warp=.11*sin(x*2.+sin(time)*.45)+.025*sin(x*5.-cos(time)*.6);
+  float fold=y+warp;
+  vec3 color=depth*.045+primary*gaussian(y-.42,.25)*.32+highlight*gaussian(y+.33,.25)*.18;
+  for(int i=0;i<7;i++){
+    float k=float(i)-3.;
+    float spread=.22+.95*smoothstep(0.,1.,abs(x-.08));
+    float curve=fold-k*.16*spread-.018*sin(x*3.+float(i)*1.3+sin(time));
+    float width=.026+.015*(.5+.5*sin(float(i)*3.));
+    vec3 tint=mix(primary,highlight,step(.5,mod(float(i),2.)));
+    float body=gaussian(curve,width*2.7);
+    float edge=gaussian(curve-width*.65,.0028);
+    float shadow=gaussian(curve+width,.012);
+    float shine=.4+.6*pow(.5+.5*sin(x*2.1+float(i)+cos(time)*.6),2.);
+    color=max(color,tint*(body*.72+edge*1.3)*shine*at(vec3(.72,1.,1.3)));
+    color*=1.-shadow*.44;
+  }
+  return color;
+}
+vec3 winterReverie(vec2 uv){
+  // Water-only displacement stays inside the photographed river, away from ice.
+  float left=.17+.50*pow(clamp((uv.y-.57)/.43,0.,1.),1.6);
+  float right=1.-.88*exp(-pow((uv.y-.535)/.05,2.));
+  float water=smoothstep(.55,.64,uv.y)*smoothstep(left,left+.06,uv.x)*(1.-smoothstep(right-.04,right,uv.x));
+  vec2 offset=vec2(sin(uv.y*145.+sin(time)*2.),cos(uv.y*190.+cos(time)*2.))*.00065*water;
+  vec3 color=texture2D(landscapeImage,uv+offset).rgb;
+  float snow=0.;
+  for(int layer=0;layer<3;layer++){
+    float l=float(layer),scale=vec3(58.,34.,19.)[layer];
+    vec2 q=uv*vec2(resolution.x/resolution.y,1.)*scale;
+    // Integer travel counts make the snowfall close exactly after each period.
+    float travel=12.+4.*l;
+    q+=vec2(.45*sin(time+l),-time/TAU*travel);
+    vec2 cell=floor(q),f=fract(q)-.5;
+    cell.y=mod(cell.y,travel);
+    float r=hash(cell+vec2(l*123.,l*31.));
+    f-=vec2(hash(cell+7.),hash(cell+13.))*.55-.275;
+    snow+=exp(-dot(f,f)/( .0012+l*.0006))*step(.64,r)*(.12+l*.09);
+  }
+  return color+vec3(snow)*at(vec3(.45,.75,1.));
+}
 vec3 scene(vec2 uv){
   if(family< -1.5)return texture2D(previousFrame,vec2(uv.x,1.-uv.y)).rgb;
   if(family< -.5)return primary;
+  if(family>22.5)return winterReverie(uv);
   vec3 color;
   if(family<.5)color=cloud(uv);else if(family<1.5)color=silk(uv);
   else if(family<2.5)color=particles(uv,false);else if(family<3.5)color=particles(uv,true);
@@ -440,8 +506,8 @@ vec3 scene(vec2 uv){
   else if(family<12.5)color=ridges(uv);else if(family<13.5)color=caustics(uv);
   else if(family<14.5)color=petals(uv);else if(family<15.5)color=mist(uv);
   else if(family<16.5)color=constellations(uv);else if(family<17.5)color=eclipse(uv);
-  else if(family<18.5)color=dunes(uv);else if(family<19.5)color=vault(uv);else color=paintSweeps(uv);
-  if(family>11.5)color*=.45+.55*smoothstep(.12,.62,length((uv-.5)*vec2(1.1,.9)));
+  else if(family<18.5)color=dunes(uv);else if(family<19.5)color=vault(uv);else if(family<20.5)color=paintSweeps(uv);else if(family<21.5)color=signalWeave(uv);else color=chromaticCurrent(uv);
+  if(family>11.5&&family<20.5)color*=.45+.55*smoothstep(.12,.62,length((uv-.5)*vec2(1.1,.9)));
   // Exposure shoulder and restrained edge falloff preserve bloom without flat clipping.
   color=1.-exp(-max(color,vec3(0.))*1.5);
   float vignette=1.-.24*smoothstep(.25,.85,length(uv-.5));
@@ -467,12 +533,19 @@ void main(){
     if(!gl.getProgramParameter(program,gl.LINK_STATUS))throw new Error(gl.getProgramInfoLog(program));
     gl.useProgram(program);const buffer=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,buffer);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,-1,1,1,-1,1,1]),gl.STATIC_DRAW);
     const pos=gl.getAttribLocation(program,'position');gl.enableVertexAttribArray(pos);gl.vertexAttribPointer(pos,2,gl.FLOAT,false,0,0);
-    const locations={};for(const name of ['resolution','times[0]','looks[0]','weights[0]','families[0]','seeds[0]','primaries[0]','highlights[0]','depths[0]','previousFrame'])locations[name]=gl.getUniformLocation(program,name);
+    const locations={};for(const name of ['resolution','times[0]','looks[0]','weights[0]','families[0]','seeds[0]','primaries[0]','highlights[0]','depths[0]','previousFrame','landscapeImage'])locations[name]=gl.getUniformLocation(program,name);
     const texture=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,texture);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,1,1,0,gl.RGBA,gl.UNSIGNED_BYTE,new Uint8Array([0,0,0,255]));
     for(const parameter of [gl.TEXTURE_MIN_FILTER,gl.TEXTURE_MAG_FILTER])gl.texParameteri(gl.TEXTURE_2D,parameter,gl.LINEAR);
     for(const parameter of [gl.TEXTURE_WRAP_S,gl.TEXTURE_WRAP_T])gl.texParameteri(gl.TEXTURE_2D,parameter,gl.CLAMP_TO_EDGE);
     gl.uniform1i(locations.previousFrame,0);
-    return {canvas,gl,locations,program,buffer,texture,times:new Float32Array(4),looks:new Float32Array(4),weights:new Float32Array(4),families:new Float32Array(4),seeds:new Float32Array(4),primaries:new Float32Array(12),highlights:new Float32Array(12),depths:new Float32Array(12)};
+    const photoTexture=gl.createTexture();gl.activeTexture(gl.TEXTURE1);gl.bindTexture(gl.TEXTURE_2D,photoTexture);
+    gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,1,1,0,gl.RGBA,gl.UNSIGNED_BYTE,new Uint8Array([20,24,40,255]));
+    for(const parameter of [gl.TEXTURE_MIN_FILTER,gl.TEXTURE_MAG_FILTER])gl.texParameteri(gl.TEXTURE_2D,parameter,gl.LINEAR);
+    for(const parameter of [gl.TEXTURE_WRAP_S,gl.TEXTURE_WRAP_T])gl.texParameteri(gl.TEXTURE_2D,parameter,gl.CLAMP_TO_EDGE);
+    let photoDisposed=false;const upload=()=>{if(photoDisposed||gl.isContextLost())return;gl.activeTexture(gl.TEXTURE1);gl.bindTexture(gl.TEXTURE_2D,photoTexture);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,landscape);gl.activeTexture(gl.TEXTURE0);};
+    if(landscape?.complete&&landscape.naturalWidth)upload();else landscape?.addEventListener('load',upload,{once:true});
+    gl.uniform1i(locations.landscapeImage,1);gl.activeTexture(gl.TEXTURE0);
+    return {canvas,gl,locations,program,buffer,texture,stopPhoto(){photoDisposed=true;landscape?.removeEventListener('load',upload);gl.deleteTexture(photoTexture);},times:new Float32Array(4),looks:new Float32Array(4),weights:new Float32Array(4),families:new Float32Array(4),seeds:new Float32Array(4),primaries:new Float32Array(12),highlights:new Float32Array(12),depths:new Float32Array(12)};
   }
   const rgb=hex=>Array.isArray(hex)?hex:[1,3,5].map(i=>parseInt(hex.slice(i,i+2),16)/255);
   function render(renderer,preset,layers,width,height){
@@ -505,7 +578,7 @@ void main(){
   function surface(canvas,preset){
     let renderer=create(canvas.ownerDocument,canvas,false),stopped=false;
     canvas.addEventListener('webglcontextrestored',()=>{if(!stopped)renderer=create(canvas.ownerDocument,canvas,false);});
-    return {render(layers){if(!stopped)render(renderer,preset,layers,canvas.width,canvas.height);},snapshot(){const {gl,texture}=renderer;if(stopped||gl.isContextLost())return false;gl.bindTexture(gl.TEXTURE_2D,texture);gl.copyTexImage2D(gl.TEXTURE_2D,0,gl.RGB,0,0,canvas.width,canvas.height,0);return true;},stop(){if(stopped)return;stopped=true;renderer.gl.deleteTexture(renderer.texture);renderer.gl.deleteBuffer(renderer.buffer);renderer.gl.deleteProgram(renderer.program);renderer.gl.getExtension('WEBGL_lose_context')?.loseContext();}};
+    return {render(layers){if(!stopped)render(renderer,preset,layers,canvas.width,canvas.height);},snapshot(){const {gl,texture}=renderer;if(stopped||gl.isContextLost())return false;gl.bindTexture(gl.TEXTURE_2D,texture);gl.copyTexImage2D(gl.TEXTURE_2D,0,gl.RGB,0,0,canvas.width,canvas.height,0);return true;},stop(){if(stopped)return;stopped=true;renderer.stopPhoto();renderer.gl.deleteTexture(renderer.texture);renderer.gl.deleteBuffer(renderer.buffer);renderer.gl.deleteProgram(renderer.program);renderer.gl.getExtension('WEBGL_lose_context')?.loseContext();}};
   }
   window.ProMaxOptics={draw,families,surface};
 })();

@@ -7,8 +7,8 @@ async function run(){
   const server=http.createServer(async(req,res)=>{
     try{
       const name=new URL(req.url,'http://localhost').pathname.slice(1)||'index.html';
-      if(!/^(desktop\/)?[\w.-]+\.(js|html|css)$/.test(name)&&!/^visuals\/[\w.-]+\.svg$/.test(name))throw Error();
-      res.setHeader('content-type',name.endsWith('.js')?'application/javascript':name.endsWith('.css')?'text/css':name.endsWith('.svg')?'image/svg+xml':'text/html');
+      if(!/^(desktop\/)?[\w.-]+\.(js|html|css)$/.test(name)&&!/^visuals\/[\w.-]+\.(svg|png)$/.test(name))throw Error();
+      res.setHeader('content-type',name.endsWith('.js')?'application/javascript':name.endsWith('.css')?'text/css':name.endsWith('.png')?'image/png':name.endsWith('.svg')?'image/svg+xml':'text/html');
       res.end(await fs.readFile(path.join(root,name)));
     }catch{res.writeHead(404);res.end();}
   });

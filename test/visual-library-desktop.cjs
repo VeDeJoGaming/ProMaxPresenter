@@ -26,7 +26,7 @@ async function run(){
     assert.ok(initial.ms<1500,`Gallery opening should stay responsive (${Math.round(initial.ms)} ms)`);
     assert.match(await page.locator('#visual-results').textContent(),new RegExp(`^${initial.count} of ${initial.count}`));
     assert.equal(await page.locator('#visual-search').evaluate(el=>el===document.activeElement),true);
-    await page.waitForFunction(()=>document.querySelector('#visual-grid canvas'));
+    await page.waitForFunction(()=>document.querySelector('#visual-grid canvas')).catch(async error=>{console.error(await page.evaluate(()=>({open:document.querySelector('#visual-library').open,cards:document.querySelectorAll('.visual-option').length,queue:visualStillQueue.length,frame:visualStillFrame,visible:[...visualPreviewCards.values()].filter(c=>c.visible).length})));throw error;});
     assert.ok(await page.locator('#visual-grid canvas').count()<initial.count*3,'Only nearby previews are loaded');
 
     const category=await page.evaluate(()=>ProMaxVisuals.presets[0].category);

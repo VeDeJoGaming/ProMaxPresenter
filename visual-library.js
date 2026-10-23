@@ -1,6 +1,10 @@
 function updateVisualName(){
   document.getElementById('glass-controls').hidden=!ProMaxVisuals.presets.some(p=>p.id===settings.visual&&p.kind!=='bundled-svg');
   const preset=ProMaxVisuals.presets.find(p=>p.id===settings.visual);
+  document.getElementById('glass-palette').disabled=!!preset?.fixedPalette;
+  document.getElementById('glass-palette').closest('label').hidden=!!preset?.fixedPalette;
+  document.getElementById('visual-solid').hidden=!!preset?.fixedPalette||settings.visualPalette!=='solid';
+  document.getElementById('visual-gradient').hidden=!!preset?.fixedPalette||settings.visualPalette!=='custom';
   document.getElementById('visual-name').textContent=preset?preset.name:media?'Custom media':'Solid color';
 }
 function selectVisual(id){
