@@ -65,5 +65,7 @@ test('private pause aborts in-flight sync and sends no requests while disabled',
 });
 test('presentation transfer confines paths and never overwrites a differing local file',async()=>{
   const root=await fs.mkdtemp(path.join(os.tmpdir(),'promax-private-files-'));const files=require('../desktop/private-files.cjs').createPrivateFiles(root);
-  try{await assert.rejects(()=>files.write({name:'../private-key',data:'AQID'}),/path/);const name='00000000-0000-0000-0000-000000000000/slide-0001.png';const url=await files.write({name,data:'AQID'});assert.equal((await files.read(url)).data,'AQID');await assert.rejects(()=>files.write({name,data:'BAUG'}),/kept/);assert.equal((await files.read(url)).data,'AQID');}finally{await fs.rm(root,{recursive:true,force:true});}
+  try{await assert.rejects(()=>files.write({name:'../private-key',data:'AQID'}),/path/);const name='00000000-0000-0000-0000-000000000000/slide-0001.png';const url=await files.write({name,data:'AQID'});assert.equal((await files.read(url)).data,'AQID');await assert.rejects(()=>files.write({name,data:'BAUG'}),/kept/);assert.equal((await files.read(url)).data,'AQID');
+    const nativeName=name.replace('slide-0001.png','source.pptx'),source=await files.write({name:nativeName,data:'UEsDBA=='});assert.equal((await files.read(source)).data,'UEsDBA==');await assert.rejects(()=>files.write({name:nativeName.replace('pptx','exe'),data:'AQID'}),/path/);
+  }finally{await fs.rm(root,{recursive:true,force:true});}
 });

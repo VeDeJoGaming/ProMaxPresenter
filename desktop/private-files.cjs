@@ -1,8 +1,8 @@
 const fs=require('node:fs/promises');const path=require('node:path');
 const {pathToFileURL,fileURLToPath}=require('node:url');
-// Only converted presentation PNGs. No arbitrary filesystem paths from renderer/network.
+// Only managed PowerPoint sources and slide previews, never arbitrary paths.
 function target(root,name){
-  if(typeof name!=='string'||! /^[a-f0-9-]{36}\/slide-\d+\.png$/i.test(name))throw Error('Invalid private presentation path.');
+  if(typeof name!=='string'||! /^[a-f0-9-]{36}\/(?:slide-\d+\.png|source\.pptx)$/i.test(name))throw Error('Invalid private presentation path.');
   return path.join(root,...name.split('/'));
 }
 function createPrivateFiles(userData){

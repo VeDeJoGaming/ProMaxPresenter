@@ -13,6 +13,7 @@ try {
     $taskPowerPoint.AutomationSecurity = 3
     $taskPowerPoint.DisplayAlerts = 1
     $taskPresentation = $taskPowerPoint.Presentations.Open($Source, -1, 0, 0)
+    $taskPresentation.SaveCopyAs((Join-Path $Destination 'source.pptx'), 24)
     $taskWidth = 1920
     $taskHeight = [int][Math]::Round($taskWidth * $taskPresentation.PageSetup.SlideHeight / $taskPresentation.PageSetup.SlideWidth)
     foreach ($taskSlide in $taskPresentation.Slides) {

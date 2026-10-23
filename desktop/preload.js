@@ -33,6 +33,8 @@ contextBridge.exposeInMainWorld('promaxDesktop', {
   youtubeStatus: value => ipcRenderer.send('youtube:status',value),
   onYouTubeStatus: callback => ipcRenderer.on('youtube:status',(_event,value)=>callback(value)),
   importPowerPoint: () => ipcRenderer.invoke('documents:powerpoint'),
+  editPowerPoint: request => ipcRenderer.invoke('documents:edit',request),
+  exportPowerPoint: request => ipcRenderer.invoke('documents:export',request),
   toggle: displayId => ipcRenderer.invoke('presentation:toggle',displayId),
   publish: value => ipcRenderer.send('presentation:state', value),
   key: value => ipcRenderer.send('presentation:key', value),

@@ -69,6 +69,31 @@ ipcMain.handle('documents:powerpoint', async event => {
   finally { importingPowerPoint = false; }
 });
 let control = null, presentation = null, latest = null, displayId = null;
+ipcMain.handle('documents:edit',async(event,request)=>{
+  if(event.sender!==control?.webContents||importingPowerPoint)return {error:'Another PowerPoint operation is running.'};
+  importingPowerPoint=true;
+  try{
+    if(request?.action==='addImage'){
+      const choice=await dialog.showOpenDialog(control,{title:'Add picture to PowerPoint',filters:[{name:'Pictures',extensions:['png','jpg','jpeg','webp','bmp']}],properties:['openFile']});
+      if(choice.canceled)return {canceled:true};request={...request,imagePath:choice.filePaths[0]};
+    }
+    return await require('./pptx-editor.cjs').editPowerPoint(app.getPath('userData'),request);
+  }
+  catch(error){return {error:error.message};}finally{importingPowerPoint=false;}
+});
+ipcMain.handle('documents:export',async(event,request)=>{
+  if(event.sender!==control?.webContents||importingPowerPoint)return {error:'Another PowerPoint operation is running.'};
+  importingPowerPoint=true;
+  try{
+    const source=await require('./pptx-editor.cjs').sourceFile(app.getPath('userData'),request.source);
+    const title=String(request.title||'Presentation').replace(/[<>:"/\\|?*\x00-\x1f]/g,'_').slice(0,100);
+    const choice=await dialog.showSaveDialog(control,{title:'Save editable PowerPoint',defaultPath:path.join(app.getPath('documents'),title+'.pptx'),filters:[{name:'PowerPoint',extensions:['pptx']}]});
+    if(choice.canceled)return {canceled:true};
+    const destination=choice.filePath.toLowerCase().endsWith('.pptx')?choice.filePath:choice.filePath+'.pptx';
+    if(path.resolve(destination).toLowerCase()===path.resolve(source).toLowerCase())return {saved:true};
+    await require('node:fs/promises').copyFile(source,destination);return {saved:true};
+  }catch(error){return {error:error.message};}finally{importingPowerPoint=false;}
+});
 const smoke = process.argv.includes('--smoke-test');
 if (smoke) app.setPath('userData', require('node:fs').mkdtempSync(path.join(app.getPath('temp'), 'promax-smoke-')));
 const preferences = { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false, sandbox: true, plugins: true };

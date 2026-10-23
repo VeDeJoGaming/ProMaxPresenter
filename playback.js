@@ -84,16 +84,27 @@
   const entrances=new WeakMap();
   function renderLiveText(text,state){
     const hadText=!!text.textContent.trim();
+    const previousKey=text.dataset.textKey;
+    const nextKey=JSON.stringify([state.text,state.biblePassage]);
+    if(previousKey===nextKey)return false;
+    const parent=text.parentNode,win=text.ownerDocument.defaultView;
+    let ghost=null;
+    if(hadText&&parent){
+      const style=win.getComputedStyle(text);
+      ghost=text.cloneNode(true);ghost.className='text-outgoing';ghost.removeAttribute('id');ghost.setAttribute('aria-hidden','true');
+      ghost.style.cssText=`position:absolute;pointer-events:none;z-index:2;left:${text.offsetLeft}px;top:${text.offsetTop}px;width:${text.clientWidth}px;height:${text.clientHeight}px;opacity:${style.opacity}`;
+      for(const property of ['font','letter-spacing','line-height','color','text-shadow','white-space','text-align','word-break','overflow-wrap'])ghost.style.setProperty(property,style.getPropertyValue(property));
+      parent.append(ghost);
+    }
     if(!renderText(text,state))return false;
+    entrances.get(text)?.cancel();entrances.delete(text);
     if(!text.textContent.trim()){
-      entrances.get(text)?.cancel();entrances.delete(text);
-    }else if(!hadText){
-      // Only fade up from an empty screen. Never dim each incoming lyric.
-      entrances.get(text)?.cancel();
-      const animation=text.animate?.([{opacity:0},{opacity:1}],{duration:650,easing:'ease-in-out'});
+      for(const old of parent?.querySelectorAll('.text-outgoing')||[]){old.getAnimations().forEach(a=>a.cancel());old.remove();}
+    }else{
+      if(ghost){const fade=ghost.animate?.([{opacity:Number(ghost.style.opacity)},{opacity:0}],{duration:450,easing:'ease-in-out',fill:'forwards'});if(fade){fade.onfinish=()=>ghost.remove();fade.oncancel=()=>ghost.remove();}else ghost.remove();}
+      const animation=text.animate?.([{opacity:0},{opacity:1}],{duration:hadText?450:650,easing:'ease-in-out'});
       if(animation)entrances.set(text,animation);
     }
-    // A fast advance during entrance keeps the running fade, without restarting it.
     return true;
   }
   window.ProMaxPlayback={warm,render,fit,renderText,renderLiveText,release,clear};

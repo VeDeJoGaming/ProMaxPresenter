@@ -20,6 +20,7 @@ async function importPowerPoint(source, userData) {
     const slides = (await fs.readdir(destination)).filter(name => /^slide-\d+\.png$/.test(name)).sort();
     if (!slides.length) throw new Error('The presentation contains no slides.');
     return { id: path.basename(destination), title: path.basename(source, path.extname(source)),
+      nativeSource: pathToFileURL(path.join(destination, 'source.pptx')).href,
       slides: slides.map(name => pathToFileURL(path.join(destination, name)).href) };
   } catch (error) {
     await fs.rm(destination, { recursive: true, force: true });

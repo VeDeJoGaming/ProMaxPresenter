@@ -181,6 +181,7 @@
   document.addEventListener('input',event=>{const next='input:'+event.target.id;if(group!==next)flushPendingSave();group=next;},true);
   document.addEventListener('change',event=>{if(event.target.type==='file')group='action:'+ ++action;},true);
   document.addEventListener('keydown',event=>{
+    if(window.ProMaxPptxEditor?.handleKey(event))return;
     const modifier=event.ctrlKey||event.metaKey,key=event.key.toLowerCase(),text=editable(event.target);
     if(modifier&&(key==='z'||key==='y')){
       event.preventDefault();event.stopImmediatePropagation();const redoCommand=key==='y'||event.shiftKey;

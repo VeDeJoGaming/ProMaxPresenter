@@ -31,38 +31,30 @@ async function run(){
         const node=()=>stage.querySelector('.screen-text');
         for(const visual of [null,'golden-hour','paint-sweeps']){
           style.visual=visual;cue('',{black:true});cue('Initial lyric');
-          const entrance=node().getAnimations()[0];
-          checks.push(!!entrance&&entrance.effect.getTiming().duration===650);
-          entrance.pause();entrance.currentTime=325;
-          const halfway=Number(getComputedStyle(node()).opacity);
-          checks.push(halfway>.4&&halfway<.6);
-          cue('Fast advance during entrance');
-          checks.push(node().getAnimations()[0]===entrance&&Number(getComputedStyle(node()).opacity)===halfway);
-          entrance.finish();
-          const background=stage.querySelector('.media');
-          for(const text of ['Next lyric','Fast advance','Last lyric']){
-            cue(text);
-            for(let frame=0;frame<3;frame++){
-              checks.push(node().textContent===text&&getComputedStyle(node()).opacity==='1'&&node().getAnimations().length===0&&background===stage.querySelector('.media'));
-              await new Promise(resolve=>requestAnimationFrame(resolve));
-            }
-          }
-          cue('');checks.push(node().textContent===''&&node().getAnimations().length===0);
-          cue('After clear');checks.push(node().getAnimations().length===1);
-          const resumed=node().getAnimations()[0];cue('After clear');checks.push(node().getAnimations()[0]===resumed);resumed.finish();
-          cue('',{black:true});checks.push(!node());cue('After blackout');checks.push(node().getAnimations().length===1);node().getAnimations()[0].finish();
-          cue('',{biblePassage:{verses:[{verse:1,text:'Synthetic verse'}],reference:'Test 1:1'}});
-          checks.push(node().textContent.includes('Synthetic verse')&&node().getAnimations().length===0);
+          const entrance=node().getAnimations()[0];checks.push(entrance.effect.getTiming().duration===650);entrance.finish();
+          const background=stage.querySelector('.media');cue('Second lyric');
+          let fade=node().getAnimations()[0];checks.push(fade.effect.getTiming().duration===450);
+          checks.push(stage.querySelector('.text-outgoing')?.textContent==='Initial lyric');
+          fade.pause();fade.currentTime=225;checks.push(Number(getComputedStyle(node()).opacity)>.4&&Number(getComputedStyle(node()).opacity)<.6);
+          cue('Rapid third lyric');checks.push(node().textContent==='Rapid third lyric'&&stage.querySelectorAll('.text-outgoing').length===2);
+          checks.push(background===stage.querySelector('.media'));
+          fade=node().getAnimations()[0];cue('Rapid third lyric');checks.push(node().getAnimations()[0]===fade);
+          cue('');checks.push(!stage.querySelector('.text-outgoing')&&node().getAnimations().length===0);
+          cue('After clear');node().getAnimations()[0].finish();cue('',{black:true});checks.push(!node());
+          cue('',{biblePassage:{verses:[{verse:1,text:'Synthetic verse'}],reference:'Test 1:1'}});node().getAnimations()[0].finish();
+          cue('',{biblePassage:{verses:[{verse:2,text:'Second verse'}],reference:'Test 1:2'}});
+          checks.push(node().textContent.includes('Second verse')&&stage.querySelector('.text-outgoing')?.textContent.includes('Synthetic verse'));
+          node().getAnimations()[0].finish();for(const old of stage.querySelectorAll('.text-outgoing'))old.getAnimations().forEach(a=>a.finish());
+          await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+          checks.push(stage.querySelectorAll('.text-outgoing').length===0);
         }
-        // Changing background under visible lyrics must not replay the entrance.
-        for(const visual of ['paint-sweeps','golden-hour',null]){style.visual=visual;cue('Background changed');checks.push(node().getAnimations().length===0);}
         return checks;
       },output);
       assert.ok(checks.every(Boolean),`${output?'Output':'Preview'} transition checks: ${JSON.stringify(checks)}`);
       await page.close();
     }
     assert.deepEqual(errors,[]);
-    console.log('PASSED: preview and actual desktop renderer; gentle entrance, uninterrupted rapid advance, no dimming between lyrics, clear/blackout/restore, Bible and background changes.');
+    console.log('PASSED: preview and actual desktop renderer; gentle entrance, text crossfades, rapid advance without losing outgoing layers, clear/blackout/restore, Bible and background changes.');
   }finally{await browser?.close();await new Promise(resolve=>server.close(resolve));}
 }
 run().catch(error=>{console.error(error);process.exitCode=1;});

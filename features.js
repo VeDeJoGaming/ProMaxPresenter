@@ -182,16 +182,18 @@
   async function saveDocument(doc) {
     if (!doc?.id || typeof doc.title!=='string' || !Array.isArray(doc.slides) || !doc.slides.length || !doc.slides.every(s=>typeof s==='string' && s.startsWith('file:')))
       throw Error('This is not a valid imported presentation.');
-    const next=[...documents,doc];await persist('presentations',next);documents=next;
+    const next=documents.some(d=>d.id===doc.id)?documents.map(d=>d.id===doc.id?doc:d):[...documents,doc];await persist('presentations',next);documents=next;
+    if(tab==='presentations')renderDocuments();
   }
   function renderDocuments() {
     window.ProMaxControls?.changed();
     const focused=documents.find(d=>d.id===focusedAsset);
-    heading(focused?.title||'PowerPoint',focused?'Click a slide to show it on the presentation.':'Import .pptx or .ppt files using Microsoft PowerPoint on this PC. Slides are saved as images, preserving the layout. Animations, embedded video and audio are not played.');
+    heading(focused?.title||'PowerPoint',focused?'Click a slide to show it on the presentation.':'Import and edit PowerPoint on this PC. Editable copies retain the PowerPoint content; presentation output uses slide images without animations, video or audio.');
     if(!focused){const actions=element('div',null,'feature-actions');const b=button('Import PowerPoint',importDocument,'primary');b.id='import-powerpoint';actions.append(b);view.append(actions);}
     if(!documents.length)view.append(element('p','Imported presentations will appear here and remain available after restarting.','empty'));
     for(const doc of documents.filter(d=>!focusedAsset||d.id===focusedAsset)){const section=element('section',null,'document-deck');section.dataset.documentId=doc.id;const top=element('div',null,'feature-actions');
       top.append(element('h3',`${doc.title} · ${doc.slides.length} slides`));
+      top.append(button('Edit PowerPoint',()=>window.ProMaxPptxEditor.open(doc)));
       if(!focused)top.append(button('＋ Meeting',()=>window.ProMaxMeetings?.add({type:'document',assetId:doc.id,title:doc.title})),button('Remove from library',async()=>{
         try{await removeDocument(doc.id);}catch{notify('Could not remove the presentation.');}
       }));section.append(top);const grid=element('div',null,'document-grid');
@@ -233,7 +235,7 @@
     try{bible=await storedAsset('get',null,'bible') || null;assets=await storedAsset('get',null,'video-list') || [];documents=await storedAsset('get',null,'presentations') || [];
       if(!Array.isArray(assets))assets=[];if(!Array.isArray(documents))documents=[];
       const paths=window.promaxDesktop?.initialData;
-      if(paths?.restoredPresentationRoot){let changed=false;for(const doc of documents)doc.slides=doc.slides.map(url=>{if(url.startsWith(paths.restoredPresentationRoot)){changed=true;return paths.presentationRoot+url.slice(paths.restoredPresentationRoot.length);}return url;});if(changed)await persist('presentations',documents);}
+      if(paths?.restoredPresentationRoot){let changed=false;const relocate=url=>{if(typeof url==='string'&&url.startsWith(paths.restoredPresentationRoot)){changed=true;return paths.presentationRoot+url.slice(paths.restoredPresentationRoot.length);}return url;};for(const doc of documents){doc.slides=doc.slides.map(relocate);if(doc.nativeSource)doc.nativeSource=relocate(doc.nativeSource);}if(changed)await persist('presentations',documents);}
       for(const asset of assets)try{await loadAsset(asset);}catch(error){notify(error.message);}
       for(const id of await storedAsset('get',null,'video-trash')||[])if(!assets.some(a=>a.id===id))await storedAsset('delete',null,`video:${id}`);
       await persist('video-trash',[]);
