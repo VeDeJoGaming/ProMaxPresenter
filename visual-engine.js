@@ -7,6 +7,7 @@
   families['paint-sweeps']=20;
   families['signal-weave']=21;families['chromatic-current']=22;
   families['winter-reverie']=23;
+  families['stellar-awakening']=24;
   let landscape=null;
   if(typeof Image!=='undefined'){
     landscape=new Image();
@@ -519,10 +520,42 @@ vec3 winterReverie(vec2 uv){
   }
   return color+vec3(snow)*at(vec3(.45,.75,1.));
 }
+vec3 stellarAwakening(vec2 uv){
+  vec2 center=vec2(.5,at(vec3(.16,.21,.46)));
+  vec2 p=(uv-center)*vec2(resolution.x/resolution.y,1.);
+  float radius=length(p),angle=atan(p.y,p.x)/TAU+.5;
+  // One slow, continuous swell: a faint star gathers light, blooms and settles.
+  float swell=pow(.5-.5*cos(time),1.65);
+  float power=at(vec3(.42,.7,.24))+swell*at(vec3(.75,1.65,.7));
+  vec3 color=depth*.018;
+  for(int layer=0;layer<5;layer++){
+    float l=float(layer),count=64.+l*48.;
+    float sector=floor(angle*count),a=fract(angle*count)-.5;
+    float r=hash(vec2(sector,l+91.));
+    float offset=(hash(vec2(sector+7.,l+19.))-.5)*.65;
+    float across=(a-offset)/count*TAU*radius;
+    float flight=fract(time/TAU*(1.+floor(l*.5))+r);
+    float head=.025*exp(flight*4.7);
+    float tail=head*at(vec3(.12,.32,.58));
+    float lengthMask=smoothstep(head-tail,head,radius)*(1.-smoothstep(head,head+head*.035+.001,radius));
+    float fade=pow(sin(flight*PI),2.);
+    float width=(.0007+.0009*radius)*(1.4-l*.17);
+    float streak=gaussian(across,width)*lengthMask*fade;
+    float glow=gaussian(across,width*4.)*lengthMask*fade*.12;
+    color+=mix(primary,highlight,r*.6)*(streak+glow)*power*(.3+r*1.2)*2.8;
+    float filament=gaussian(across,width*.36)*smoothstep(.04,.22,radius)*exp(-radius*1.4);
+    color+=primary*filament*power*.13;
+  }
+  float star=at(vec3(.25,1.,.035))*power;
+  color+=primary*gaussian(radius,.085+.025*swell)*star*.48;
+  color+=highlight*gaussian(radius,.012+.011*swell)*star*2.3;
+  color+=highlight*(gaussian(p.x,.0015+.001*swell)*gaussian(p.y,.09)+gaussian(p.y,.0012)*gaussian(p.x,.16))*star;
+  return color;
+}
 vec3 scene(vec2 uv){
   if(family< -1.5)return texture2D(previousFrame,vec2(uv.x,1.-uv.y)).rgb;
   if(family< -.5)return primary;
-  if(family>22.5)return winterReverie(uv);
+  if(family>22.5&&family<23.5)return winterReverie(uv);
   vec3 color;
   if(family<.5)color=cloud(uv);else if(family<1.5)color=silk(uv);
   else if(family<2.5)color=particles(uv,false);else if(family<3.5)color=particles(uv,true);
@@ -533,7 +566,7 @@ vec3 scene(vec2 uv){
   else if(family<12.5)color=ridges(uv);else if(family<13.5)color=caustics(uv);
   else if(family<14.5)color=petals(uv);else if(family<15.5)color=mist(uv);
   else if(family<16.5)color=constellations(uv);else if(family<17.5)color=eclipse(uv);
-  else if(family<18.5)color=dunes(uv);else if(family<19.5)color=vault(uv);else if(family<20.5)color=paintSweeps(uv);else if(family<21.5)color=signalWeave(uv);else color=chromaticCurrent(uv);
+  else if(family<18.5)color=dunes(uv);else if(family<19.5)color=vault(uv);else if(family<20.5)color=paintSweeps(uv);else if(family<21.5)color=signalWeave(uv);else if(family<22.5)color=chromaticCurrent(uv);else color=stellarAwakening(uv);
   if(family>11.5&&family<20.5)color*=.45+.55*smoothstep(.12,.62,length((uv-.5)*vec2(1.1,.9)));
   // Exposure shoulder and restrained edge falloff preserve bloom without flat clipping.
   color=1.-exp(-max(color,vec3(0.))*1.5);
@@ -550,7 +583,7 @@ void main(){
   gl_FragColor=vec4(result,1.);
 }`;
   const renderers=new WeakMap();
-  const previewFunctions=['cloud(uv)','silk(uv)','particles(uv,false)','particles(uv,true)','halo(uv)','glass(uv)','streams(uv)','rays(uv)','neon(uv)','cross(uv)','orbit(uv)','ocean(uv)','ridges(uv)','caustics(uv)','petals(uv)','mist(uv)','constellations(uv)','eclipse(uv)','dunes(uv)','vault(uv)','paintSweeps(uv)','signalWeave(uv)','chromaticCurrent(uv)','winterReverie(uv)'];
+  const previewFunctions=['cloud(uv)','silk(uv)','particles(uv,false)','particles(uv,true)','halo(uv)','glass(uv)','streams(uv)','rays(uv)','neon(uv)','cross(uv)','orbit(uv)','ocean(uv)','ridges(uv)','caustics(uv)','petals(uv)','mist(uv)','constellations(uv)','eclipse(uv)','dunes(uv)','vault(uv)','paintSweeps(uv)','signalWeave(uv)','chromaticCurrent(uv)','winterReverie(uv)','stellarAwakening(uv)'];
   function previewFragment(familyId){
     if(Array.isArray(familyId)){
       const ids=[...new Set(familyId.filter(id=>id>=0))];

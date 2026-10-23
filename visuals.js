@@ -44,6 +44,7 @@
   presets.push({id:'signal-weave',name:'Signal Weave',category:'Energy',kind:'signal',colors:['#fa2009','#ff4b10','#170400'],seed:202,mood:'Energetic',tags:['red','led','matrix','lights']});
   presets.push({id:'chromatic-current',name:'Chromatic Current',category:'Glass',kind:'chromatic',colors:['#ec2509','#1809fa','#060414'],seed:203,mood:'Calm',tags:['red','blue','reflections','liquid']});
   presets.push({id:'winter-reverie',name:'Winter Reverie',category:'Nature',kind:'winter',colors:['#8c7caa','#ffd0de','#20233e'],seed:204,mood:'Calm',fixedPalette:true,tags:['winter','snow','river','realistic','landscape']});
+  presets.push({id:'stellar-awakening',name:'Stellar Awakening',category:'Space',kind:'stellar',colors:['#0848ff','#70dfff','#02031c'],seed:205,mood:'Calm',tags:['star','blue','light','rays','stjerne']});
   presets.sort((a,b)=>Number(b.kind==='scene')-Number(a.kind==='scene'));
   const resolveId=id=>{let result=id;for(let i=0;i<4&&aliases[result];i++)result=aliases[result];return result;};
   const palettes={gold:['#e87b08','#ffd35a','#6c2500'],blue:['#157dd0','#7ddfff','#082558'],purple:['#8249c9','#e2acff','#35105e'],rose:['#d64277','#ffadc9','#64152d'],green:['#159c79','#a2f9c7','#084536'],white:['#9baaba','#f4f8ff','#3c4857']};
