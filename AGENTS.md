@@ -6,6 +6,10 @@ Keep the same ProMax theme across the desktop app, sharing dialogs, invitation w
 
 Presentation backgrounds may use their own artistic palettes; their surrounding controls and library follow the shared ProMax theme.
 
+## Update the installed local app
+
+After every completed application change, build and update the installed ProMax Presenter on the current computer and verify that the installed app runs the changed code. Preserve all user content and settings. Updating source files or pushing to GitHub alone does not complete the task. Do not interrupt an active presentation. If installation or verification is blocked, explicitly report that the installed app is not yet updated and record the remaining steps in `FORTSETT-HER.md`. This local update does not authorize publishing a release or merging into main.
+
 ## Continue between PC and laptop
 
 Read `FORTSETT-HER.md` at the start of work. The shared development branch is `work/pc-laptop` on origin. Before editing, fetch origin and fast-forward this branch when the checkout is clean. Preserve uncommitted edits and reconcile divergent history without resetting or force-pushing.
