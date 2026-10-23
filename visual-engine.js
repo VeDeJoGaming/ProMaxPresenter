@@ -4,6 +4,7 @@
   const families={'golden-hour':0,'amber-silk':1,'floating-gold':2,'starlit-warmth':3,'gentle-halo':4,'molten-glass':5,'dynamic-glass':5,'prism-columns':5,'liquid-cathedral':5,'midnight-facets':5,'velocity-streams':6,'bloom-rays':7,'neon-depth':8,'sacred-light':9,'orbital-dust':10,'still-waters':11};
   Object.assign(families,{'dusk-ridges':12,'tidal-caustics':13,'petal-canopy':14,'boreal-mist':15,'celestial-arcs':16,'lunar-eclipse':17,'contour-dunes':18,'luminous-vault':19});
   families.solid=-1;
+  families['paint-sweeps']=20;
   const vertex=`attribute vec2 position;void main(){gl_Position=vec4(position,0.,1.);}`;
   const fragment=`
 precision highp float;
@@ -396,6 +397,36 @@ vec3 vault(vec2 uv){
   color+=primary*(gaussian(uv.x-.08,.09)+gaussian(uv.x-.92,.09))*gaussian(uv.y-.7-.02*sin(time),.7)*.1;
   return color;
 }
+// Layered pigment, split bristles and dry edges. Drift follows a closed orbit,
+// so even the microscopic grain returns to precisely the same loop boundary.
+vec3 paintSweeps(vec2 uv){
+  float angle=at(vec3(-.10,-.62,-1.48));
+  vec2 p=(uv-.5)*vec2(resolution.x/resolution.y,1.);
+  p=mat2(cos(angle),-sin(angle),sin(angle),cos(angle))*p;
+  vec2 drift=vec2(sin(time),cos(time))*.075;
+  vec3 color=depth*.09;
+  for(int i=0;i<9;i++){
+    float id=float(i),r=hash(vec2(id,31.));
+    vec2 q=p+drift*(.6+r);
+    float center=(id-4.)*.145+.055*sin(q.x*2.2+id*1.7+sin(time)*.35)+.045*(fbm(vec2(q.x*5.,id*3.))- .5);
+    float y=q.y-center;
+    float width=.038+r*.095;
+    float bristle=noise(vec2(q.x*3.+id*9.,q.y*175.))* .014;
+    float chipped=fbm(q*vec2(8.,74.)+id*11.);
+    float mask=1.-smoothstep(width*.65,width+bristle,abs(y));
+    float ends=smoothstep(-1.2+r*.35,-.8+r*.35,q.x)*(1.-smoothstep(.55+r*.3,1.15+r*.3,q.x));
+    float streaks=noise(vec2(q.x*2.5+id*7.,q.y*380.));
+    float pigment=smoothstep(.24,.55,chipped)*(.8+.2*streaks);
+    vec3 tint=mix(depth*.35,primary, .3+.7*r);
+    tint=mix(tint,highlight,.62*smoothstep(.68,.9,r));
+    float flakes=mix(.92,smoothstep(.22,.5,chipped),smoothstep(width*.35,width,abs(y)));
+    color=mix(color,tint*(.45+pigment*.48),mask*ends*flakes*.96);
+    float ridge=gaussian(y+width*.72,.0018)*( .2+.8*streaks)*ends;
+    color+=highlight*ridge*.1;
+  }
+  float grain=noise(uv*resolution*.63);
+  return color*(.94+.06*grain);
+}
 vec3 scene(vec2 uv){
   if(family< -1.5)return texture2D(previousFrame,vec2(uv.x,1.-uv.y)).rgb;
   if(family< -.5)return primary;
@@ -409,7 +440,7 @@ vec3 scene(vec2 uv){
   else if(family<12.5)color=ridges(uv);else if(family<13.5)color=caustics(uv);
   else if(family<14.5)color=petals(uv);else if(family<15.5)color=mist(uv);
   else if(family<16.5)color=constellations(uv);else if(family<17.5)color=eclipse(uv);
-  else if(family<18.5)color=dunes(uv);else color=vault(uv);
+  else if(family<18.5)color=dunes(uv);else if(family<19.5)color=vault(uv);else color=paintSweeps(uv);
   if(family>11.5)color*=.45+.55*smoothstep(.12,.62,length((uv-.5)*vec2(1.1,.9)));
   // Exposure shoulder and restrained edge falloff preserve bloom without flat clipping.
   color=1.-exp(-max(color,vec3(0.))*1.5);

@@ -29,7 +29,7 @@ async function run(){
           if(output)sendState(value);else{state=value;settings={...style};paintScreen(document,stage,false);ProMaxPlayback.fit(stage);}
         };
         const node=()=>stage.querySelector('.screen-text');
-        for(const visual of [null,'golden-hour','nordlys']){
+        for(const visual of [null,'golden-hour','paint-sweeps']){
           style.visual=visual;cue('',{black:true});cue('Initial lyric');
           const entrance=node().getAnimations()[0];
           checks.push(!!entrance&&entrance.effect.getTiming().duration===650);
@@ -55,7 +55,7 @@ async function run(){
           checks.push(node().textContent.includes('Synthetic verse')&&node().getAnimations().length===0);
         }
         // Changing background under visible lyrics must not replay the entrance.
-        for(const visual of ['nordlys','golden-hour',null]){style.visual=visual;cue('Background changed');checks.push(node().getAnimations().length===0);}
+        for(const visual of ['paint-sweeps','golden-hour',null]){style.visual=visual;cue('Background changed');checks.push(node().getAnimations().length===0);}
         return checks;
       },output);
       assert.ok(checks.every(Boolean),`${output?'Output':'Preview'} transition checks: ${JSON.stringify(checks)}`);

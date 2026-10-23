@@ -40,7 +40,7 @@
   Object.assign(aliases,{'soft-ribbons':'amber-silk','light-of-dawn':'bloom-rays','quiet-embers':'floating-gold','desert-tides':'golden-hour','golden-ripples':'still-waters','scarlet-veil':'amber-silk','afterglow':'still-waters','fireline':'neon-depth','open-sanctuary':'neon-depth','amber-windows':'prism-columns','aurora-curtains':'golden-hour','pulse-grid':'velocity-streams'});
   for(let i=presets.length-1;i>=0;i--)if(aliases[presets[i].id])presets.splice(i,1);
   presets.push(...(window.ProMaxScenes?.presets||[]).filter(p=>!aliases[p.id]));
-  presets.push(...(window.ProMaxBundledVisuals?.presets||[]));
+  presets.push({id:'paint-sweeps',name:'Paint Sweeps',category:'Paint',kind:'paint',colors:['#2969a0','#c7a6da','#101b35'],seed:201,mood:'Calm',tags:['brush','pigment','paint','sweeps','texture']});
   presets.sort((a,b)=>Number(b.kind==='scene')-Number(a.kind==='scene'));
   const resolveId=id=>{let result=id;for(let i=0;i<4&&aliases[result];i++)result=aliases[result];return result;};
   const palettes={gold:['#e87b08','#ffd35a','#6c2500'],blue:['#157dd0','#7ddfff','#082558'],purple:['#8249c9','#e2acff','#35105e'],rose:['#d64277','#ffadc9','#64152d'],green:['#159c79','#a2f9c7','#084536'],white:['#9baaba','#f4f8ff','#3c4857']};

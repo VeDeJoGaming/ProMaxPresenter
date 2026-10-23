@@ -17,3 +17,7 @@ Read `FORTSETT-HER.md` at the start of work. The shared development branch is `w
 The user has requested that completed development work be available on the other computer even when this one is off. At the end of each completed task, review the diff and new files, run appropriate checks, update `FORTSETT-HER.md` with the current state and any unfinished work, commit the reviewed project files, and push `work/pc-laptop`. Verify the remote commit before reporting synchronization complete. If a push fails, keep local work and explicitly say it has not reached the other computer yet. Do not merge into main or publish a release merely to synchronize work.
 
 Never commit private songs, Bible contents, imported media, user profiles, access keys, transfer folders or backups. App contents must use the authenticated Shared library service; GitHub holds only application source, original visual assets and development notes. Never automatically upload an entire user profile to a shared song group.
+
+## Visual quality
+
+Prioritize quality over quantity. Develop a small number of polished, distinct visual families with integrated palettes and A/B/C looks. Do not pad the library with color duplicates or simplistic scenes. Review motion, texture, lyric readability, seamless looping and transitions before installing. User explicitly removed the eighteen SVG backgrounds from Nordlys onward; do not reintroduce them.

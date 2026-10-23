@@ -19,24 +19,18 @@ async function run() {
     assert.equal(path.resolve(await app.evaluate(({app})=>app.getPath('userData'))).toLowerCase(),profile.toLowerCase());
     assert.equal(await page.evaluate(()=>typeof require),'undefined');
     const visualCount=await page.evaluate(()=>ProMaxVisuals.presets.length);
-    assert.equal(visualCount,42);
+    assert.equal(visualCount,25);
     await page.evaluate(()=>{ProMaxMeetings.create('Sunday');ProMaxMeetings.addSong();ProMaxMeetings.create('Youth');ProMaxMeetings.addSong();ProMaxMeetings.create('Prayer');ProMaxMeetings.addSong();});
     assert.equal((await page.evaluate(()=>proMaxPrepareUpdate())).meetingFolders.length,3);
-    // Every installed SVG loop loads offline and continues across cues.
-    const bundledIds=await page.evaluate(()=>ProMaxBundledVisuals.presets.map(p=>p.id));
-    assert.equal(bundledIds.length,18);
-    for(const id of bundledIds) {
-      stage='visual '+id; console.log('Desktop check: '+stage);
-      await page.evaluate(id=>{selectVisual(id);state={text:'Bundled background',black:false};paint();},id);
-      await page.waitForFunction(id=>{const img=document.querySelector('#preview img[data-bundled-visual]');return img?.dataset.bundledVisual===id&&img.complete&&img.naturalWidth>0;},id);
-      const same=await page.evaluate(()=>{const image=document.querySelector('#preview img');state.text='Next cue';paint();return image===document.querySelector('#preview img');});
-      assert.equal(same,true);
-      const first=await page.locator('#preview').evaluate(el=>({x:el.getBoundingClientRect().x,y:el.getBoundingClientRect().y,width:el.clientWidth,height:el.clientHeight}));
-      const before=await page.screenshot({clip:first});
-      await new Promise(resolve=>setTimeout(resolve,250));
-      const after=await page.screenshot({clip:first});
-      assert.equal(before.equals(after),false,id+' must animate');
-    }
+    // The curated family keeps one live surface across lyric cues and look changes.
+    await page.evaluate(()=>{selectVisual('paint-sweeps');state={text:'Paint background',black:false};paint();});
+    await page.waitForFunction(()=>document.querySelector('#preview canvas[data-glass]')?.getRenderStats().frames>2);
+    assert.equal(await page.evaluate(()=>{const c=document.querySelector('#preview canvas');state.text='Next cue';paint();return c===document.querySelector('#preview canvas');}),true);
+    const frames=await page.evaluate(()=>{const p=ProMaxVisuals.presets.find(p=>p.id==='paint-sweeps'),c=document.createElement('canvas');c.width=320;c.height=180;const draw=(phase,variant='a')=>{ProMaxVisuals.draw(c,{...p,variant},phase);return c.toDataURL()};return {start:draw(0),end:draw(1),middle:draw(.25),b:draw(0,'b'),c:draw(0,'c')};});
+    assert.equal(frames.start,frames.end,'precise seamless loop');
+    assert.notEqual(frames.start,frames.middle,'visible motion');
+    assert.notEqual(frames.start,frames.b,'distinct B expression');
+    assert.notEqual(frames.b,frames.c,'distinct C expression');
     await page.evaluate(()=>{selectVisual('dynamic-glass');state.text='Canvas restored';paint();});
     assert.equal(await page.locator('#preview canvas[data-glass]').count(),1);
     stage='Bible and saved YouTube library'; console.log('Desktop check: '+stage);
@@ -57,12 +51,12 @@ async function run() {
     const saved=JSON.parse(await fs.readFile(backup,'utf8'));
     assert.deepEqual(saved.meetingFolders,data.meetingFolders);
     assert.equal(saved.settings.visual,'dynamic-glass');
-    await page.evaluate(()=>selectVisual('nordlys'));
+    await page.evaluate(()=>selectVisual('paint-sweeps'));
     await page.reload();
     stage='restart'; console.log('Desktop check: '+stage);
-    await page.waitForFunction(()=>window.ProMaxControls && document.querySelector('#preview img[data-bundled-visual]')?.complete);
+    await page.waitForFunction(()=>window.ProMaxControls && document.querySelector('#preview canvas[data-glass]')?.getRenderStats().frames>0);
     assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('promax-library')).meetingFolders.length),3);
-    assert.equal(await page.evaluate(()=>settings.visual),'nordlys');
+    assert.equal(await page.evaluate(()=>settings.visual),'paint-sweeps');
     await page.evaluate(()=>ProMaxYouTubeLibrary.ready);
     assert.equal(await page.evaluate(()=>ProMaxYouTubeLibrary.list().length),1);
     assert.equal(await page.evaluate(()=>proMaxShared.getState().then(s=>s.connected)),false);

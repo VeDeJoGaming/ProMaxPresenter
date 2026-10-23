@@ -1,3 +1,10 @@
+## Paint Sweeps og kuratert bibliotek — 23. oktober 2026
+
+- Installert app er oppdatert og verifisert: én original GPU-generert Paint Sweeps-visual i bakgrunnsbiblioteket, inspirert av penselstrøkene i referansene, uten å pakke eller dele CMG-medier. Integrert med paletter, egen farge/gradient, bevegelseshastighet, A/B/C, sangdeler, favoritter, forhåndsvisning og eksisterende myke overganger. Tre uttrykk: horisontale, diagonale og vertikale strøk.
+- Alle 18 SVG-bakgrunner fra Nordlys og nedover er fjernet fra katalog, installasjon og gallerigenerator. Biblioteket har nå 25 oppføringer. Ingen er erstattet av en mengde fargeduplikater. Fast kvalitetsregel er skrevet i AGENTS.md.
+- De ti CMG-oppføringene fra forrige økt er fjernet fra brukerens videobibliotek gjennom appens lagringsfunksjoner. Original MP4/ZIP er bevart på disk. Paint Sweeps er valgt og bekreftet etter omlasting. Automatisk kontroll bekrefter at sanger og møteinnhold er uendret.
+- Kontrollert: 47 enhetstester; native komplett-app-test inkludert sømløs periode, ulike A/B/C og uavbrutt bakgrunn ved tekstskifte; galleritest med søk/favoritter/tastatur/reduced-motion; tekstoverganger i kontroll og faktisk output-renderer. Forhåndsvisninger er visuelt gjennomgått og iterert. Galleri er bygget på nytt med theme.css. Installert app.asar samsvarer med ferdig bygget pakke (SHA256 49981AA8A261A3256C123530D6882838A0223B8F2D56BB007EC10FD2295BFDCB).
+- Aktiv utviklingscheckout er fortsatt C:\ProMaxPresenter\artifacts\local-update på work/pc-laptop. Rotens uforente eldre checkout er bevart; bruk denne worktree-mappen til videre utvikling. Lokalt versjonsnummer er fortsatt 1.3.0 med vanlig GitHub-oppdateringskonfigurasjon. Ingen release eller main-endring.
 ## Fullført lokalt 23. oktober 2026
 
 - Tidligere tilgangsblokkeringer er løst i lokal Windows-økt. Git fetch, Computer Use, bygg og installasjon fungerer. Windows-verktøyets filvelger var upålitelig; import er fullført gjennom appens filinput med Playwright.
