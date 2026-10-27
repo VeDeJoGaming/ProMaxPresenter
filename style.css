@@ -121,3 +121,12 @@ aside{position:sticky;top:0;align-self:start;max-height:100vh;overflow-y:auto}#m
 .meeting-item-note{color:var(--pm-selection-text);font-size:10px;margin-top:5px}.meeting-item-note[hidden]{display:none}
 
 #meeting-banner{flex-wrap:wrap}#meeting-name{flex:1 1 180px}#meeting-notes{flex:0 0 100%}
+
+#meeting-check{width:min(820px,95vw);max-height:90vh;overflow:auto;padding:25px;background:var(--pm-panel);color:var(--pm-text);border:1px solid var(--pm-border);border-radius:14px;box-shadow:0 25px 100px #0009}
+#meeting-check::backdrop{background:#000a}.meeting-check-heading{display:flex;justify-content:space-between;gap:20px;align-items:flex-start}.meeting-check-heading h2{margin:0}.meeting-check-heading p{color:var(--pm-selection-text);margin:7px 0}
+#meeting-check-summary{padding:13px 0;color:var(--pm-selection-text);font-size:13px}#meeting-check-message{font-size:12px;color:var(--pm-muted);line-height:1.6}
+.meeting-check-row{padding:16px;margin-top:12px;background:var(--pm-field);border:1px solid var(--pm-border-soft);border-radius:10px}.meeting-check-row h3{font-size:14px;margin:0 0 9px;overflow-wrap:anywhere}.meeting-check-row p{font-size:12px;color:var(--pm-muted);line-height:1.6}.meeting-check-row [hidden]{display:none}
+.meeting-check-badge{display:inline-block;padding:4px 8px;border-radius:5px;font-size:11px;background:var(--pm-panel);color:var(--pm-muted)}.meeting-check-badge.ready{color:var(--pm-text)}.meeting-check-badge.attention{background:var(--pm-selection-bg);color:var(--pm-selection-text);border-left:2px solid var(--pm-red)}.meeting-check-badge.online{color:var(--pm-selection-text)}
+#meeting-check-repair{padding:16px;margin:12px 0;border:1px solid var(--pm-selection-border);border-radius:10px}#meeting-check-repair h3{font-size:14px;margin-top:0}#meeting-repair-search{width:100%}#meeting-repair-options{display:grid;gap:7px;max-height:220px;overflow:auto;margin:12px 0}#meeting-repair-options button{text-align:left}
+
+#meeting-check .check-label{display:inline-flex;align-items:center;gap:8px;white-space:nowrap}#meeting-check .check-label input{width:auto;flex:none;margin:0}

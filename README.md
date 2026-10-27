@@ -15,6 +15,7 @@ Your songs, folders, imported Bible and media stay local. Installation includes 
 - Operator notes for meetings and individual running-order items save automatically, support undo/redo and stay off the presentation screen.
 - Alphabetical Norwegian song ordering and automatic cleanup of empty, inactive drafts; song order in meetings stays as arranged.
 - Search song titles and lyrics in the library and meeting picker; title matches come first, with lyric excerpts and support for accents and Nordic letters.
+- **Check meeting** checks the running order for missing songs, ungenerated slides, missing video files and local PowerPoint slide images; flags online YouTube entries and offers undoable replacements or slide generation without changing the live cue.
 - Meeting folders and running orders with songs, Bible passages, text, video, YouTube and PowerPoint; drag/drop, undo/redo and automatic saving.
 - Song sections, slide editing, keyboard shortcuts, quick text, countdown, PDF and blackout.
 - Indexed Bible search, full chapter context, previous/next chapter navigation across books, Shift-click range selection and Clear selection; local video library and native YouTube preview/output.

@@ -27,6 +27,10 @@ ipcMain.handle('settings:info',event=>{
   return {version:app.getVersion(),dataPath:app.getPath('userData'),displays:screen.getAllDisplays().map((d,i)=>({id:d.id,label:d.label||`Display ${i+1}`,width:d.size.width,height:d.size.height,isControl:d.id===current.id,isOutput:d.id===displayId}))};
 });
 ipcMain.handle('settings:open-data',event=>{if(event.sender===control?.webContents)return shell.openPath(app.getPath('userData'));});
+ipcMain.handle('meeting:check-files',async(event,urls)=>{
+  if(event.sender!==control?.webContents)throw Error('Invalid window.');
+  try{return await require('./meeting-files.cjs').checkPresentationFiles(app.getPath('userData'),urls);}catch(error){return {error:error.message};}
+});
 ipcMain.handle('settings:maintenance',async(event,kind)=>{
   if(event.sender!==control?.webContents||!['backup','restore'].includes(kind))throw Error('Invalid backup request.');
   if(maintenanceBusy)return {error:'A backup operation is already running.'};maintenanceBusy=true;
