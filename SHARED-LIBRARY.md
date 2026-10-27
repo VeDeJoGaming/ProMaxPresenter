@@ -6,11 +6,11 @@ Privat PC-/laptop-synkronisering er under utvikling som en separat funksjon i sa
 
 - **Off:** ingen automatisk kontakt med fellesbiblioteket.
 - **Receive only:** hent gruppens sanger uten å laste opp egne.
-- **Receive & share:** hent sanger og del de egne sangene du velger.
+- **Receive & share:** hent gruppens sanger og del automatisk alle egne sanger, både eksisterende og nye.
 
-Opprett en gruppe, eller lim inn en invitasjonskode/lenke fra eieren. Ingen konto kreves. Å bli med laster aldri opp sanger. **Share selected song** og **Share my library…** krever et eget valg. Sanger, lysbilder og en uttrykkelig delt Bibel støttes; bakgrunnsbilder, videoer og PDF-filer holdes lokale. Del bare innhold du har tillatelse til å dele.
+Opprett en gruppe, eller lim inn en invitasjonskode/lenke fra eieren. Ingen konto kreves. Med **Receive & share** lastes egne sanger opp ved neste synkronisering; du trenger ikke velge dem i en egen delingsmeny. **Receive only** beholder egne sanger lokalt. Sanger, lysbilder og en uttrykkelig delt Bibel støttes; bakgrunnsbilder, videoer og PDF-filer holdes lokale. Del bare innhold du har tillatelse til å dele.
 
-Programmet synkroniserer omtrent hvert minutt når det er åpent og mottak er aktivert. **Sync now** gjør det med en gang. Endringer i egne sanger som allerede er delt, lastes opp ved synkronisering. Mottatte sanger blir aldri automatisk delt videre. Gruppen støtter opptil 100 medlemmer, 1 000 sanger og 10 MiB med sangtekst/lysbilder.
+Programmet synkroniserer omtrent hvert minutt når det er åpent og mottak er aktivert. **Sync now** gjør det med en gang. Alle egne sanger og endringer deles automatisk i **Receive & share**, også sanger som foreløpig bare har et navn. Tomme, unavngitte kladder hoppes over. Mottatte sanger blir aldri automatisk delt videre. **Stop sharing selected song** hindrer videre automatisk opplasting av den sangen fra denne maskinen, også etter omstart. **Share selected song now** deler den igjen. Gruppen støtter opptil 100 medlemmer, 1 000 sanger og 10 MiB med sangtekst/lysbilder.
 
 Lokale sanger kan brukes uten internett. En urørt mottatt sang oppdateres på stedet. Hvis du har redigert den, eller den er valgt i arbeidsområdet, beholdes den og en nyere delt versjon legges til separat. Fjerning fra gruppen sletter ikke kopier som allerede finnes på andres maskiner.
 

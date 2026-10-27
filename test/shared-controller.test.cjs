@@ -18,6 +18,44 @@ test('received songs cannot be published and selecting share does not upload any
   assert.deepEqual(urls,['/api/v1/me']);assert.equal((await s.controller.publish([{shared:{groupId:'other'}}])).count,0);
 });
 const sharedSong={id:'local-song',title:'Synthetic sync song',lyrics:'Test words',lines:4,slides:[{text:'Test words',section:'Verse',key:'v'}]};
+test('sync automatically publishes new own songs, including named drafts, and skips unchanged content',async()=>{
+  const uploads=[];const s=setup(async(url,options)=>{
+    if(options.method==='PUT'){
+      const body=JSON.parse(options.body);uploads.push({route:url.pathname,...body});
+      return Response.json({publication:{id:'remote-'+uploads.length,revision:1}});
+    }
+    return url.pathname==='/api/v1/me'?Response.json({self:{mode:'share'}}):Response.json({songs:[],nextAfter:null});
+  },'share');
+  await s.controller.init();
+  const draft={id:'named-draft',title:'test',lyrics:'',lines:4,slides:[]};
+  const songs=[sharedSong,draft,{...draft,id:'blank',title:'Untitled song'},{...sharedSong,id:'received',shared:{groupId:'group'}}];
+  assert.equal((await s.controller.sync(songs)).published,2);
+  assert.deepEqual(uploads.map(p=>p.route),['/api/v1/songs/local-song','/api/v1/songs/named-draft']);
+  assert.ok(uploads.every(p=>p.revision===0&&!p.restore));
+  assert.equal((await s.controller.sync(songs)).published,0);
+  assert.equal(uploads.length,2,'unchanged songs are not uploaded again');
+});
+test('receive-only never publishes own songs',async()=>{
+  const s=setup(async(url,options)=>{
+    assert.equal(options.method,'GET');
+    return url.pathname==='/api/v1/me'?Response.json({self:{mode:'receive'}}):Response.json({songs:[],nextAfter:null});
+  },'receive');
+  await s.controller.init();assert.equal((await s.controller.sync([sharedSong])).published,0);
+});
+test('stopping sharing survives restart and sync; explicitly sharing resumes it',async()=>{
+  let puts=0,deletes=0;
+  const s=setup(async(url,options)=>{
+    if(options.method==='PUT'){puts++;return Response.json({publication:{id:'remote-song',revision:puts}});}
+    if(options.method==='DELETE'){deletes++;return Response.json({ok:true});}
+    return url.pathname==='/api/v1/me'?Response.json({self:{mode:'share'}}):Response.json({songs:[],nextAfter:null});
+  },'share');
+  await s.controller.init();await s.controller.sync([sharedSong]);
+  await s.controller.unpublish(sharedSong.id);await s.controller.init();
+  assert.equal((await s.controller.sync([{...sharedSong,lyrics:'Edited while stopped'}])).published,0);
+  assert.equal(puts,1);assert.equal(deletes,1);
+  await s.controller.publish([sharedSong]);assert.equal(puts,2);
+  assert.equal((await s.controller.sync([{...sharedSong,lyrics:'Automatic edit'}])).published,1);
+});
 test('restored member receives its own shared songs on another computer',async()=>{
   const row={id:'remote-song',authorId:'member',revision:1,song:sharedSong};
   const s=setup(async url=>url.pathname==='/api/v1/me'?Response.json({self:{mode:'receive'}}):Response.json({songs:[row],nextAfter:null}),'receive');

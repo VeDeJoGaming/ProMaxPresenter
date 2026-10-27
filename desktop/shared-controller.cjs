@@ -32,13 +32,14 @@ function createSharedController({origin,vault,fetchImpl=fetch,clipboard}) {
   }
   function ensure(choice) {if(!access)throw Error('Connect to a group first.');if(choice&&access.self.mode!==choice)throw Error('Choose Receive & share first.');}
   async function publish(s,explicit,expectedGeneration) {
-    ensure('share');if(s.shared||require('../song-search.js').isEmpty(s)) return false;
-    const p=payload(s), previous=access.publications[p.id];if(!explicit&&!previous)return false;
-    if(!explicit&&previous.hash===fingerprint(p.song))return false;
+    ensure('share');if(s.shared||require('../song-search.js').isPlaceholder(s)) return false;
+    const p=payload(s), previous=access.publications[p.id];
+    if(!explicit&&(access.excludedSongs?.[p.id]||previous?.hash===fingerprint(p.song)))return false;
     if(expectedGeneration!==generation)return false;
     const result=await api('/songs/'+p.id,'PUT',{song:p.song,revision:previous?.revision||0,restore:!!explicit});
     if(expectedGeneration!==generation)return false;
     access.publications[p.id]={id:result.publication.id,revision:result.publication.revision,hash:fingerprint(p.song)};
+    if(access.excludedSongs)delete access.excludedSongs[p.id];
     await persist();return true;
   }
   return {
@@ -82,10 +83,10 @@ function createSharedController({origin,vault,fetchImpl=fetch,clipboard}) {
       const me=await api('/me');if(epoch!==generation)return {songs:[],...state()};
       // Local consent is authoritative; never accept a remote escalation of sharing mode.
       if(me.self.mode!==access.self.mode)throw Error('Sharing settings changed. Choose your mode again.');
-      const publishFailures=[];
+      const publishFailures=[];let published=0;
       if(access.self.mode==='share')for(const s of songs.slice(0,10000)){
         if(epoch!==generation)break;
-        try{await publish(s,false,epoch);}catch(error){
+        try{if(await publish(s,false,epoch))published++;}catch(error){
           if(epoch!==generation)throw error;
           // A rejected local edit must not prevent this member from receiving songs.
           publishFailures.push({id:s.id,message:error.message});
@@ -98,10 +99,10 @@ function createSharedController({origin,vault,fetchImpl=fetch,clipboard}) {
         for(const row of r.songs){normalizeLibrary({songs:[row.song]});incoming.push(row);}
         if(incoming.length>1000)throw Error('The shared library is too large.');if(r.nextAfter===null)break;if(!Number.isSafeInteger(r.nextAfter)||r.nextAfter<=after)throw Error('Invalid shared library page.');after=r.nextAfter;
       }
-      return {songs:epoch===generation?incoming:[],publishFailures,...state()};}),
+      return {songs:epoch===generation?incoming:[],published,publishFailures,...state()};}),
     publish: songs=>serial(async()=>{ensure('share');if(paused)throw Error('Sharing settings are changing. Try again.');if(access.modePending)throw Error('Sync your sharing settings before publishing.');if(!Array.isArray(songs)||songs.length>1000)throw Error('Share up to 1,000 songs at a time.');const epoch=generation;let count=0;
       for(const s of songs){if(epoch!==generation)break;if(await publish(s,true,epoch))count++;}return {count,...state()};}),
-    unpublish: localId=>serial(async()=>{ensure();const publication=access.publications[localId];if(!publication)throw Error('This song has not been shared from this computer.');await api('/songs/'+publication.id,'DELETE');delete access.publications[localId];await persist();return state();}),
+    unpublish: localId=>serial(async()=>{ensure();const publication=access.publications[localId];if(!publication)throw Error('This song has not been shared from this computer.');await api('/songs/'+publication.id,'DELETE');delete access.publications[localId];(access.excludedSongs||={})[localId]=true;await persist();return state();}),
     copyInvite: rotate=>serial(async()=>{ensure();if(access.self.role!=='owner')throw Error('Only the owner can invite people.');
       if(rotate||!access.invite||access.invite.expiresAt<Date.now()){access.invite=await api(rotate?'/invites/rotate':'/invites','POST',{});await persist();}
       clipboard.writeText(base.origin+'/#invite='+access.invite.code);return {ok:true};}),

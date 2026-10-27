@@ -7,7 +7,8 @@
     const lyrics=String(song.lyrics||'').replace(/^\s*\[[^\]\n]*\]\s*$/gm,'').trim();
     return !lyrics&&!song.slides?.some(s=>String(s.text||'').trim()||s.image||s.biblePassage);
   }
-  function cleanup(songs,keepId){return songs.filter(s=>s.id===keepId||!isEmpty(s));}
+  function isPlaceholder(song){const title=String(song.title||'').trim();return isEmpty(song)&&(!title||title==='Untitled song');}
+  function cleanup(songs,keepId){return songs.filter(s=>s.id===keepId||!isPlaceholder(s));}
   function normalize(value){return String(value||'').normalize('NFKD').replace(/\p{M}/gu,'').toLowerCase().replace(/æ/g,'ae').replace(/ø/g,'o').replace(/\s+/g,' ').trim();}
   function indexed(song){
     let entry=cache.get(song);
@@ -42,7 +43,7 @@
       return [{song,snippet,rank,index}];
     }).sort((a,b)=>a.rank-b.rank||compare(a.song,b.song)||a.index-b.index);
   }
-  const api={search,normalize,compare,isEmpty,cleanup};
+  const api={search,normalize,compare,isEmpty,isPlaceholder,cleanup};
   if(typeof module==='object'&&module.exports)module.exports=api;
   else root.ProMaxSongSearch=api;
 })(typeof window==='object'?window:globalThis);

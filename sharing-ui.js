@@ -6,7 +6,7 @@
     <p id="shared-message" role="status" aria-live="polite"></p>
     <div id="shared-setup"><label>Your name <input id="shared-name" maxlength="80" autocomplete="off" placeholder="Name shown to your friends"></label>
       <label>My choice <select id="shared-choice"><option value="none">Off — keep everything local</option><option value="receive">Receive only</option><option value="share">Receive & share</option></select></label>
-      <p class="sharing-help">Joining never uploads your songs. You choose what to share afterwards.</p>
+      <p class="sharing-help">Receive & share automatically shares all your own songs at the next sync. Receive only keeps your own songs local.</p>
       <div class="sharing-row"><input id="shared-code" aria-label="Invitation code" placeholder="Paste invitation code or link" autocomplete="off"><button id="shared-join" class="primary">Join group</button></div>
       <details><summary>Create a group</summary><div class="sharing-row"><input id="shared-group-name" maxlength="80" aria-label="Group name" placeholder="Your group's name"><button id="shared-create">Create group</button></div></details>
       <details><summary>Restore access on this computer</summary><p class="sharing-help">Use your own access key. An owner's access key also restores group management.</p><div class="sharing-row"><input id="shared-key" type="password" aria-label="Personal access key" placeholder="PMXA-…" autocomplete="off"><button id="shared-restore">Restore</button></div></details>
@@ -14,7 +14,7 @@
     <div id="shared-connected" hidden><h3 id="shared-group"></h3><p id="shared-person" class="sharing-help"></p>
       <label>My choice <select id="shared-mode"><option value="none">Off — keep everything local</option><option value="receive">Receive only</option><option value="share">Receive & share</option></select></label>
       <div class="sharing-row"><button id="shared-sync" class="primary">Sync now</button><span id="shared-last" class="sharing-help">Syncs every minute when enabled.</span></div>
-      <div id="shared-publishing"><h3>Choose what to share</h3><p class="sharing-help">Share only songs you have permission to share. Songs received from others and backgrounds are excluded. Changes to songs you share are synced automatically.</p><div class="sharing-row"><button id="shared-song">Share selected song</button><button id="shared-all">Share my library…</button><button id="shared-remove">Stop sharing selected song</button></div></div>
+      <div id="shared-publishing"><h3>Automatic song sharing</h3><p class="sharing-help">All your own songs, including new songs and edits, are shared automatically every minute or when you press Sync now. Songs received from others and backgrounds are excluded. Share only songs you have permission to share. Stopped songs stay local until you share them again.</p><div class="sharing-row"><button id="shared-song">Share selected song now</button><button id="shared-all">Share all songs now…</button><button id="shared-remove">Stop sharing selected song</button></div></div>
       <section id="shared-bible-panel"><h3>Shared Bible</h3><p id="shared-bible-status" class="sharing-help">Sync to check your group's Bible.</p><div class="sharing-row"><button id="shared-bible-publish">Share imported Bible</button><button id="shared-bible-use" disabled>Use shared Bible</button><button id="shared-bible-remove">Stop sharing Bible</button></div><p class="sharing-help">Only share a translation you have permission to share. Replacing a local Bible requires your choice.</p></section>
       <div id="shared-owner" hidden><h3>Invitations & people</h3><p class="sharing-help">Invitations last 30 days. Anyone with the invitation can join. Removing someone also replaces all invitations.</p><div class="sharing-row"><button id="shared-invite">Copy invitation</button><button id="shared-rotate">Replace invitation…</button><button id="shared-people">Manage people</button></div><div id="shared-members"></div></div>
       <details><summary>Access & disconnect</summary><p class="sharing-help">Save your personal access key somewhere private. There is no account or password reset. Anyone with this key can use your group access. Keep the owner's key to recover group management.</p><div class="sharing-row"><button id="shared-backup">Copy my access key</button><button id="shared-disconnect">Disconnect…</button></div></details>
@@ -39,7 +39,7 @@
       state=latest;const merged=await host.receive(result.songs,state.group.id,()=>requestEpoch===epoch&&state.self?.mode!=='none');
       if(!merged)return;await refreshBible();await useBible(true);const time=new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});el('shared-last').textContent='Last synced '+time;
       const failures=result.publishFailures||[];
-      message(`${merged.added} added · ${merged.updated} updated`+(merged.conflicts?' · Your edits were kept; newer shared versions were added separately.':'. Your local songs are saved.')+(failures.length?` ${failures.length} shared update${failures.length===1?'':'s'} could not upload: ${failures[0].message} Incoming songs were still received.`:''));
+      message(`${result.published||0} shared · ${merged.added} added · ${merged.updated} updated`+(merged.conflicts?' · Your edits were kept; newer shared versions were added separately.':'. Your local songs are saved.')+(failures.length?` ${failures.length} song${failures.length===1?'':'s'} could not upload: ${failures[0].message} Incoming songs were still received.`:''));
     });
   }
   async function refreshBible(){
@@ -71,16 +71,16 @@
   dialog.addEventListener('keydown',e=>e.stopPropagation());
   for(const action of ['create','join'])el('shared-'+action).onclick=()=>run(async()=>{
     const input={displayName:el('shared-name').value,mode:el('shared-choice').value,...(action==='create'?{groupName:el('shared-group-name').value}:{code:el('shared-code').value})};
-    state=await call(action,input);sharedBible=null;epoch++;el('shared-code').value='';message('Connected. No songs have been uploaded. Choose Sync now to receive songs.');render();
+    state=await call(action,input);sharedBible=null;epoch++;el('shared-code').value='';message(state.self.mode==='share'?'Connected. All your own songs will be shared at the next sync.':'Connected. Choose Sync now to receive songs.');render();
   });
   el('shared-restore').onclick=()=>run(async()=>{const key=el('shared-key').value;el('shared-key').value='';state=await call('restore',key);sharedBible=null;epoch++;message('Access restored. Check your sharing choice below.');render();});
   el('shared-mode').onchange=async()=>{const choice=el('shared-mode').value;epoch++;state.self.mode=choice;render();
     // Mode changes must interrupt even an in-flight sync; they never wait for the UI busy lock.
-    try{state=await call('setMode',choice);message(choice==='none'?'Sync paused. Your local songs are kept.':'Choice saved. Existing songs are only uploaded when you choose to share them.');}
+    try{state=await call('setMode',choice);message(choice==='none'?'Sync paused. Your local songs are kept.':choice==='share'?'Choice saved. All your own songs will be shared automatically at the next sync.':'Choice saved. Your own songs stay local; shared songs will be received.');}
     catch(e){state=await api.getState();message(e.message);}render();};
   el('shared-sync').onclick=sync;
   for(const action of ['song','all'])el('shared-'+action).onclick=()=>run(async()=>{
-    const snapshot=host.snapshot().filter(s=>!s.shared&&!ProMaxSongSearch.isEmpty(s)&&(action==='all'||s.id===host.selected()));
+    const snapshot=host.snapshot().filter(s=>!s.shared&&!ProMaxSongSearch.isPlaceholder(s)&&(action==='all'||s.id===host.selected()));
     if(!snapshot.length)throw Error('Choose one of your own songs. Received songs are kept local.');
     if(!confirm(`Share ${snapshot.length} song${snapshot.length===1?'':'s'} with everyone in “${state.group.name}”? Only share songs you have permission to share.`))return;
     const result=await call('publish',snapshot);message(`${result.count} song${result.count===1?'':'s'} shared with your group.`);

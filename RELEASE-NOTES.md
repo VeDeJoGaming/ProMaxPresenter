@@ -1,4 +1,12 @@
-ProMax Presenter 1.4.0 gir raskere betjening, bedre Bibelarbeid og en ny møtesjekk.
+ProMax Presenter 1.4.1 gjør sangdeling automatisk.
+
+- Med Receive & share deles alle egne sanger ved Sync now og den automatiske synkroniseringen hvert minutt. Nye sanger trenger ikke velges i en egen delingsmeny.
+- Navngitte kladder, også uten sangtekst, deles og beholdes etter omstart. Tomme, unavngitte kladder ryddes fortsatt bort.
+- Synkroniseringsstatus viser hvor mange sanger som ble lastet opp. Stop sharing selected song beholdes etter omstart og hindrer at sangen deles igjen automatisk.
+
+Receive only og Off beholder egne sanger lokalt. Deling av Bibelen krever fortsatt et eget valg. Oppdateringen bevarer lokalt innhold og innstillinger.
+
+ProMax Presenter 1.4.0 ga raskere betjening, bedre Bibelarbeid og en ny møtesjekk.
 
 - Søk i både sangtitler og sangtekst, med tekstutdrag og tittelprioritet. Sanglisten sorteres etter norsk alfabet. Tomme, forlatte sanger ryddes automatisk; et aktivt utkast beholdes mens du skriver.
 - Sangfavoritter med eget filter, og Ctrl+K for hurtigåpning av sanger og møter uten å endre den aktive presentasjonen.

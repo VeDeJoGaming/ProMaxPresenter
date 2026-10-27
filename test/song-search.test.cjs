@@ -25,13 +25,13 @@ test('snippets keep original text and crop around distant matches without interp
   assert.equal(search([{title:'Empty'}],'x').length,0);
 });
 
-test('empty cleanup protects the active draft and all meaningful content',()=>{
+test('empty cleanup protects named drafts, the active draft and all meaningful content',()=>{
   const {cleanup,isEmpty}=require('../song-search');
   const songs=[{id:'blank',title:'Named but empty',lyrics:'  ',slides:[]},{id:'draft',title:'Untitled song',lyrics:'',slides:[]},
     {id:'headings',lyrics:'[Verse 1]\n\n[Chorus]',slides:[]},{id:'lyrics',lyrics:'Keep this',slides:[]},
     {id:'slide',lyrics:'',slides:[{text:'Keep slide'}]},{id:'image',lyrics:'',slides:[{text:'',image:{src:'local'}}]}];
-  assert.deepEqual(cleanup(songs,'draft').map(s=>s.id),['draft','lyrics','slide','image']);
-  assert.ok(isEmpty(songs[0]));assert.deepEqual(cleanup(songs).map(s=>s.id),['lyrics','slide','image']);
+  assert.deepEqual(cleanup(songs,'draft').map(s=>s.id),['blank','draft','lyrics','slide','image']);
+  assert.ok(isEmpty(songs[0]));assert.deepEqual(cleanup(songs).map(s=>s.id),['blank','lyrics','slide','image']);
 });
 test('Norwegian alphabetical order is consistent regardless of storage order',()=>{
   assert.deepEqual(search(['Åpen','Ønske','Ære','Zebra','Beta','alfa'].map(title=>({title,lyrics:'x'})),'').map(r=>r.song.title),['alfa','Beta','Zebra','Ære','Ønske','Åpen']);
