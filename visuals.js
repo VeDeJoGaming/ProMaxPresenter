@@ -49,6 +49,10 @@
   const resolveId=id=>{let result=id;for(let i=0;i<4&&aliases[result];i++)result=aliases[result];return result;};
   const palettes={gold:['#e87b08','#ffd35a','#6c2500'],blue:['#157dd0','#7ddfff','#082558'],purple:['#8249c9','#e2acff','#35105e'],rose:['#d64277','#ffadc9','#64152d'],green:['#159c79','#a2f9c7','#084536'],white:['#9baaba','#f4f8ff','#3c4857']};
   function variant(section=''){return /^(pre[- ]?(chorus|refreng))/i.test(section)?'c':/chorus|refrain|refreng/i.test(section)?'b':/bridge|\bbro\b/i.test(section)?'c':'a';}
+  function sectionLook(preset,section=''){
+    if(preset.id!=='stellar-awakening')return variant(section);
+    return /bridge|\bbro\b/i.test(section)?'c':/chorus|refrain|refreng/i.test(section)?'b':'a';
+  }
   const tau=Math.PI*2;
   const fraction=n=>n-Math.floor(n);
   const random=(seed,n)=>fraction(Math.sin(seed*71.17+n*19.31)*43758.5453);
@@ -261,9 +265,10 @@
       }
       if(preset.kind==='solid')colors=Array(3).fill(valid(options.color)?options.color:'#181818');
       const motion=options.visualMotion||'auto';
-      const chosen=options.glassAuto===false?(options.glassVariant||'a'):variant(options.section);
+      const chosen=options.glassAuto===false?(options.glassVariant||'a'):sectionLook(preset,options.section);
       const basePeriod=motion==='calm'?100000:motion==='energetic'?20000:motion==='normal'?60000:preset.mood==='Energetic'?24000:80000;
-      return {colors:[...colors],variant:chosen,period:basePeriod*{a:1,b:.8,c:.6}[chosen]};
+      const pace=preset.id==='stellar-awakening'?{a:1,b:.85,c:.45}:{a:1,b:.8,c:.6};
+      return {colors:[...colors],variant:chosen,period:basePeriod*pace[chosen]};
     };
     let look=getLook(options),started=0;
     const numeric=value=>({look:{a:0,b:1,c:2}[value.variant],colors:value.colors.map(hex=>[1,3,5].map(i=>parseInt(hex.slice(i,i+2),16)/255)),period:value.period});
@@ -385,5 +390,5 @@
       if(media&&(media.tagName==='IMG'?!media.complete:media.readyState<2)){media.addEventListener(media.tagName==='IMG'?'load':'loadeddata',start,{once:true});media.addEventListener('error',start,{once:true});timeout=setTimeout(start,6000);}else start();
     };
   }
-  window.ProMaxVisuals={presets,draw,mount,variant,palettes,renderGlass,resolveId,beginBackground};
+  window.ProMaxVisuals={presets,draw,mount,variant,sectionLook,palettes,renderGlass,resolveId,beginBackground};
 })();

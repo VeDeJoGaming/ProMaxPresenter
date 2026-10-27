@@ -521,35 +521,40 @@ vec3 winterReverie(vec2 uv){
   return color+vec3(snow)*at(vec3(.45,.75,1.));
 }
 vec3 stellarAwakening(vec2 uv){
-  vec2 center=vec2(.5,at(vec3(.16,.21,.46)));
-  vec2 p=(uv-center)*vec2(resolution.x/resolution.y,1.);
+  // Keep the source anchored above the lyrics in every look; build energy instead of moving it.
+  vec2 p=(uv-vec2(.5,.21))*vec2(resolution.x/resolution.y,1.);
   float radius=length(p),angle=atan(p.y,p.x)/TAU+.5;
-  // One slow, continuous swell: a faint star gathers light, blooms and settles.
-  float swell=pow(.5-.5*cos(time),1.65);
-  float power=at(vec3(.42,.7,.24))+swell*at(vec3(.75,1.65,.7));
-  vec3 color=depth*.018;
-  for(int layer=0;layer<5;layer++){
-    float l=float(layer),count=64.+l*48.;
-    float sector=floor(angle*count),a=fract(angle*count)-.5;
+  float swell=pow(.5-.5*cos(time),1.4);
+  float energy=at(vec3(.3,.62,1.05))+swell*at(vec3(.32,.68,1.1));
+  vec3 color=depth*.06+primary*gaussian(radius,.62)*.018;
+  // Sparse, soft starlight gives the quiet look depth without constant laser spokes.
+  vec2 grid=uv*vec2(48.,27.),cell=floor(grid),point=fract(grid)-.5;
+  float random=hash(cell+seed),dust=gaussian(length(point),.10)*smoothstep(.968,.985,random);
+  color+=highlight*dust*(.28+.12*sin(time+random*TAU));
+  for(int layer=0;layer<3;layer++){
+    float l=float(layer),count=48.+l*40.;
+    float sector=floor(angle*count),acrossCell=fract(angle*count)-.5;
     float r=hash(vec2(sector,l+91.));
-    float offset=(hash(vec2(sector+7.,l+19.))-.5)*.65;
-    float across=(a-offset)/count*TAU*radius;
-    float flight=fract(time/TAU*(1.+floor(l*.5))+r);
-    float head=.025*exp(flight*4.7);
-    float tail=head*at(vec3(.12,.32,.58));
-    float lengthMask=smoothstep(head-tail,head,radius)*(1.-smoothstep(head,head+head*.035+.001,radius));
+    float offset=(hash(vec2(sector+7.,l+19.))-.5)*.38;
+    float across=(acrossCell-offset)/count*TAU*radius;
+    float flight=fract(time/TAU*(1.+l)+r);
+    float head=.035*exp(flight*4.5);
+    float tail=head*at(vec3(.07,.17,.34));
+    float mask=smoothstep(head-tail,head-tail*.35,radius)*(1.-smoothstep(head,head+head*.035+.001,radius));
     float fade=pow(sin(flight*PI),2.);
-    float width=(.0007+.0009*radius)*(1.4-l*.17);
-    float streak=gaussian(across,width)*lengthMask*fade;
-    float glow=gaussian(across,width*4.)*lengthMask*fade*.12;
-    color+=mix(primary,highlight,r*.6)*(streak+glow)*power*(.3+r*1.2)*2.8;
-    float filament=gaussian(across,width*.36)*smoothstep(.04,.22,radius)*exp(-radius*1.4);
-    color+=primary*filament*power*.13;
+    float visible=smoothstep(at(vec3(.6,.25,.0)),at(vec3(.78,.46,.12)),r);
+    float width=(.00065+.0007*radius)*(1.2-l*.15);
+    float streak=gaussian(across,width)+gaussian(across,width*3.)*.16;
+    color+=mix(primary,highlight,.25+r*.4)*streak*mask*fade*visible*energy*at(vec3(.85,1.4,2.2));
   }
-  float star=at(vec3(.25,1.,.035))*power;
-  color+=primary*gaussian(radius,.085+.025*swell)*star*.48;
-  color+=highlight*gaussian(radius,.012+.011*swell)*star*2.3;
-  color+=highlight*(gaussian(p.x,.0015+.001*swell)*gaussian(p.y,.09)+gaussian(p.y,.0012)*gaussian(p.x,.16))*star;
+  // A rounded luminous core survives in C. Bloom grows smoothly, without a white flash.
+  float veil=pow(.5+.5*sin(angle*TAU*7.+.22*sin(time)),8.)+pow(.5+.5*cos(angle*TAU*11.-.16*sin(time)),10.)*.4;
+  color+=primary*veil*gaussian(radius,.42)*(1.-exp(-radius*18.))*energy*.08;
+  color+=primary*gaussian(radius,.32)*energy*at(vec3(.045,.085,.14));
+  color+=primary*gaussian(radius,.10+.045*swell)*energy*.55;
+  color+=highlight*gaussian(radius,.009+.006*swell)*energy*1.8;
+  float flare=gaussian(p.x,.0015)*gaussian(p.y,.055+.025*swell)+gaussian(p.y,.0012)*gaussian(p.x,.085+.035*swell);
+  color+=highlight*flare*energy*.65;
   return color;
 }
 vec3 scene(vec2 uv){
