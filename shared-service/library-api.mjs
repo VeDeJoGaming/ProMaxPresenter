@@ -1,3 +1,4 @@
+import {handleBibleRequest} from './bible-api.mjs';
 import {handlePrivateRequest} from './private-api.mjs';
 // Shared by the hosted service and its SQLite integration tests. No credentials are logged.
 const modes = new Set(['none', 'receive', 'share']);
@@ -60,7 +61,7 @@ export async function handleLibraryRequest(request, db) {
     if (!token) fail(401, 'Connect to your group again.');
     const m = await q('SELECT m.*,g.name group_name FROM members m JOIN groups g ON g.id=m.group_id WHERE m.token_hash=? AND m.revoked_at IS NULL',await hash(token)).first();
     if (!m) fail(401, 'Your access has ended. Ask the group owner for a new invitation.');
-    await rate('member',m.id,method==='GET'?120:60,60000); return m;
+    await rate(route.startsWith('/bible')?'bible-member':'member',m.id,route.startsWith('/bible')?900:method==='GET'?120:60,60000); return m;
   }
   try {
     const origin = request.headers.get('origin'); if (origin && origin !== url.origin) fail(403, 'Origin not allowed.');
@@ -91,6 +92,7 @@ export async function handleLibraryRequest(request, db) {
       return json({token,...view(m)},201);
     }
     const m=await auth(); const membership=[m.id,m.group_id];
+    if(route==='/bible'||route.startsWith('/bible/'))return await handleBibleRequest({route,method,request,db,member:m,body});
     if(route==='/me'&&method==='GET') return json(view(m));
     if(route==='/me'&&method==='PATCH') {
       const b=await body(request); const updated=await q(`UPDATE members SET mode=? WHERE id=? AND revoked_at IS NULL RETURNING id`,mode(b.mode),m.id).first();

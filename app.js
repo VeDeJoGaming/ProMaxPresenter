@@ -58,7 +58,13 @@ function scheduleLibraryRender(){
   if(libraryRenderFrame!==null)return;
   libraryRenderFrame=requestAnimationFrame(()=>{libraryRenderFrame=null;renderLibrary();});
 }
-function selectSong(id){selected=id;liveIndex=-1;const s=current();$('title').value=s.title;$('lyrics').value=s.lyrics;$('lines').value=s.lines;renderLibrary();renderSlides();save();}
+function cleanEmptySongs(keepId){
+  const cleaned=ProMaxSongSearch.cleanup(songs,keepId),kept=new Set(cleaned.map(s=>s.id)),removed=new Set(songs.filter(s=>!kept.has(s.id)).map(s=>s.id));
+  if(!removed.size)return;
+  songs=cleaned;
+  for(const folder of meetingFolders)folder.items=folder.items.filter(item=>item.type!=='song'||!removed.has(item.songId));
+}
+function selectSong(id){selected=id;cleanEmptySongs(id);liveIndex=-1;const s=current();$('title').value=s.title;$('lyrics').value=s.lyrics;$('lines').value=s.lines;renderLibrary();renderSlides();save();}
 const backgroundPosters=new Map();
 function addBackgroundPoster(container,url){
   const image=document.createElement('img');image.className='media';image.alt='';container.prepend(image);
@@ -200,6 +206,7 @@ async function init(){
   }
   if(native?.library&&(!data||native.library.savedAt>data.savedAt)){data=native.library;recovered=true;}
   if(data){songs=data.songs;selected=data.selected;settings={...settings,...data.settings};meetingFolders=data.meetingFolders;meetingSelected=data.meetingSelected;}
+  if(data){cleanEmptySongs();if(!songs.length)songs=[{id:uid(),title:'Untitled song',lyrics:'',lines:4,slides:[]}];}
   if(!songs.length){sample.slides=parseLyrics(sample.lyrics,4);songs=[sample];}
   selected=songs.some(s=>s.id===selected)?selected:songs[0].id;
   if(settings.color.toLowerCase()==='#142a39')settings.color='#181818';

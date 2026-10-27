@@ -41,7 +41,7 @@ async function run(){
     await page.waitForFunction(()=>$('library').children.length===1);
     assert.equal(await page.evaluate(()=>$('library').firstElementChild.dataset.songId),'synthetic-999');
     await page.evaluate(()=>{$('search').value='';renderLibrary();songs.reverse();renderLibrary();});
-    assert.equal(await page.evaluate(()=>$('library').firstElementChild.dataset.songId),'synthetic-999');
+    assert.equal(await page.evaluate(()=>$('library').firstElementChild.dataset.songId),'synthetic-0','alphabetical order ignores stored ordering');
     await page.evaluate(()=>{songs=songs.filter(s=>s.id!=='synthetic-999');renderLibrary();});
     assert.equal(await page.evaluate(()=>$('library').querySelector('[data-song-id="synthetic-999"]')),null);
     await page.evaluate(()=>{$('title').value='Renamed synthetic song';$('title').dispatchEvent(new Event('input',{bubbles:true}));});

@@ -10,6 +10,7 @@ Your songs, folders, imported Bible and media stay local. Installation includes 
 
 ## Features
 
+- Alphabetical Norwegian song ordering and automatic cleanup of empty, inactive drafts; song order in meetings stays as arranged.
 - Search song titles and lyrics in the library and meeting picker; title matches come first, with lyric excerpts and support for accents and Nordic letters.
 - Meeting folders and running orders with songs, Bible passages, text, video, YouTube and PowerPoint; drag/drop, undo/redo and automatic saving.
 - Song sections, slide editing, keyboard shortcuts, quick text, countdown, PDF and blackout.
@@ -18,7 +19,7 @@ Your songs, folders, imported Bible and media stay local. Installation includes 
 - Native fullscreen presentation on the selected external screen. Use **Extend displays** in Windows, select the screen in Settings and press **Presentation off** to open output.
 - Built-in offline motion backgrounds, custom media, and A/B/C looks, palettes and section-following for the original procedural styles.
 - Full backup/restore in Settings, including IndexedDB media and converted presentations. Update backups also preserve meeting folders and all presentation settings.
-- Optional invitation-only shared song library without accounts. Choose Off, Receive only, or Receive & share. Joining uploads nothing; sharing songs requires an explicit choice.
+- Optional invitation-only shared song library and explicit Bible sharing without accounts. Choose Off, Receive only, or Receive & share. Joining uploads nothing; sharing songs requires an explicit choice.
 
 The app retains the stable application identity and profile folder (`ProMax Presenter`, `com.promax.presenter`). When an early reduced GitHub library and an original recovery copy coexist, songs from both and the original meeting folders are reunited. Keep backups before migrating between computers. Installation cannot recover data that is absent from that computer.
 

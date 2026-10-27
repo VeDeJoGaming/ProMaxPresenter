@@ -14,7 +14,7 @@ contextBridge.exposeInMainWorld('proMaxDesktop', {
   }
 });
 contextBridge.exposeInMainWorld('proMaxShared', Object.fromEntries(
-  ['getState','create','join','restore','setMode','sync','publish','unpublish','copyInvite','copyAccessKey','members','revoke','disconnect']
+  ['getState','create','join','restore','setMode','sync','publish','unpublish','bibleInfo','publishBible','downloadBible','unpublishBible','copyInvite','copyAccessKey','members','revoke','disconnect']
     .map(action => [action, input => ipcRenderer.invoke('shared:'+action,input)])
 ));
 contextBridge.exposeInMainWorld('promaxDesktop', {

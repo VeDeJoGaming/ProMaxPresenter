@@ -1,5 +1,7 @@
 const { normalizeLibrary } = require('../library.js');
 const { createHash } = require('node:crypto');
+const Bible=require('../bible.js');
+const fingerprintText = text => createHash('sha256').update(text).digest('hex');
 const fingerprint = song => createHash('sha256').update(JSON.stringify(song)).digest('hex');
 function createSharedController({origin,vault,fetchImpl=fetch,clipboard}) {
   const base=new URL(origin);
@@ -30,7 +32,7 @@ function createSharedController({origin,vault,fetchImpl=fetch,clipboard}) {
   }
   function ensure(choice) {if(!access)throw Error('Connect to a group first.');if(choice&&access.self.mode!==choice)throw Error('Choose Receive & share first.');}
   async function publish(s,explicit,expectedGeneration) {
-    ensure('share');if(s.shared) return false;
+    ensure('share');if(s.shared||require('../song-search.js').isEmpty(s)) return false;
     const p=payload(s), previous=access.publications[p.id];if(!explicit&&!previous)return false;
     if(!explicit&&previous.hash===fingerprint(p.song))return false;
     if(expectedGeneration!==generation)return false;
@@ -42,6 +44,32 @@ function createSharedController({origin,vault,fetchImpl=fetch,clipboard}) {
   return {
     async init(){ const saved=await vault.read(); if(saved&&(!saved.token||!saved.self||!saved.group))throw Error('Group access could not be opened.');access=saved;return state(); },
     getState:state,
+    bibleInfo: ()=>serial(async()=>{ensure();if(paused||access.self.mode==='none')throw Error('Enable receiving first.');return api('/bible');}),
+    publishBible: value=>serial(async()=>{
+      ensure('share');if(paused||access.modePending)throw Error('Sync your sharing settings first.');
+      const bible=Bible.parse(JSON.stringify(value)),text=JSON.stringify(bible),byteLength=Buffer.byteLength(text);
+      if(byteLength>16*1024*1024)throw Error('Shared Bibles can be up to 16 MiB.');
+      const epoch=generation,parts=[];for(let i=0;i<text.length;){let end=Math.min(i+60000,text.length);if(end<text.length&&/[\uD800-\uDBFF]/.test(text[end-1]))end--;parts.push(text.slice(i,end));i=end;}
+      const check=()=>{if(epoch!==generation||paused||access.self.mode!=='share')throw Error('Bible sharing was interrupted. Your local Bible is safe.');};
+      const upload=await api('/bible/uploads','POST',{name:bible.name,verseCount:bible.verses.length,chunkCount:parts.length,byteLength,digest:fingerprintText(text)});
+      for(const [i,part] of parts.entries()){check();await api('/bible/'+upload.id+'/chunks/'+i,'PUT',{text:part});}
+      check();const result=await api('/bible/'+upload.id+'/commit','POST',{});check();return result;
+    }),
+    downloadBible: id=>serial(async()=>{
+      ensure();if(paused||access.self.mode==='none')throw Error('Enable receiving first.');
+      const epoch=generation,{bible:info}=await api('/bible');if(!info||info.id!==id)throw Error('Shared Bible changed. Sync again.');
+      if(!Number.isSafeInteger(info.chunkCount)||info.chunkCount<1||info.chunkCount>300||!Number.isSafeInteger(info.byteLength)||info.byteLength>16*1024*1024)throw Error('Invalid shared Bible size.');
+      const parts=[];let bytes=0;
+      for(let i=0;i<info.chunkCount;i++){
+        if(epoch!==generation)throw Error('Bible download interrupted.');
+        const part=await api('/bible/'+id+'/chunks/'+i);if(typeof part.text!=='string'||part.text.length>60000)throw Error('Invalid shared Bible part.');
+        bytes+=Buffer.byteLength(part.text);if(bytes>info.byteLength)throw Error('Shared Bible exceeds its declared size.');parts.push(part.text);
+      }
+      const text=parts.join('');if(bytes!==info.byteLength||fingerprintText(text)!==info.digest)throw Error('Shared Bible integrity check failed.');
+      const bible=Bible.parse(text);if(bible.name!==info.name||bible.verses.length!==info.verseCount)throw Error('Invalid shared Bible manifest.');
+      if(epoch!==generation)throw Error('Bible download interrupted.');return {bible,info,generation:epoch};
+    }),
+    unpublishBible: ()=>serial(async()=>{ensure('share');if(paused||access.modePending)throw Error('Sync your sharing settings first.');return api('/bible','DELETE');}),
     create: input=>serial(async()=>{if(access)throw Error('Disconnect before creating another group.');const result=await api('/groups','POST',input,null);access={...result,publications:{}};await persist();generation++;return state();}),
     join: input=>serial(async()=>{if(access)throw Error('Disconnect before joining another group.');const result=await api('/join','POST',{...input,code:code(input.code)},null);access={...result,publications:{}};await persist();generation++;return state();}),
     restore: key=>serial(async()=>{if(access)throw Error('Disconnect first.');if(typeof key!=='string'||!/^PMXA-[A-Za-z0-9_-]{43}$/.test(key.trim()))throw Error('Invalid access key.');const token=key.trim().slice(5);const result=await api('/me','GET',undefined,token);access={...result,token,publications:{}};await persist();generation++;return state();}),

@@ -64,7 +64,7 @@ async function initializeIntegrations({ app, getControl, hasPresentation, flush 
     if(!trusted(event))throw Error('Untrusted request');try{return await privateFiles[action](input);}catch(error){return {error:error.message};}
   });
   try { await shared.init(); } catch { sharedError = 'Your protected group access could not be opened. Restore your access key or reconnect to your group.'; }
-  for (const action of ['getState','create','join','restore','setMode','sync','publish','unpublish','copyInvite','copyAccessKey','members','revoke','disconnect']) {
+  for (const action of ['getState','create','join','restore','setMode','sync','publish','unpublish','bibleInfo','publishBible','downloadBible','unpublishBible','copyInvite','copyAccessKey','members','revoke','disconnect']) {
     ipcMain.handle('shared:' + action, async (event, input) => {
       if (!trusted(event)) throw Error('Untrusted request');
       try {

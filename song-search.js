@@ -1,6 +1,13 @@
 (function(root){
   'use strict';
   const cache=new WeakMap();
+  const alphabet=new Intl.Collator('nb',{sensitivity:'base',numeric:true});
+  function compare(a,b){return alphabet.compare(a.title||'Untitled song',b.title||'Untitled song');}
+  function isEmpty(song){
+    const lyrics=String(song.lyrics||'').replace(/^\s*\[[^\]\n]*\]\s*$/gm,'').trim();
+    return !lyrics&&!song.slides?.some(s=>String(s.text||'').trim()||s.image||s.biblePassage);
+  }
+  function cleanup(songs,keepId){return songs.filter(s=>s.id===keepId||!isEmpty(s));}
   function normalize(value){return String(value||'').normalize('NFKD').replace(/\p{M}/gu,'').toLowerCase().replace(/æ/g,'ae').replace(/ø/g,'o').replace(/\s+/g,' ').trim();}
   function indexed(song){
     let entry=cache.get(song);
@@ -33,9 +40,9 @@
         }
       }
       return [{song,snippet,rank,index}];
-    }).sort((a,b)=>a.rank-b.rank||a.index-b.index);
+    }).sort((a,b)=>a.rank-b.rank||compare(a.song,b.song)||a.index-b.index);
   }
-  const api={search,normalize};
+  const api={search,normalize,compare,isEmpty,cleanup};
   if(typeof module==='object'&&module.exports)module.exports=api;
   else root.ProMaxSongSearch=api;
 })(typeof window==='object'?window:globalThis);

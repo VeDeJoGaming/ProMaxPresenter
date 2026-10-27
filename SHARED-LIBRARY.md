@@ -1,6 +1,6 @@
 # Felles sangbibliotek
 
-Privat PC-/laptop-synkronisering er under utvikling som en separat funksjon i samme dialog. Se `PRIVATE-SYNC.md` for status, datatyper, grenser og nødvendig tjenesteoppdatering. Gruppevalgene nedenfor gjelder fortsatt bare sangdeling.
+Privat PC-/laptop-synkronisering er under utvikling som en separat funksjon i samme dialog. Se `PRIVATE-SYNC.md` for status, datatyper, grenser og nødvendig tjenesteoppdatering. Gruppevalgene nedenfor gjelder sangdeling og gruppens delte Bibel.
 
 Åpne **Shared library** i Windows-programmet. Velg navnet ditt og ett av tre valg:
 
@@ -8,11 +8,19 @@ Privat PC-/laptop-synkronisering er under utvikling som en separat funksjon i sa
 - **Receive only:** hent gruppens sanger uten å laste opp egne.
 - **Receive & share:** hent sanger og del de egne sangene du velger.
 
-Opprett en gruppe, eller lim inn en invitasjonskode/lenke fra eieren. Ingen konto kreves. Å bli med laster aldri opp sanger. **Share selected song** og **Share my library…** krever et eget valg. Bare sanger og lysbilder deles; bakgrunnsbilder, videoer og PDF-filer holdes lokale. Del bare innhold du har tillatelse til å dele.
+Opprett en gruppe, eller lim inn en invitasjonskode/lenke fra eieren. Ingen konto kreves. Å bli med laster aldri opp sanger. **Share selected song** og **Share my library…** krever et eget valg. Sanger, lysbilder og en uttrykkelig delt Bibel støttes; bakgrunnsbilder, videoer og PDF-filer holdes lokale. Del bare innhold du har tillatelse til å dele.
 
 Programmet synkroniserer omtrent hvert minutt når det er åpent og mottak er aktivert. **Sync now** gjør det med en gang. Endringer i egne sanger som allerede er delt, lastes opp ved synkronisering. Mottatte sanger blir aldri automatisk delt videre. Gruppen støtter opptil 100 medlemmer, 1 000 sanger og 10 MiB med sangtekst/lysbilder.
 
 Lokale sanger kan brukes uten internett. En urørt mottatt sang oppdateres på stedet. Hvis du har redigert den, eller den er valgt i arbeidsområdet, beholdes den og en nyere delt versjon legges til separat. Fjerning fra gruppen sletter ikke kopier som allerede finnes på andres maskiner.
+
+## Del importert Bibel
+
+Velg **Receive & share → Share imported Bible** for å dele den importerte Bibelen med gruppen. En gruppe har én delt Bibel (opptil 16 MiB med normalisert tekst). Den som delte den, eller gruppeeieren, kan erstatte eller stoppe delingen. Del bare oversettelser du har tillatelse til å dele. Ingen Bibel lastes opp ved oppretting, innmelding eller vanlig sangsynkronisering.
+
+**Sync now** viser hvilken Bibel gruppen har. En maskin uten importert Bibel henter den automatisk når mottak er aktivert. Hvis en lokal Bibel allerede finnes, beholdes den til du velger **Use shared Bible** og bekrefter byttet. Lagrede bibelavsnitt i sanger og møter beholdes. Senere endringer av den lokale Bibelen publiseres først når du velger **Share imported Bible** igjen; en eksisterende lokal mottakerkopi oppdateres også ved uttrykkelig valg.
+
+Overføringen bruker separate deler, størrelsesgrenser og SHA256-kontroll. En opplasting gjøres først synlig når alle delene er mottatt og validert. Avbrudd beholder forrige delte Bibel. Versjon og gruppetilgang kontrolleres ved nedlasting; en ufullstendig eller endret nedlasting importeres ikke. Tilgangsnøkler forblir i Windows-hvelvet. Bibeltekst lagres i den tilgangskontrollerte tjenesten, aldri i prosjektets Git-repository.
 
 ## Invitasjoner og tilgang
 
@@ -28,4 +36,4 @@ Fra versjon 1.3 mottar en ny maskin også sangene som samme medlem selv har delt
 
 Nettjenesten er publisert med Sites, med privat gruppeinnhold bak invitasjons- og medlemskontroll. Den faste adressen finnes i `shared-config.json`. Klientens nettverkskall skjer i Electron-hovedprosessen og følger ikke videresendinger. Nettleserversjonen støtter fortsatt lokal import/eksport, mens grupper krever Windows-programmet.
 
-`shared-service/library-api.mjs` og `schema.sql` er tjenestens testbare kjerne. Sites-kildeprosjektet har eget administrert Git-repository, Vinext-grensesnitt, Drizzle-skjema og versjonerte D1-migreringer. Endringer i API-kjernen må også publiseres i tjenesten. Kjør `npm test`, `npm run test:desktop` og `npm run test:shared` før en utgivelse. Sistnevnte starter en isolert testtjeneste og to separate app-profiler; den sender ingen virkelige sanger til nettet.
+`shared-service/library-api.mjs`, `bible-api.mjs`, `bible-schema.sql` og `schema.sql` er tjenestens testbare kjerne. Sites-kildeprosjektet har eget administrert Git-repository, Vinext-grensesnitt, Drizzle-skjema og versjonerte D1-migreringer. Endringer i API-kjernen må også publiseres i tjenesten. Kjør `npm test`, `npm run test:desktop` og `npm run test:shared` før en utgivelse. Sistnevnte starter en isolert testtjeneste og to separate app-profiler; den sender ingen virkelige sanger til nettet.
