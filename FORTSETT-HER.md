@@ -1,3 +1,10 @@
+## 1.4.1 publisert til appens oppdateringskanal — 27. oktober 2026
+
+- Etter at brukeren meldte at laptopen ikke fant oppdateringen i appen, er 1.4.1 nå publisert som siste stabile GitHub-utgave: https://github.com/VeDeJoGaming/ProMaxPresenter/releases/tag/v1.4.1 . Release ID 425713470, ikke draft/prerelease. Taggen peker på kontrollert kildecommit f140ed8f50c2f5ce2df7c501e963705948c847b2 fra work/pc-laptop; main og eldre utgivelser er beholdt.
+- Den allerede testede og lokalt installerte 1.4.1-pakken ble publisert uten kodeendringer. Bare installeren (114372082 byte), dens .blockmap (120837 byte), latest.yml (361 byte) og SHA256SUMS.txt (284 byte) er lastet opp. Alle fire størrelser og SHA256-digester er verifisert mot GitHub før og etter publisering; installerens SHA256 er 76c287addeefd7e86a07beebcf98136a0c950a66608b7e7b2511fc3e9537ad1a. Manifestets versjon, filnavn, størrelse og SHA512 stemmer med installeren.
+- Kildecommitens GitHub-kontroll består: https://github.com/VeDeJoGaming/ProMaxPresenter/actions/runs/40536214775 . I tillegg til kontrollene nedenfor består full sikkerhetskopi/gjenoppretting og galleri mot ferdig 1.4.1-pakke. En bevart ekte 1.4.0-installasjon ble kjørt med en separat, tom testprofil: dens uendrede Check for updates returnerte status available og availableVersion 1.4.1 fra den vanlige GitHub-feeden. Ingen faktisk brukerprofil ble nedgradert eller endret i denne kontrollen.
+- På laptopen: Check for updates → Update i appen. Laptopen er ikke fjernkontrollert eller installert herfra. Den lokale stasjonære appen er allerede 1.4.1 fra arbeidet nedenfor. Ingen private bibliotek, profiler, tilgangsnøkler eller sikkerhetskopier er publisert.
+
 ## Automatisk sangdeling, lokal 1.4.1 — 27. oktober 2026
 
 - Arbeidet startet fra siste GitHub-commit a8b3198 på origin/work/pc-laptop etter fetch og ren fast-forward fra denne PC-ens eldre 1.3-kode. Laptopens ferdige 1.4.0-arbeid er beholdt. Dette er en lokal 1.4.1-oppdatering; ingen ny GitHub Release, tagg eller endring på main er publisert.
