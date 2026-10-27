@@ -9,7 +9,7 @@ on:
       version:
         description: 'New stable version, without v'
         required: true
-        default: '1.3.0'
+        default: '1.4.0'
       require_signing:
         description: 'Require the configured Windows signing certificate'
         type: boolean
@@ -68,6 +68,14 @@ jobs:
       - if: steps.version.outputs.build == 'true'
         run: npm run test:backup
         timeout-minutes: 3
+      - name: Check recent operator, meeting and Stellar improvements
+        if: steps.version.outputs.build == 'true'
+        shell: pwsh
+        run: |
+          foreach ($script in @('test/operator-tools-desktop.cjs','test/meeting-check-desktop.cjs','test/stellar-visual.cjs')) {
+            node $script
+            if ($LASTEXITCODE -ne 0) { throw "Feature verification failed: $script" }
+          }
       - name: Build the installer with all backgrounds included
         if: steps.version.outputs.build == 'true'
         run: npm run dist:release
@@ -83,6 +91,14 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Packaged app verification failed.' }
           node test/visual-library-desktop.cjs "dist/win-unpacked/ProMax Presenter.exe"
           if ($LASTEXITCODE -ne 0) { throw 'Packaged visual library verification failed.' }
+      - name: Check recent features in the packaged application
+        if: steps.version.outputs.build == 'true'
+        shell: pwsh
+        run: |
+          foreach ($script in @('test/operator-tools-desktop.cjs','test/meeting-check-desktop.cjs','test/stellar-visual.cjs')) {
+            node $script "dist/win-unpacked/ProMax Presenter.exe"
+            if ($LASTEXITCODE -ne 0) { throw "Packaged feature verification failed: $script" }
+          }
       - name: Create checksums
         if: steps.version.outputs.build == 'true'
         shell: pwsh

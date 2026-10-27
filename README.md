@@ -1,6 +1,6 @@
 # ProMax Presenter
 
-Windows presentation software for worship meetings. Version 1.3 adds a larger visual collection, a searchable gallery and more reliable shared-library synchronization to the complete application.
+Windows presentation software for worship meetings. Version 1.4 adds quick opening, song favorites, an indexed Bible reader, explicit group Bible sharing, operator notes and meeting checks.
 
 ## Install
 

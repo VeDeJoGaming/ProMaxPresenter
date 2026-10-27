@@ -1,3 +1,10 @@
+## Utgave 1.4.0 klargjort for GitHub — 27. oktober 2026
+
+- Brukeren har uttrykkelig bestilt at alt ferdig arbeid publiseres som vanlig GitHub-oppdatering og at utviklingen kan fortsette på stasjonær PC. Ny versjon er 1.4.0, fra work/pc-laptop. Main skal ikke endres. Package.json, de to rotversjonene i package-lock.json og RELEASE-NOTES.md er oppdatert. Eksisterende 1.3.1 eller andre utgaver må ikke overskrives.
+- FORTSETT-PC.md forklarer appoppdatering og videre utvikling: åpne prosjektet på PC-en, les AGENTS.md/FORTSETT-HER.md og hent origin/work/pc-laptop uten å overskrive lokale endringer. På ren checkout kan Hent prosjekt.cmd brukes. GitHub beholder utviklingskoden også når denne maskinen er av. Privat brukerinnhold følger ikke med Git eller installasjonsfilen.
+- Kildekontroller består: 60 enhetstester, komplett-app-test, treprofiltesten av sang-/Bibeldeling og full backup/gjenoppretting. Release-arbeidsflyten dekker nå også operatørverktøy, møtesjekk og Stellar både fra kilde og ferdig pakke. Galleriet er bygget på nytt; tema og de 29 visualene beholdes.
+- Gjenstår i denne publiseringsøkten: ferdig byggepakke, native pakke-/presentasjonskontroller, verifisering av de fire utgivelsesfilene, nytt GitHub-utkast fra den kontrollerte commiten, publisering som siste stabile utgave, kontroll fra eksisterende oppdateringsklient og lokal installasjon med bevart profil. Endelig resultat føres øverst når alle steg er bekreftet. Ingen private sanger, Bibler, medier, profiler eller nøkler skal publiseres.
+
 ## Møtesjekk før presentasjon — 27. oktober 2026
 
 - Ny funksjon, fullført og installert lokalt etter omtrent en halvtime: «Check meeting» i møtets toppfelt viser hele kjøreplanen med tilgjengelig offline-innhold, manglende innhold, YouTube som krever internett og filer som ikke er verifisert. Filteret «Only items to review» skjuler ferdige lokale innslag. Kontrollen starter aldri avspilling og verifiserer ikke YouTube-tilgjengelighet, reklame eller buffering.
