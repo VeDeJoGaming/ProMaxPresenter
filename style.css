@@ -82,3 +82,10 @@ aside{position:sticky;top:0;align-self:start;max-height:100vh;overflow-y:auto}#m
 .settings-field{display:grid;gap:9px;font-size:12px}.settings-field select{width:100%;color:#ddd}.settings-actions{display:flex;gap:8px;flex-wrap:wrap}.settings-actions button{font-size:12px}
 .live-dot[data-mode=off]{color:var(--pm-muted)}.live-dot[data-mode=black]{color:#ffd277}#blackout[aria-pressed=true]{background:#ffd277;color:#20130c;border-color:#ffd277}#presentation-performance{display:block;font-size:10px;color:#999;margin:-12px 0 18px;min-height:0}#presentation-performance:empty{display:none}
 @media(max-width:1050px){header{padding-left:16px;padding-right:16px}.header-actions{gap:6px}.header-actions button{padding:8px 10px}.brand{font-size:16px;gap:8px}}
+
+/* Song discovery uses the shared ProMax colors. */
+.song-search-excerpt{display:block;white-space:normal;overflow-wrap:anywhere;line-height:1.5;font-size:12px;color:var(--pm-muted);margin-top:7px;border-left:2px solid var(--pm-accent);padding-left:8px;text-align:left}
+.song-search-excerpt[hidden]{display:none}
+.song-search-status{font-size:12px;color:var(--pm-muted);margin:0 0 12px}
+.song-search-status:empty{display:none}
+#song-search-empty{font-size:13px;line-height:1.6;color:var(--pm-muted)}

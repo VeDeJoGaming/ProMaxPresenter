@@ -6,10 +6,11 @@ Windows presentation software for worship meetings. Version 1.3 adds a larger vi
 
 Download the published installer from [GitHub Releases](https://github.com/VeDeJoGaming/ProMaxPresenter/releases/latest). Locally built installers are in `dist/`. Node.js is not needed. Existing installations can use **Update** after a release is published. Close the presentation window before updating.
 
-Your songs, folders, imported Bible and media stay local. Installation includes all **42 motion backgrounds**: 24 procedural styles with A/B/C looks and 18 animated SVG loops. The original 22 remain available. New scenes include mountain ridges, water caustics, petals, mist, celestial arcs, a lunar eclipse, dunes and luminous vaults. Open **Look & feel → Browse motion backgrounds** to search, filter categories, star favorites and compare backgrounds with sample lyrics. No separate visual download is needed.
+Your songs, folders, imported Bible and media stay local. Installation includes **29 curated motion backgrounds** with A/B/C looks, including Paint Sweeps, Signal Weave, Chromatic Current, Winter Reverie and Stellar Awakening. Open **Look & feel → Browse motion backgrounds** to search, filter categories, star favorites and compare backgrounds with sample lyrics. No separate visual download is needed.
 
 ## Features
 
+- Search song titles and lyrics in the library and meeting picker; title matches come first, with lyric excerpts and support for accents and Nordic letters.
 - Meeting folders and running orders with songs, Bible passages, text, video, YouTube and PowerPoint; drag/drop, undo/redo and automatic saving.
 - Song sections, slide editing, keyboard shortcuts, quick text, countdown, PDF and blackout.
 - Imported Bible search and verse selection; local video library and native YouTube preview/output.

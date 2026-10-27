@@ -103,8 +103,8 @@
     if(!f.items.length)$('meeting-items').append(node('p','Add only what you need for this meeting.'));
   }
   function renderPicker(){
-    const q=$('meeting-song-search').value.toLocaleLowerCase();const list=$('meeting-song-options');list.replaceChildren();
-    songs.filter(s=>s.title.toLocaleLowerCase().includes(q)).forEach(song=>list.append(button(song.title,()=>addSong(song))));
+    const q=$('meeting-song-search').value;const list=$('meeting-song-options');list.replaceChildren();
+    ProMaxSongSearch.search(songs,q).forEach(({song,snippet})=>{const option=button(song.title,()=>addSong(song));if(snippet){const excerpt=node('small',snippet);excerpt.className='song-search-excerpt';option.append(excerpt);}list.append(option);});
     if(!list.children.length)list.append(node('p','No matching songs.'));
   }
   const workspace=document.querySelector('.workspace');
