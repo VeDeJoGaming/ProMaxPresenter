@@ -90,12 +90,14 @@
     $('song-library-area').hidden=!!f;$('meeting-plan').hidden=!f;$('meeting-banner').hidden=!f;
     $('add-song-meeting').hidden=!f||f.items.some(item=>item.type==='song'&&item.songId===selected);
     if(!f)return;
+    updateNotes();
     $('meeting-folder-title').textContent=f.name;
     if(document.activeElement!==$('meeting-name'))$('meeting-name').value=f.name;
     $('meeting-items').replaceChildren();$('meeting-count').textContent=`${f.items.length} items`;
     for(const [index,item] of f.items.entries()){
       const row=node('div');row.className='meeting-item'+(activeItem===item.id?' active':'');row.dataset.folderId=f.id;row.dataset.itemId=item.id;
       const selectButton=button('',()=>open(item));selectButton.className='meeting-item-open';selectButton.setAttribute('aria-pressed',String(activeItem===item.id));selectButton.append(node('small',`${index+1} · ${item.type==='document'?'PowerPoint':item.type}`),node('span',title(item)));
+      const noteFlag=node('small','✎ Operator note');noteFlag.className='meeting-item-note';noteFlag.hidden=!item.operatorNotes?.trim();selectButton.append(noteFlag);
       const actions=node('div');actions.className='meeting-item-actions';
       actions.append(button('×',()=>remove(index),'Remove '+title(item)+' from this meeting'));
       row.append(selectButton,actions);$('meeting-items').append(row);
@@ -121,6 +123,17 @@
   const name=node('input');name.id='meeting-name';name.setAttribute('aria-label','Meeting name');
   name.oninput=()=>{const f=folder();if(f){f.name=name.value;scheduleSave();render();}};
   banner.append(name,button('Delete folder',()=>{const f=folder();if(!f)return;if(window.ProMaxControls){ProMaxControls.remove({type:'folder',folderId:f.id});return;}if(!confirm(`Delete the folder “${f.name}”? Songs and media remain in your library.`))return;meetingFolders=meetingFolders.filter(entry=>entry!==f);meetingSelected=null;activeItem=null;save();ProMaxFeatures.showTab('songs');render();}));
+  const notes=node('details');notes.id='meeting-notes';const noteHeading=node('summary','Operator notes'),noteInput=node('textarea');noteInput.id='meeting-operator-note';noteInput.rows=3;noteInput.maxLength=8000;noteInput.setAttribute('aria-label','Operator notes');noteInput.placeholder='Reminders for the operator…';
+  notes.append(noteHeading,node('p','Saved with this meeting. These notes never appear on the presentation screen.'),noteInput);banner.append(notes);
+  function noteTarget(){const f=folder();return f?.items.find(item=>item.id===activeItem)||f;}
+  function updateNotes(){const target=noteTarget();if(!target)return;const key=folder().id+':'+target.id;
+    if(noteInput.dataset.target!==key){noteInput.dataset.target=key;noteInput.value=target.operatorNotes||'';notes.open=!!target.operatorNotes?.trim();}
+    else if(document.activeElement!==noteInput)noteInput.value=target.operatorNotes||'';
+    noteHeading.textContent='Operator notes · '+(target===folder()?'Meeting':title(target));
+  }
+  noteInput.oninput=()=>{const target=noteTarget();if(!target)return;target.operatorNotes=noteInput.value;scheduleSave();
+    const row=[...$('meeting-items').children].find(row=>row.dataset.itemId===target.id),flag=row?.querySelector('.meeting-item-note');if(flag)flag.hidden=!noteInput.value.trim();
+  };
   workspace.insertBefore(banner,workspace.firstChild);
   const overview=node('section');overview.id='meeting-overview';overview.hidden=true;workspace.append(overview);
   const lyrics=document.querySelector('.editor');const fold=node('details');fold.id='lyrics-fold';fold.open=false;fold.append(node('summary','Edit lyrics & slide settings'));lyrics.replaceWith(fold);fold.append(lyrics);

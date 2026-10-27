@@ -14,16 +14,17 @@
     });
     const source=value.settings&&typeof value.settings==='object'&&!Array.isArray(value.settings)?value.settings:{};
     const settings={...source,color:/^#[0-9a-f]{6}$/i.test(source.color)?source.color:'#181818',fontSize:Math.max(3,Math.min(9,Number(source.fontSize)||5)),align:source.align==='left'?'left':'center'};
+    if(source.songFavorites!==undefined)settings.songFavorites=Array.isArray(source.songFavorites)?[...new Set(source.songFavorites.filter(v=>typeof v==='string'&&v.length<=128))].slice(0,10000):[];
     settings.visualColors=Array.isArray(source.visualColors)&&source.visualColors.length===3&&source.visualColors.every(c=>/^#[0-9a-f]{6}$/i.test(c))?source.visualColors:['#5276f4','#e0edff','#131c43'];
     settings.renderQuality=['auto','quality','performance'].includes(source.renderQuality)?source.renderQuality:'auto';
     const folders=Array.isArray(value.meetingFolders)?value.meetingFolders:[];
     if(folders.length>10000)throw Error('The saved meeting library is too large.');
     const meetingFolders=folders.map(f=>{
       if(!f||!Array.isArray(f.items))throw Error('A saved meeting folder is invalid.');
-      return {...f,id:id(f.id),name:text(f.name,'Untitled meeting',500),items:f.items.map(item=>{
+      return {...f,id:id(f.id),name:text(f.name,'Untitled meeting',500),...(f.operatorNotes!==undefined?{operatorNotes:text(f.operatorNotes,'',8000)}:{}),items:f.items.map(item=>{
         if(!item||!['song','bible','text','video','document','youtube'].includes(item.type))throw Error('A saved meeting entry is invalid.');
         if(['bible','text'].includes(item.type)&&(!Array.isArray(item.slides)||item.slides.some(s=>!s||typeof s.text!=='string')))throw Error('A saved meeting passage is invalid.');
-        return {...item,id:id(item.id),title:text(item.title,'Untitled item',500),...(item.slides?{slides:item.slides.map(s=>({...s,id:id(s.id)}))}:{})};
+        return {...item,id:id(item.id),title:text(item.title,'Untitled item',500),...(item.operatorNotes!==undefined?{operatorNotes:text(item.operatorNotes,'',8000)}:{}),...(item.slides?{slides:item.slides.map(s=>({...s,id:id(s.id)}))}:{})};
       })};
     });
     return {schemaVersion:1,savedAt:Number(value.savedAt)||0,songs,selected:songs.some(s=>s.id===value.selected)?value.selected:songs[0].id,settings,meetingFolders,meetingSelected:meetingFolders.some(f=>f.id===value.meetingSelected)?value.meetingSelected:null};

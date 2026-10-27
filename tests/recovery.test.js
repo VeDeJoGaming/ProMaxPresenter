@@ -11,6 +11,13 @@ test('Saved libraries normalize legacy values and reject damaged content',()=>{
   const value=parse(library('Legacy'));assert.equal(value.settings.color,'#181818');assert.equal(value.settings.fontSize,9);assert.equal(value.settings.visualColors.length,3);assert.ok(value.songs[0].slides[0].id);assert.equal(value.selected,'song');
   assert.throws(()=>parse('{broken'));assert.throws(()=>parse({songs:[{slides:null}]}));assert.throws(()=>parse({...library('Future'),schemaVersion:2}));
 });
+test('operator notes and personal favorites survive validation without accepting malformed values',()=>{
+  const source=library('Personal tools');source.settings.songFavorites=['song','song',42];
+  source.meetingFolders=[{id:'folder',name:'Meeting',operatorNotes:'Meeting reminder',items:[{id:'item',type:'song',songId:'song',operatorNotes:'Private cue'}]}];
+  const value=parse(source);assert.deepEqual(value.settings.songFavorites,['song']);assert.equal(value.meetingFolders[0].operatorNotes,'Meeting reminder');assert.equal(value.meetingFolders[0].items[0].operatorNotes,'Private cue');
+  source.settings.songFavorites={broken:true};source.meetingFolders[0].operatorNotes={broken:true};source.meetingFolders[0].items[0].operatorNotes='x'.repeat(9000);
+  const repaired=parse(source);assert.deepEqual(repaired.settings.songFavorites,[]);assert.equal(repaired.meetingFolders[0].operatorNotes,'');assert.equal(repaired.meetingFolders[0].items[0].operatorNotes.length,8000);
+});
 test('Atomic recovery retains the previous valid version and coalesces edits',async t=>{
   const root=await fs.mkdtemp(path.join(os.tmpdir(),'promax-recovery-test-'));t.after(()=>fs.rm(root,{recursive:true,force:true}));
   const recovery=createLibraryRecovery(root);recovery.save(JSON.stringify(library('First')));await recovery.flush();

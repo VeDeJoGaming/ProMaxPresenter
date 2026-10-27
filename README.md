@@ -10,11 +10,14 @@ Your songs, folders, imported Bible and media stay local. Installation includes 
 
 ## Features
 
+- **Ctrl+K** opens a keyboard finder for song titles, lyrics and meeting names. Opening a result keeps the live cue unchanged.
+- Personal song favorites: mark the selected song with **☆ Favorite** and use **★ Favorites** to filter the library.
+- Operator notes for meetings and individual running-order items save automatically, support undo/redo and stay off the presentation screen.
 - Alphabetical Norwegian song ordering and automatic cleanup of empty, inactive drafts; song order in meetings stays as arranged.
 - Search song titles and lyrics in the library and meeting picker; title matches come first, with lyric excerpts and support for accents and Nordic letters.
 - Meeting folders and running orders with songs, Bible passages, text, video, YouTube and PowerPoint; drag/drop, undo/redo and automatic saving.
 - Song sections, slide editing, keyboard shortcuts, quick text, countdown, PDF and blackout.
-- Imported Bible search, full chapter context from each search hit, and nearby verse selection; local video library and native YouTube preview/output.
+- Indexed Bible search, full chapter context, previous/next chapter navigation across books, Shift-click range selection and Clear selection; local video library and native YouTube preview/output.
 - PowerPoint import through installed Microsoft PowerPoint on Windows.
 - Native fullscreen presentation on the selected external screen. Use **Extend displays** in Windows, select the screen in Settings and press **Presentation off** to open output.
 - Built-in offline motion backgrounds, custom media, and A/B/C looks, palettes and section-following for the original procedural styles.

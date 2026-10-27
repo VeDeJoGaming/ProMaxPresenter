@@ -56,26 +56,35 @@
     const count=element('span','0 selected');
     count.setAttribute('aria-live','polite');
     selectActions.append(button('Show selected passage',()=>showPassage()),button('Add passage to meeting',()=>{const verses=passage();if(verses)window.ProMaxMeetings?.add({type:'bible',title:ProMaxBible.formatReference(verses),slides:buildPassage(verses)});}),button('Add passage to song library',()=>savePassage()),count);
-    let context=null;
+    let context=null,contextHit=null,selectionAnchor=null;
+    const clearSelection=button('Clear selection',()=>{chosen.clear();selectionAnchor=null;draw();},'subtle');selectActions.insertBefore(clearSelection,count);
     const contextBar=element('div',null,'bible-context-bar');contextBar.hidden=true;
-    const updateCount=()=>{count.textContent=`${bibleResults.length} ${context?'verses in chapter':'matches'} · ${chosen.size} selected`;};
+    const updateCount=()=>{clearSelection.disabled=!chosen.size;count.textContent=`${bibleResults.length} ${context?'verses in chapter':'matches'} · ${chosen.size} selected`;};
     const draw=()=>{
       results.replaceChildren();results.classList.toggle("bible-chapter-results",!!context);contextBar.replaceChildren();contextBar.hidden=!context;updateCount();
       if(context){
-        contextBar.append(button('← Back to search results',()=>{const verse=context;context=null;bibleResults=ProMaxBible.search(bible,input.value);draw();const index=bibleResults.indexOf(verse);results.querySelector(`[data-verse-index="${index}"] .bible-read-context`)?.focus();}),element('strong',`${context.book} ${context.chapter}`),element('span','Select nearby verses to build your passage.','feature-help'));
+        contextBar.append(button('← Back to search results',()=>{const verse=contextHit;context=null;contextHit=null;selectionAnchor=null;bibleResults=ProMaxBible.search(bible,input.value);draw();const index=bibleResults.indexOf(verse);results.querySelector(`[data-verse-index="${index}"] .bible-read-context`)?.focus();}),element('strong',`${context.book} ${context.chapter}`),element('span','Select nearby verses to build your passage.','feature-help'));
+      }
+      if(context){
+        const navigation=element('div',null,'bible-chapter-navigation');
+        for(const [label,delta] of [['← Previous chapter',-1],['Next chapter →',1]]){
+          const chapter=ProMaxBible.adjacentChapter(bible,context,delta),b=button(label,()=>{context=chapter[0];bibleResults=chapter;selectionAnchor=null;draw();results.scrollTop=0;contextBar.querySelector('strong')?.focus({preventScroll:true});});b.disabled=!chapter.length;navigation.append(b);
+        }
+        contextBar.append(navigation);contextBar.querySelector('strong').tabIndex=-1;
       }
       for (const [index,v] of bibleResults.slice(0,context?undefined:250).entries()) {
         const row=element('div',null,'verse-row');row.dataset.verseIndex=String(index);const checkbox=document.createElement('input');checkbox.type='checkbox';checkbox.setAttribute('aria-label',`Select ${ref(v)}`);checkbox.checked=chosen.has(v);
+        checkbox.onclick=e=>{if(e.shiftKey&&selectionAnchor!==null){const checked=checkbox.checked;for(let i=Math.min(selectionAnchor,index);i<=Math.max(selectionAnchor,index);i++){if(checked)chosen.add(bibleResults[i]);else chosen.delete(bibleResults[i]);}for(const row of results.children){const box=row.querySelector('input[type=checkbox]');if(box)box.checked=chosen.has(bibleResults[Number(row.dataset.verseIndex)]);}}selectionAnchor=index;updateCount();};
         checkbox.onchange=()=>{if(checkbox.checked)chosen.add(v);else chosen.delete(v);updateCount();};
         row.append(checkbox,button(`${ref(v)}\n${v.text}`,()=>cueText(`${v.verse} ${v.text}\n\n${ref(v)}`,ref(v),{verses:[v],reference:ref(v)}),'verse-button'));
-        if(context===v){row.classList.add('bible-context-target');row.setAttribute('aria-label','Search result: '+ref(v));}
-        if(!context){const more=button('Read chapter',()=>{context=v;bibleResults=ProMaxBible.chapterVerses(bible,v);draw();const target=results.querySelector('.bible-context-target');target?.scrollIntoView({block:'nearest'});target?.querySelector('.verse-button')?.focus({preventScroll:true});},'bible-read-context');more.setAttribute('aria-label',`Read verses around ${ref(v)}`);row.append(more);}
+        if(contextHit===v){row.classList.add('bible-context-target');row.setAttribute('aria-label','Search result: '+ref(v));}
+        if(!context){const more=button('Read chapter',()=>{context=v;contextHit=v;selectionAnchor=null;bibleResults=ProMaxBible.chapterVerses(bible,v);draw();const target=results.querySelector('.bible-context-target');target?.scrollIntoView({block:'nearest'});target?.querySelector('.verse-button')?.focus({preventScroll:true});},'bible-read-context');more.setAttribute('aria-label',`Read verses around ${ref(v)}`);row.append(more);}
         results.append(row);
       }
       if (!bibleResults.length)results.append(element('p',input.value.trim()?'No matching verses. Try a book name or a word.':'Start typing a book, reference or words to see verses.','feature-help'));
       if (!context&&bibleResults.length>250)results.append(element('p','Showing the first 250 matches. Refine your search to see more.','feature-help'));
     };
-    const search=()=>{bibleQuery=input.value;context=null;chosen.clear();bibleResults=ProMaxBible.search(bible,input.value);draw();};
+    const search=()=>{bibleQuery=input.value;context=null;contextHit=null;selectionAnchor=null;chosen.clear();bibleResults=ProMaxBible.search(bible,input.value);draw();};
     input.oninput=search;
     form.onsubmit=e=>{e.preventDefault();search();};
     view.append(form,selectActions,contextBar,results);

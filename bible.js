@@ -92,25 +92,38 @@
       const order=name=>bookOrder.get(name)??books.length;
       return order(a.book)-order(b.book)||a.chapter-b.chapter||a.verse-b.verse;
     });
-  function chapterVerses(bible,verse){return ordered(bible.verses.filter(v=>v.book===verse.book&&v.chapter===verse.chapter));}
+  // Imported Bible objects are immutable. Reuse chapter maps and folded text until replaced.
+  const indexes=new WeakMap();
+  function indexFor(bible){
+    let cached=indexes.get(bible);if(cached&&cached.source===bible.verses&&cached.length===bible.verses.length)return cached;
+    const byBook=new Map(),byChapter=new Map(),chapters=[];
+    for(const v of ordered(bible.verses)){
+      const name=normalize(v.book),key=name+':'+v.chapter;
+      if(!byBook.has(name))byBook.set(name,[]);byBook.get(name).push(v);
+      if(!byChapter.has(key)){const chapter=[];byChapter.set(key,chapter);chapters.push(chapter);}byChapter.get(key).push(v);
+    }
+    cached={source:bible.verses,length:bible.verses.length,byBook,byChapter,chapters,text:null};indexes.set(bible,cached);return cached;
+  }
+  function chapterVerses(bible,verse){return (indexFor(bible).byChapter.get(normalize(verse.book)+':'+verse.chapter)||[]).slice();}
+  function adjacentChapter(bible,verse,delta){
+    const index=indexFor(bible),chapter=index.byChapter.get(normalize(verse.book)+':'+verse.chapter),at=index.chapters.indexOf(chapter);
+    return at<0?[]:(index.chapters[at+delta]||[]).slice();
+  }
   function search(bible,query) {
     query=query.trim(); if (!query) return [];
-    const matchingBooks = value => {
-      const key=normalize(value);
-      const exact=books.find(b=>b.some(name=>normalize(name)===key));
+    const index=indexFor(bible),matchingBooks=value=>{
+      const key=normalize(value),exact=books.find(b=>b.some(name=>normalize(name)===key));
       return exact?[exact]:books.filter(b=>b.some(name=>normalize(name).startsWith(key)));
     };
     const ref=query.match(/^(.+?)\s*(\d+)(?:[:.](\d*)(?:\s*[-–]\s*(\d*))?)?$/);
-    if (ref) {
-      const matches=matchingBooks(ref[1]), names=new Set(matches.map(b=>normalize(b[1])));
-      if(!matches.length)names.add(normalize(bookName(ref[1])));
-      return ordered(bible.verses.filter(v=>names.has(normalize(v.book)) && v.chapter===Number(ref[2]) &&
-        (!ref[3] || (v.verse>=Number(ref[3]) && v.verse<=Number(ref[4] || ref[3])))));
+    if(ref){
+      const matches=matchingBooks(ref[1]),names=matches.length?matches.map(b=>normalize(b[1])):[normalize(bookName(ref[1]))];
+      return ordered(names.flatMap(name=>index.byChapter.get(name+':'+Number(ref[2]))||[]).filter(v=>!ref[3]||(v.verse>=Number(ref[3])&&v.verse<=Number(ref[4]||ref[3]))));
     }
-    const matches=matchingBooks(query);
-    if(matches.length){const names=new Set(matches.map(b=>b[1]));return ordered(bible.verses.filter(v=>names.has(v.book)));}
+    const matches=matchingBooks(query);if(matches.length)return ordered(matches.flatMap(b=>index.byBook.get(normalize(b[1]))||[]));
+    if(!index.text)index.text=bible.verses.map(v=>`${v.book} ${v.text}`.toLocaleLowerCase('nb'));
     const terms=query.toLocaleLowerCase('nb').split(/\s+/);
-    return bible.verses.filter(v=>terms.every(term=>`${v.book} ${v.text}`.toLocaleLowerCase('nb').includes(term)));
+    return bible.verses.filter((v,i)=>terms.every(term=>index.text[i].includes(term)));
   }
   function formatReference(verses) {
     const ranges=[];
@@ -121,6 +134,6 @@
     }
     return ranges.map(r=>`${r.book} ${r.chapter}:${r.start}${r.end>r.start?'-'+r.end:''}`).join(' · ');
   }
-  root.ProMaxBible={parse,search,bookName,formatReference,chapterVerses,ordered};
+  root.ProMaxBible={parse,search,bookName,formatReference,chapterVerses,adjacentChapter,ordered};
   if (typeof module!=='undefined') module.exports=root.ProMaxBible;
 })(typeof window!=='undefined'?window:globalThis);

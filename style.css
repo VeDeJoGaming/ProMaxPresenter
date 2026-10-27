@@ -99,3 +99,25 @@ aside{position:sticky;top:0;align-self:start;max-height:100vh;overflow-y:auto}#m
 @media(max-width:1100px){.verse-row{flex-wrap:wrap}.verse-row .verse-button{flex-basis:calc(100% - 40px)}.bible-read-context{margin-left:28px}}
 
 .bible-chapter-results{max-height:60vh;overflow-y:auto;overscroll-behavior:contain;padding-right:8px;scrollbar-gutter:stable}
+
+/* Operator tools use the shared theme without changing presentation content. */
+#song-favorites{margin-bottom:10px;font-size:12px}
+#song-favorites[aria-pressed=true],#song-favorite[aria-pressed=true]{border-color:var(--pm-selection-border);background:var(--pm-selection-bg);color:var(--pm-selection-text)}
+.workspace-top>div:last-child{flex-wrap:wrap;justify-content:flex-end}
+#quick-open{width:min(670px,94vw);max-height:85vh;padding:24px;background:var(--pm-panel);color:var(--pm-text);border:1px solid var(--pm-border);border-radius:14px;box-shadow:0 24px 90px #0009}
+#quick-open::backdrop{background:#000a}
+.quick-open-heading{display:flex;align-items:center;justify-content:space-between;gap:16px}.quick-open-heading h2{margin:0}
+#quick-open p,#quick-open>small{font-size:12px;line-height:1.6;color:var(--pm-muted)}
+#quick-open-search{width:100%;margin:8px 0 14px}
+#quick-open-results{max-height:46vh;overflow-y:auto;overscroll-behavior:contain;display:grid;gap:6px}
+#quick-open-results button{text-align:left;display:grid;gap:5px;width:100%;border-color:transparent;background:var(--pm-field)}
+#quick-open-results button[aria-selected=true]{background:var(--pm-selection-bg);border-color:var(--pm-accent);color:var(--pm-selection-text)}
+#quick-open-results small{font-size:12px;font-weight:400;color:var(--pm-muted);overflow-wrap:anywhere;line-height:1.5}
+.bible-chapter-navigation{display:flex;gap:8px;flex-basis:100%}
+#meeting-notes{flex-basis:100%;border-top:1px solid var(--pm-border);padding-top:10px;min-width:0}
+#meeting-notes summary{cursor:pointer;font-size:12px;color:var(--pm-selection-text);overflow-wrap:anywhere}
+#meeting-notes p{font-size:12px;color:var(--pm-muted);line-height:1.5}
+#meeting-operator-note{width:100%;resize:vertical;min-height:80px;line-height:1.6}
+.meeting-item-note{color:var(--pm-selection-text);font-size:10px;margin-top:5px}.meeting-item-note[hidden]{display:none}
+
+#meeting-banner{flex-wrap:wrap}#meeting-name{flex:1 1 180px}#meeting-notes{flex:0 0 100%}

@@ -65,3 +65,20 @@ test('Passage references combine only consecutive verses in the same chapter',()
   assert.equal(Bible.formatReference([v(26),v(28)]),'Matteus 16:26 · Matteus 16:28');
   assert.equal(Bible.formatReference([v(28),v(1,17)]),'Matteus 16:28 · Matteus 17:1');
 });
+test('indexed chapter browsing crosses book boundaries and retains original verse identities',()=>{
+  const bible=Bible.parse(JSON.stringify({verses:[{book:'Mark',chapter:1,verse:1,text:'Next book'},...rows]}));
+  const current=Bible.search(bible,'Joh 3:16')[0];
+  assert.deepEqual(Bible.adjacentChapter(bible,current,1).map(v=>v.chapter),[4]);
+  assert.equal(Bible.adjacentChapter(bible,current,-1)[0].book,'Markus');
+  assert.deepEqual(Bible.adjacentChapter(bible,bible.verses[0],-1),[]);
+  assert.deepEqual(Bible.adjacentChapter(bible,Bible.search(bible,'Joh 4:1')[0],1),[]);
+  assert.equal(Bible.chapterVerses(bible,current)[0],current);
+  const copy=Bible.chapterVerses(bible,current);copy.pop();assert.equal(Bible.chapterVerses(bible,current).length,2);
+});
+test('cached text search preserves word matching and refreshes for a replacement import',()=>{
+  const bible=Bible.parse(JSON.stringify({verses:rows}));
+  assert.equal(Bible.search(bible,'synthetic light')[0],bible.verses[0]);
+  assert.equal(Bible.search(bible,'synthetic light')[0],bible.verses[0]);
+  bible.verses=Bible.parse(JSON.stringify({verses:[{book:'Ps',chapter:1,verse:1,text:'Replacement content'}]})).verses;
+  assert.equal(Bible.search(bible,'synthetic').length,0);assert.equal(Bible.search(bible,'replacement')[0].book,'Salmene');
+});
