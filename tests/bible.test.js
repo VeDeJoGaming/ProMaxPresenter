@@ -4,6 +4,15 @@ const Bible = require('../bible');
 const rows=[{book:'John',chapter:3,verse:16,text:'Synthetic verse with a light.'},
   {book:'John',chapter:3,verse:17,text:'Another synthetic verse.'},
   {book:'John',chapter:4,verse:1,text:'A light appears here.'}];
+test('chapter context includes preceding and following verses in order, confined to the same book and chapter',()=>{
+  const bible=Bible.parse(JSON.stringify({verses:[rows[2],rows[1],rows[0],{book:'Matt',chapter:3,verse:16,text:'Another book'}]}));
+  const verse=Bible.search(bible,'Joh 3:17')[0],context=Bible.chapterVerses(bible,verse);
+  assert.deepEqual(context.map(v=>v.verse),[16,17]);assert.equal(context[1],verse);
+  assert.equal(Bible.chapterVerses(bible,Bible.search(bible,'Joh 3:16')[0]).length,2);
+  assert.equal(Bible.chapterVerses(bible,Bible.search(bible,'Joh 4:1')[0]).length,1);
+  assert.deepEqual(bible.verses.map(v=>v.verse),[1,17,16,16],'context must not reorder imported data');
+  assert.deepEqual(Bible.ordered([bible.verses[0],bible.verses[1],bible.verses[3],bible.verses[2]]).map(v=>`${v.book} ${v.chapter}:${v.verse}`),['Matteus 3:16','Johannes 3:16','Johannes 3:17','Johannes 4:1']);
+});
 test('JSON import normalizes Norwegian and OSIS book names and searches ranges',()=>{
   const bible=Bible.parse(JSON.stringify({name:'Test translation',verses:rows}));
   assert.equal(bible.name,'Test translation');assert.equal(bible.verses[0].book,'Johannes');

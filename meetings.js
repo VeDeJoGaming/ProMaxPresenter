@@ -142,7 +142,7 @@
   document.querySelector('.workspace-tabs').addEventListener('click',()=>{$('meeting-banner').hidden=!folder();});
   $('quick-add-meeting').onclick=()=>{const text=$('quick-text').value.trim();if(!text){notify('Write the text you want to add first.');return;}add({type:'text',title:text.split('\n')[0].slice(0,80),slides:[{text,label:'Text'}]});};
   function onTab(){overview.hidden=true;banner.hidden=!folder();document.querySelector('.workspace-tabs').hidden=!!folder();}
-  function markSlide(id,index){const grid=$('feature-view').querySelector('.prepared-slides');if(grid?.dataset.meetingItem!==id)return;[...grid.children].forEach((b,i)=>b.setAttribute('aria-pressed',String(i===index)));}
+  function markSlide(id,index){const grid=$('feature-view').querySelector('.prepared-slides');if(!grid||grid.dataset.meetingItem!==id)return;[...grid.children].forEach((b,i)=>b.setAttribute('aria-pressed',String(i===index)));}
   window.ProMaxMeetings={create,select,add,addSong,open,move,remove,render,folder,onTab,markSlide,refresh:()=>{const f=folder();const item=f?.items.find(i=>i.id===f.selectedItem);render();if(item)open(item);else if(f)showOverview();else selectSong(selected)}};
   render();if(folder())select(meetingSelected);
 })();

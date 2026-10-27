@@ -13,7 +13,7 @@ Your songs, folders, imported Bible and media stay local. Installation includes 
 - Search song titles and lyrics in the library and meeting picker; title matches come first, with lyric excerpts and support for accents and Nordic letters.
 - Meeting folders and running orders with songs, Bible passages, text, video, YouTube and PowerPoint; drag/drop, undo/redo and automatic saving.
 - Song sections, slide editing, keyboard shortcuts, quick text, countdown, PDF and blackout.
-- Imported Bible search and verse selection; local video library and native YouTube preview/output.
+- Imported Bible search, full chapter context from each search hit, and nearby verse selection; local video library and native YouTube preview/output.
 - PowerPoint import through installed Microsoft PowerPoint on Windows.
 - Native fullscreen presentation on the selected external screen. Use **Extend displays** in Windows, select the screen in Settings and press **Presentation off** to open output.
 - Built-in offline motion backgrounds, custom media, and A/B/C looks, palettes and section-following for the original procedural styles.

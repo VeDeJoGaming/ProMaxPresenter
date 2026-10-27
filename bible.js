@@ -88,6 +88,11 @@
     });
     return {name:String(title),verses};
   }
+  const ordered = verses => verses.slice().sort((a,b)=>{
+      const order=name=>bookOrder.get(name)??books.length;
+      return order(a.book)-order(b.book)||a.chapter-b.chapter||a.verse-b.verse;
+    });
+  function chapterVerses(bible,verse){return ordered(bible.verses.filter(v=>v.book===verse.book&&v.chapter===verse.chapter));}
   function search(bible,query) {
     query=query.trim(); if (!query) return [];
     const matchingBooks = value => {
@@ -95,10 +100,6 @@
       const exact=books.find(b=>b.some(name=>normalize(name)===key));
       return exact?[exact]:books.filter(b=>b.some(name=>normalize(name).startsWith(key)));
     };
-    const ordered = verses => verses.slice().sort((a,b)=>{
-      const order=name=>bookOrder.get(name)??books.length;
-      return order(a.book)-order(b.book)||a.chapter-b.chapter||a.verse-b.verse;
-    });
     const ref=query.match(/^(.+?)\s*(\d+)(?:[:.](\d*)(?:\s*[-–]\s*(\d*))?)?$/);
     if (ref) {
       const matches=matchingBooks(ref[1]), names=new Set(matches.map(b=>normalize(b[1])));
@@ -120,6 +121,6 @@
     }
     return ranges.map(r=>`${r.book} ${r.chapter}:${r.start}${r.end>r.start?'-'+r.end:''}`).join(' · ');
   }
-  root.ProMaxBible={parse,search,bookName,formatReference};
+  root.ProMaxBible={parse,search,bookName,formatReference,chapterVerses,ordered};
   if (typeof module!=='undefined') module.exports=root.ProMaxBible;
 })(typeof window!=='undefined'?window:globalThis);
