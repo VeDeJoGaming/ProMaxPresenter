@@ -1,10 +1,12 @@
 function updateVisualName(){
-  document.getElementById('glass-controls').hidden=!ProMaxVisuals.presets.some(p=>p.id===settings.visual&&p.kind!=='bundled-svg');
   const preset=ProMaxVisuals.presets.find(p=>p.id===settings.visual);
+  document.getElementById('glass-controls').hidden=!preset||preset.kind==='bundled-svg'||preset.static&&!preset.variants;
+  document.getElementById('visual-motion').closest('label').hidden=!!preset?.static;
   document.getElementById('glass-palette').disabled=!!preset?.fixedPalette;
   document.getElementById('glass-palette').closest('label').hidden=!!preset?.fixedPalette;
   document.getElementById('visual-solid').hidden=!!preset?.fixedPalette||settings.visualPalette!=='solid';
   document.getElementById('visual-gradient').hidden=!!preset?.fixedPalette||settings.visualPalette!=='custom';
+  document.querySelector('#glass-controls small').innerHTML=preset?.variants?'Three authored color editions · A / B / C<br>Verse → A · Chorus → B · Bridge → C<br>Image blend: 1.5 s · No motion or recoloring':'Verse → A · Chorus → B · Bridge → C<br>Style change: 1.5 s · Colors/sections: 5 s<br>Text: 0.18 s · Seamless loop';
   document.getElementById('visual-name').textContent=preset?preset.name:media?'Custom media':'Solid color';
 }
 function selectVisual(id){
@@ -63,29 +65,29 @@ function renderVisualLibrary(){
   const requestMotion=card=>{
     if(activeVisualPreview!==card){activeVisualPreview?.still();activeVisualPreview=card;}
     card.visible=true;
-    if(motionAllowed())card.animate();else card.still();
+    if(motionAllowed()&&!card.static)card.animate();else card.still();
   };
   for(const preset of presets){
     const wrapper=document.createElement('div');wrapper.className='visual-card';
     const button=document.createElement('button');button.type='button';button.className='visual-option';button.dataset.visualId=preset.id;button.setAttribute('aria-pressed',String(settings.visual===preset.id));
     button.setAttribute('aria-label',`${preset.name}, ${preset.category}. Use background`);
-    const preview=document.createElement('div');preview.className='visual-triptych'+(preset.kind==='bundled-svg'?' visual-triptych-loop':'');button.append(preview);
+    const preview=document.createElement('div');preview.className='visual-triptych'+((preset.kind==='bundled-svg'||preset.static&&!preset.variants)?' visual-triptych-loop':'');button.append(preview);
     const label=document.createElement('span');label.textContent=preset.name;button.append(label);
-    const caption=document.createElement('small');caption.textContent=preset.category+' · '+(preset.kind==='bundled-svg'?'Seamless loop':(preset.mood||'Calm')+' · A / B / C');button.append(caption);
+    const caption=document.createElement('small');caption.textContent=preset.category+' · '+(preset.kind==='still-image'?'Still artwork'+(preset.variants?' · A / B / C':''):preset.kind==='bundled-svg'?'Seamless loop':(preset.mood||'Calm')+' · A / B / C');button.append(caption);
     let mounted=[],mode;
     const dispose=()=>{for(const surface of mounted)surface?.stop?.();mounted=[];mode=undefined;};
     const frames=animated=>{
       if(mode===animated)return;
       dispose();mode=animated;preview.replaceChildren();
-      for(const variant of preset.kind==='bundled-svg'?['a']:['a','b','c']){
-        const cell=document.createElement('div');cell.className='visual-option-preview';preview.append(cell);
+      for(const variant of (preset.kind==='bundled-svg'||preset.static&&!preset.variants)?['a']:['a','b','c']){
+        const cell=document.createElement('div');cell.className='visual-option-preview';if(preset.static)cell.style.aspectRatio='16 / 9';preview.append(cell);
         cell.style.background=`linear-gradient(135deg,${preset.colors?.[2]||'#100d0b'},${preset.colors?.[0]||'#241c1b'})`;
         if(animated!==null)mounted.push(ProMaxVisuals.mount(cell,preset.id,animated,{...settings,glassAuto:false,glassVariant:variant}));
         const lyrics=document.createElement('div');lyrics.className='visual-sample-lyrics';lyrics.textContent='Let every heart\nfind a place to sing';lyrics.setAttribute('aria-hidden','true');cell.append(lyrics);
-        if(preset.kind!=='bundled-svg'){const letter=document.createElement('b');letter.className='visual-letter';letter.textContent=variant.toUpperCase();letter.setAttribute('aria-hidden','true');cell.append(letter);}
+        if(preset.variants||!['bundled-svg','still-image'].includes(preset.kind)){const letter=document.createElement('b');letter.className='visual-letter';letter.textContent=variant.toUpperCase();letter.setAttribute('aria-hidden','true');cell.append(letter);}
       }
     };
-    const card={visible:false,queued:false,dispose,still:()=>frames(card.visible?false:null),animate:()=>frames(true),preview:()=>frames(activeVisualPreview===card&&motionAllowed())};
+    const card={static:preset.static,visible:false,queued:false,dispose,still:()=>frames(card.visible?false:null),animate:()=>frames(!preset.static),preview:()=>frames(!preset.static&&activeVisualPreview===card&&motionAllowed())};
     visualPreviewCards.set(button,card);
     let hovered=false,focused=false;
     const releaseMotion=()=>{if(!hovered&&!focused){if(activeVisualPreview===card)activeVisualPreview=null;card.still();}};
@@ -114,7 +116,9 @@ function bindVisualLibrary(){
   if(settings.visual&&!ProMaxVisuals.presets.some(p=>p.id===settings.visual))settings.visual=null;
   settings.visualFavorites=[...new Set((Array.isArray(settings.visualFavorites)?settings.visualFavorites:[]).filter(id=>typeof id==='string').map(id=>ProMaxVisuals.resolveId(id)).filter(id=>ProMaxVisuals.presets.some(p=>p.id===id)))];
   const dialog=document.getElementById('visual-library');
-  dialog.querySelector('.visual-library-header p').textContent=`${ProMaxVisuals.presets.length} offline styles · Compare A / B / C · Hover or focus for motion`;
+  document.getElementById('visual-library-title').textContent='Background library';
+  document.getElementById('browse-visuals').textContent='Browse backgrounds';
+  dialog.querySelector('.visual-library-header p').textContent=`${ProMaxVisuals.presets.length} offline backgrounds · Still artwork and motion families`;
   document.getElementById('browse-visuals').onclick=()=>{dialog.showModal();renderVisualLibrary();document.getElementById('visual-search').focus();};
   document.getElementById('close-visuals').onclick=()=>dialog.close();
   dialog.addEventListener('close',()=>{stopVisualPreviews();document.getElementById('visual-grid').replaceChildren();});
@@ -145,7 +149,7 @@ function bindVisualLibrary(){
     input.onchange=()=>{settings[prop]=input.type==='checkbox'?input.checked:input.value;document.getElementById('glass-variant').disabled=settings.glassAuto!==false;save();renderSlides();paint();refreshColors();};
   }
   document.getElementById('glass-variant').disabled=settings.glassAuto!==false;
-  function refreshColors(){document.getElementById('visual-solid').hidden=settings.visualPalette!=='solid';document.getElementById('visual-gradient').hidden=settings.visualPalette!=='custom';}
+  function refreshColors(){updateVisualName();}
   settings.visualColors=settings.visualColors||['#5276f4','#e0edff','#131c43'];
   for(let i=0;i<3;i++){const input=document.getElementById('visual-color-'+i);input.value=settings.visualColors[i];input.oninput=()=>{settings.visualColors[i]=input.value;save();renderSlides();paint();};}
   const color=document.getElementById('visual-color');color.value=settings.visualColor||'#5276f4';color.oninput=()=>{settings.visualColor=color.value;save();renderSlides();paint();};

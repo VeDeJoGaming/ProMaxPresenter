@@ -232,7 +232,7 @@ else {
         assert.equal(await control.webContents.executeJavaScript("document.querySelectorAll('.visual-option').length===ProMaxVisuals.presets.length"), true);
         const loopChecks = await control.webContents.executeJavaScript(`(() => {
           const canvas=document.createElement('canvas');canvas.width=160;canvas.height=90;
-          return ProMaxVisuals.presets.filter(p=>p.kind!=='bundled-svg').map(p=>{
+          return ProMaxVisuals.presets.filter(p=>!['bundled-svg','still-image'].includes(p.kind)).map(p=>{
             const frame=phase=>{ProMaxVisuals.draw(canvas,p,phase);return canvas.toDataURL();};
             const first=frame(0);return {name:p.name,loops:first===frame(1),moves:first!==frame(.173)};
           });

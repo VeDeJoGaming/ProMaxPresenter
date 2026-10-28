@@ -45,6 +45,7 @@
   presets.push({id:'chromatic-current',name:'Chromatic Current',category:'Glass',kind:'chromatic',colors:['#ec2509','#1809fa','#060414'],seed:203,mood:'Calm',tags:['red','blue','reflections','liquid']});
   presets.push({id:'winter-reverie',name:'Winter Reverie',category:'Nature',kind:'winter',colors:['#8c7caa','#ffd0de','#20233e'],seed:204,mood:'Calm',fixedPalette:true,tags:['winter','snow','river','realistic','landscape']});
   presets.push({id:'stellar-awakening',name:'Stellar Awakening',category:'Space',kind:'stellar',colors:['#0848ff','#70dfff','#02031c'],seed:205,mood:'Calm',tags:['star','blue','light','rays','stjerne']});
+  presets.push(...(window.ProMaxStillVisuals?.presets||[]));
   presets.sort((a,b)=>Number(b.kind==='scene')-Number(a.kind==='scene'));
   const resolveId=id=>{let result=id;for(let i=0;i<4&&aliases[result];i++)result=aliases[result];return result;};
   const palettes={gold:['#e87b08','#ffd35a','#6c2500'],blue:['#157dd0','#7ddfff','#082558'],purple:['#8249c9','#e2acff','#35105e'],rose:['#d64277','#ffadc9','#64152d'],green:['#159c79','#a2f9c7','#084536'],white:['#9baaba','#f4f8ff','#3c4857']};
@@ -241,6 +242,7 @@
   const findPreset=(id,options={})=>id==='solid'?{id:'solid',kind:'solid',colors:[options.color||'#181818',options.color||'#181818',options.color||'#181818'],seed:0,mood:'Calm'}:presets.find(p=>p.id===id);
   function mount(container,id,animated=true,options={}){
     let preset=findPreset(id,options);if(!preset)return null;
+    if(preset.kind==='still-image')return window.ProMaxStillVisuals.mount(container,preset,options);
     if(preset.kind==='bundled-svg')return window.ProMaxBundledVisuals.mount(container,preset,animated);
     let canvas=container.ownerDocument.createElement('canvas');
     const isOutput=container.id==='stage',isGallery=!!container.closest('.visual-option');
@@ -345,6 +347,7 @@
     return canvas;
   }
   function renderGlass(doc,container,value,isOutput){
+    if(window.ProMaxStillVisuals?.render(doc,container,value,isOutput))return true;
     if(window.ProMaxBundledVisuals?.render(doc,container,value,isOutput))return true;
     if(value.black||value.pdf||value.video||value.image||value.youtube||value.media&&!value.settings.visual)return false;
     let canvas=container.querySelector('canvas[data-glass]'),text=container.querySelector('.screen-text');
@@ -359,13 +362,14 @@
   const backgroundStates=new WeakMap();
   function beginBackground(doc,container,value){
     const bare=!value.black&&!value.pdf&&!value.video&&!value.image&&!value.youtube;
-    const key=bare?value.settings.visual||value.media?.url||'solid:'+value.settings.color:null;
+    const still=window.ProMaxStillVisuals?.presets.find(p=>p.id===value.settings.visual);
+    const key=bare?still?still.id+':'+window.ProMaxStillVisuals.variant(still,{...value.settings,section:value.section}):value.settings.visual||value.media?.url||'solid:'+value.settings.color:null;
     const previous=backgroundStates.get(container);
     if(previous?.key===key)return ()=>{};
     const record={key};backgroundStates.set(container,record);
     if(!bare||!previous?.key)return ()=>{};
     const motion=presets.some(p=>p.id===value.settings.visual);
-    const bundled=presets.some(p=>p.id===value.settings.visual&&p.kind==='bundled-svg');
+    const bundled=presets.some(p=>p.id===value.settings.visual&&['bundled-svg','still-image'].includes(p.kind));
     if(!bundled&&((motion||!value.media)&&container.querySelector('canvas[data-glass]')||motion&&!container.querySelector('.media')))return ()=>{};
     // File backgrounds use one composited still frame; text is never part of the fade.
     const snapshot=doc.createElement('canvas'),width=Math.min(1600,container.clientWidth||320);
@@ -377,7 +381,7 @@
       element.drawFrame?.();
       const w=element.videoWidth||element.naturalWidth||element.width,h=element.videoHeight||element.naturalHeight||element.height;
       if(!w||!h)continue;
-      try{const scale=element.tagName==='CANVAS'?null:Math.max(snapshot.width/w,snapshot.height/h);if(scale)context.drawImage(element,(snapshot.width-w*scale)/2,(snapshot.height-h*scale)/2,w*scale,h*scale);else context.drawImage(element,0,0,snapshot.width,snapshot.height);}catch{}
+      try{const scale=element.tagName==='CANVAS'?null:Math.max(snapshot.width/w,snapshot.height/h);if(scale){const position=style.objectPosition.split(' ').map(v=>v.endsWith('%')?parseFloat(v)/100:.5);context.drawImage(element,(snapshot.width-w*scale)*(position[0]??.5),(snapshot.height-h*scale)*(position[1]??.5),w*scale,h*scale);}else context.drawImage(element,0,0,snapshot.width,snapshot.height);}catch{}
     }
     context.globalAlpha=1;
     return ()=>{

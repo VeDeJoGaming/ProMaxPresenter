@@ -19,7 +19,8 @@ async function run() {
     assert.equal(path.resolve(await app.evaluate(({app})=>app.getPath('userData'))).toLowerCase(),profile.toLowerCase());
     assert.equal(await page.evaluate(()=>typeof require),'undefined');
     const visualCount=await page.evaluate(()=>ProMaxVisuals.presets.length);
-    assert.equal(visualCount,29);
+    assert.equal(await page.evaluate(()=>ProMaxVisuals.presets.filter(p=>p.kind!=='still-image').length),29);
+    assert.equal(visualCount,29+await page.evaluate(()=>ProMaxStillVisuals.presets.length));
     await page.evaluate(()=>{ProMaxMeetings.create('Sunday');ProMaxMeetings.addSong();ProMaxMeetings.create('Youth');ProMaxMeetings.addSong();ProMaxMeetings.create('Prayer');ProMaxMeetings.addSong();});
     assert.equal((await page.evaluate(()=>proMaxPrepareUpdate())).meetingFolders.length,3);
     // The curated family keeps one live surface across lyric cues and look changes.
