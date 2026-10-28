@@ -1,3 +1,7 @@
+# Manual color update — 28 October 2026
+
+Botanical Engraving and Covenant Weave now use manual palette choices and My color in the app. No A/B/C or section following. The original artwork stays in place; luminance-based material dye preserves texture and a warm-color mask protects engraving/thread details. The previously generated B/C companions below remain source artwork history and are no longer selectable as looks.
+
 # Original artwork collection — 28 October 2026
 
 Created with the built-in imagegen tool. AI-generated interpretive artwork, not documentary photographs of identified historic sites. Original masters are bundled losslessly with no external fetch, tinting or animation. Two families have authored companion editions; the others keep one composition. All artwork is composed for 16:9 worship projection. Other aspect ratios crop at the edges, with motif-specific focal positions. Per-image live shading supports white lyrics; gallery previews retain the artwork.

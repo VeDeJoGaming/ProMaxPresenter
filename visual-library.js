@@ -1,12 +1,15 @@
 function updateVisualName(){
   const preset=ProMaxVisuals.presets.find(p=>p.id===settings.visual);
-  document.getElementById('glass-controls').hidden=!preset||preset.kind==='bundled-svg'||preset.static&&!preset.variants;
+  document.getElementById('glass-controls').hidden=!preset||preset.kind==='bundled-svg'||preset.static&&!preset.recolorable;
   document.getElementById('visual-motion').closest('label').hidden=!!preset?.static;
+  for(const id of ['glass-auto','glass-variant'])document.getElementById(id).closest('label').hidden=!!preset?.static;
+  const gradientOption=document.querySelector('#glass-palette option[value=custom]');gradientOption.disabled=!!preset?.recolorable;gradientOption.hidden=!!preset?.recolorable;
+  document.getElementById('glass-palette').value=preset?.recolorable&&settings.visualPalette==='custom'?'solid':settings.visualPalette||'original';
   document.getElementById('glass-palette').disabled=!!preset?.fixedPalette;
   document.getElementById('glass-palette').closest('label').hidden=!!preset?.fixedPalette;
-  document.getElementById('visual-solid').hidden=!!preset?.fixedPalette||settings.visualPalette!=='solid';
-  document.getElementById('visual-gradient').hidden=!!preset?.fixedPalette||settings.visualPalette!=='custom';
-  document.querySelector('#glass-controls small').innerHTML=preset?.variants?'Three authored color editions · A / B / C<br>Verse → A · Chorus → B · Bridge → C<br>Image blend: 1.5 s · No motion or recoloring':'Verse → A · Chorus → B · Bridge → C<br>Style change: 1.5 s · Colors/sections: 5 s<br>Text: 0.18 s · Seamless loop';
+  document.getElementById('visual-solid').hidden=!!preset?.fixedPalette||!(['solid',...(preset?.recolorable?['custom']:[])].includes(settings.visualPalette));
+  document.getElementById('visual-gradient').hidden=!!preset?.fixedPalette||!!preset?.recolorable||settings.visualPalette!=='custom';
+  document.querySelector('#glass-controls small').innerHTML=preset?.recolorable?'Choose a palette or My color.<br>Paper / fabric changes color; decorative details retain their original finish.':'Verse → A · Chorus → B · Bridge → C<br>Style change: 1.5 s · Colors/sections: 5 s<br>Text: 0.18 s · Seamless loop';
   document.getElementById('visual-name').textContent=preset?preset.name:media?'Custom media':'Solid color';
 }
 function selectVisual(id){
@@ -84,7 +87,7 @@ function renderVisualLibrary(){
         cell.style.background=`linear-gradient(135deg,${preset.colors?.[2]||'#100d0b'},${preset.colors?.[0]||'#241c1b'})`;
         if(animated!==null)mounted.push(ProMaxVisuals.mount(cell,preset.id,animated,{...settings,glassAuto:false,glassVariant:variant}));
         const lyrics=document.createElement('div');lyrics.className='visual-sample-lyrics';lyrics.textContent='Let every heart\nfind a place to sing';lyrics.setAttribute('aria-hidden','true');cell.append(lyrics);
-        if(preset.variants||!['bundled-svg','still-image'].includes(preset.kind)){const letter=document.createElement('b');letter.className='visual-letter';letter.textContent=variant.toUpperCase();letter.setAttribute('aria-hidden','true');cell.append(letter);}
+        if(!['bundled-svg','still-image'].includes(preset.kind)){const letter=document.createElement('b');letter.className='visual-letter';letter.textContent=variant.toUpperCase();letter.setAttribute('aria-hidden','true');cell.append(letter);}
       }
     };
     const card={static:preset.static,visible:false,queued:false,dispose,still:()=>frames(card.visible?false:null),animate:()=>frames(!preset.static),preview:()=>frames(!preset.static&&activeVisualPreview===card&&motionAllowed())};

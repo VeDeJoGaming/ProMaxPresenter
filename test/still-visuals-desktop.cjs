@@ -17,7 +17,7 @@ async function run(){
       await control.evaluate(id=>{selectVisual(id);goLive(0);},id);
       await control.waitForFunction(id=>{const image=document.querySelector('#preview img[data-still-visual]');return image?.dataset.stillVisual===id&&image.complete&&image.naturalWidth>=1000;},id);
       await output.waitForFunction(id=>{const image=document.querySelector('#stage img[data-still-visual]');return image?.dataset.stillVisual===id&&image.complete&&image.naturalWidth>=1000;},id);
-      assert.equal(await control.locator('#glass-controls').evaluate(el=>el.hidden),await control.evaluate(id=>!ProMaxStillVisuals.presets.find(p=>p.id===id).variants,id));
+      assert.equal(await control.locator('#glass-controls').evaluate(el=>el.hidden),await control.evaluate(id=>!ProMaxStillVisuals.presets.find(p=>p.id===id).recolorable,id));
       assert.equal(await output.locator('#stage canvas[data-glass]').count(),0,'Stills do not run motion canvases');
       await output.evaluate(()=>window.previousStill=document.querySelector('img[data-still-visual]'));
       await control.evaluate(()=>goLive(1));await output.waitForFunction(()=>document.querySelector('.screen-text').textContent==='Hope has risen');
@@ -25,20 +25,28 @@ async function run(){
       const size=await output.locator('img[data-still-visual]').evaluate(image=>({width:image.clientWidth,height:image.clientHeight,naturalWidth:image.naturalWidth,naturalHeight:image.naturalHeight,url:image.src}));
       assert.ok(size.width>0&&size.height>0&&size.url.startsWith('file:'),'Offline full-frame output');
     }
-    const authored=await control.evaluate(()=>ProMaxStillVisuals.presets.filter(p=>p.variants).map(p=>p.id));
+    const authored=await control.evaluate(()=>ProMaxStillVisuals.presets.filter(p=>p.recolorable).map(p=>p.id));
+    await fs.mkdir(path.join(__dirname,'../test-results'),{recursive:true});
     for(const id of authored){
-      for(const look of ['a','b','c']){
-        await control.evaluate(({id,look})=>{settings.glassAuto=false;settings.glassVariant=look;selectVisual(id);}, {id,look});
-        await output.waitForFunction(({id,look})=>{const image=document.querySelector('img[data-still-visual]');return image?.dataset.stillVisual===id&&image.dataset.stillVariant===look&&image.complete&&image.naturalWidth>0;},{id,look});
-        assert.equal(await control.locator('#visual-motion').evaluate(el=>el.closest('label').hidden),true);
-        assert.equal(await control.locator('#glass-palette').evaluate(el=>el.closest('label').hidden),true);
-        if(look!=='a')assert.ok(await output.locator('.background-fade').count()>0,'Authored image changes use the background fade');
-        await output.waitForTimeout(1600);assert.equal(await output.locator('.background-fade').count(),0,'Snapshot released after authored image transition');
+      await control.evaluate(id=>{selectVisual(id);document.querySelector('#glass-controls').closest('details').open=true;},id);
+      for(const name of ['glass-auto','glass-variant','visual-motion'])assert.equal(await control.locator('#'+name).evaluate(el=>el.closest('label').hidden),true);
+      await output.evaluate(()=>window.previousStill=document.querySelector('img[data-still-visual]'));
+      await output.waitForTimeout(1600);const shots=[];
+      for(const palette of ['original','blue','solid']){
+        await control.locator('#glass-palette').selectOption(palette);
+        if(palette==='solid'){await control.locator('#visual-color').fill('#d33173');await control.locator('#visual-color').dispatchEvent('input');}
+        await output.waitForFunction(palette=>{const image=document.querySelector('img[data-still-visual]');return image?.complete&&(palette==='original'?!image.style.filter:!!image.style.filter);},palette);
+        await output.waitForTimeout(150);
+        assert.equal(await output.evaluate(()=>previousStill===document.querySelector('img[data-still-visual]')),true,'Manual colors retain the original detailed artwork');
+        const shot=await output.screenshot({path:path.join(__dirname,'../test-results/manual-'+id+'-'+palette+'.png')});shots.push(shot.toString('base64'));
       }
-      for(const [section,look]of [['Verse','a'],['Chorus','b'],['Bridge','c']]){
-        await control.evaluate(({section})=>{settings.glassAuto=true;state.section=section;paint();},{section});
-        await output.waitForFunction(look=>document.querySelector('img[data-still-visual]')?.dataset.stillVariant===look,look);
+      assert.equal(new Set(shots).size,3,'Original, preset and arbitrary color visibly differ');
+      const filter=await output.locator('img[data-still-visual]').evaluate(el=>el.style.filter);
+      for(const section of ['Verse','Chorus','Bridge']){
+        await control.evaluate(section=>{settings.glassAuto=true;state.section=section;paint();},section);
+        assert.equal(await output.locator('img[data-still-visual]').evaluate(el=>el.style.filter),filter,'Song sections do not change manual color');
       }
+      assert.equal(await output.locator('svg').count(),1,'One dye filter per live artwork');
     }
     await control.evaluate(()=>{settings.glassAuto=false;settings.glassVariant='a';selectVisual('dynamic-glass');goLive(0);});await output.waitForFunction(()=>document.querySelector('canvas[data-glass]'));
     await control.evaluate(()=>selectVisual('empty-tomb'));await output.waitForFunction(()=>document.querySelector('img[data-still-visual="empty-tomb"]')?.complete);
@@ -52,15 +60,13 @@ async function run(){
     assert.match(await card.innerText(),/Still artwork/);
     for(const id of authored){
       await control.locator('#visual-search').fill(id.replaceAll('-',' '));const authoredCard=control.locator('.visual-option[data-visual-id="'+id+'"]');await authoredCard.hover();
-      await control.waitForFunction(id=>{const images=[...document.querySelectorAll('.visual-option[data-visual-id="'+id+'"] img')];return images.length===3&&images.every(i=>i.complete&&i.naturalWidth>0);},id);
-      assert.deepEqual(await authoredCard.locator('img').evaluateAll(images=>images.map(i=>i.dataset.stillVariant)),['a','b','c']);
-      assert.equal(await authoredCard.locator('.visual-letter').count(),3);assert.equal(await authoredCard.locator('canvas').count(),0);
+      await authoredCard.locator('img[data-still-visual]').waitFor();assert.equal(await authoredCard.locator('img[data-still-visual]').count(),1);assert.equal(await authoredCard.locator('.visual-letter').count(),0);
     }
     await control.locator('#close-visuals').click();
     await control.reload();await control.waitForFunction(()=>window.ProMaxControls);await control.evaluate(()=>ProMaxControls.ready);
-    assert.equal(await control.evaluate(()=>settings.visual),'empty-tomb');
+    assert.equal(await control.evaluate(()=>settings.visual),'empty-tomb');assert.equal(await control.evaluate(()=>settings.visualColor),'#d33173');assert.equal(await control.evaluate(()=>settings.visualPalette),'solid');
     assert.deepEqual(errors,[]);assert.deepEqual(network,[]);
-    console.log('PASSED: all bundled stills, offline image decoding in native output, retained across lyrics, authored A/B/C manual/section selection and fades, no motion/tints for stills, motion transition cleanup, blackout/restore, single-image gallery and persisted selection. '+(executablePath||'source'));
+    console.log('PASSED: all bundled stills, offline image decoding in native output, retained across lyrics, manual palette/custom color, no A/B/C or section changes, no motion or automatic colors, motion transition cleanup, blackout/restore, single-image gallery and persisted selection. '+(executablePath||'source'));
   }finally{await app?.close();await fs.rm(profile,{recursive:true,force:true});}
 }
 run().catch(e=>{console.error(e);process.exitCode=1;});

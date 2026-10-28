@@ -381,9 +381,9 @@
       element.drawFrame?.();
       const w=element.videoWidth||element.naturalWidth||element.width,h=element.videoHeight||element.naturalHeight||element.height;
       if(!w||!h)continue;
-      try{const scale=element.tagName==='CANVAS'?null:Math.max(snapshot.width/w,snapshot.height/h);if(scale){const position=style.objectPosition.split(' ').map(v=>v.endsWith('%')?parseFloat(v)/100:.5);context.drawImage(element,(snapshot.width-w*scale)*(position[0]??.5),(snapshot.height-h*scale)*(position[1]??.5),w*scale,h*scale);}else context.drawImage(element,0,0,snapshot.width,snapshot.height);}catch{}
+      try{context.filter=style.filter||'none';const scale=element.tagName==='CANVAS'?null:Math.max(snapshot.width/w,snapshot.height/h);if(scale){const position=style.objectPosition.split(' ').map(v=>v.endsWith('%')?parseFloat(v)/100:.5);context.drawImage(element,(snapshot.width-w*scale)*(position[0]??.5),(snapshot.height-h*scale)*(position[1]??.5),w*scale,h*scale);}else context.drawImage(element,0,0,snapshot.width,snapshot.height);}catch{}
     }
-    context.globalAlpha=1;
+    context.globalAlpha=1;context.filter='none';
     return ()=>{
       for(const old of container.querySelectorAll('.background-fade'))old.stop();
       let timeout,begun=false,stopped=false;
