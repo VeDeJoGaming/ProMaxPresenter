@@ -36,19 +36,23 @@
   async function importBible(file) {
     if (file.size>30*1024*1024) throw Error('Choose a Bible text file smaller than 30 MB.');
     const parsed=ProMaxBible.parse(await file.text(),file.name);
-    await persist('bible',parsed);bible=parsed;chosen.clear();renderBible();notify(`${bible.verses.length.toLocaleString()} verses imported for offline use`);
+    await persist('bible',parsed);bible=parsed;chosen.clear();if(tab==='bible')renderBible();window.ProMaxControls?.changed();document.dispatchEvent(new Event('promax:bible-changed'));notify(`${bible.verses.length.toLocaleString()} verses imported for offline use`);
+  }
+  function renderBibleSettings(container){
+    container.replaceChildren(element('h3','Bible library'),element('p','Import a Bible once to search and present verses offline. Replacing or removing it keeps passages already saved in your meetings.'));
+    const status=element('p',bible?bible.name+' · '+bible.verses.length.toLocaleString()+' verses · Available offline':'No Bible imported.','bible-settings-status');status.setAttribute('role','status');container.append(status);
+    const actions=element('div',null,'settings-actions');
+    actions.append(fileButton(bible?'Replace Bible text':'Import Bible text','.json,.csv,.tsv,.txt,.xml',files=>importBible(files[0])));
+    if(bible)actions.append(button('Remove Bible',async()=>{if(!confirm('Remove the imported Bible from this app?'))return;try{await storedAsset('delete',null,'bible');bible=null;chosen.clear();if(tab==='bible')renderBible();document.dispatchEvent(new Event('promax:bible-changed'));window.ProMaxControls?.changed();}catch{notify('Could not remove the Bible.');}},'subtle'));
+    container.append(actions);
+    const details=element('details');details.append(element('summary','Supported import formats'),element('p','JSON, CSV/TSV, plain text, OSIS XML and Zefania XML. PDF, EPUB and encrypted Bible apps are not supported.'));
+    const example=element('pre','{"name":"My Bible","verses":[{"book":"Johannes","chapter":3,"verse":16,"text":"Verse text"}]}');details.append(example,element('p','CSV/TSV columns: book, chapter, verse, text. Plain text: one line per verse, for example Johannes 3:16 Verse text.'));container.append(details);
   }
   function renderBible() {
     window.ProMaxControls?.changed();
     heading('Bible','Search as you type: Mat, Mat 1.1, Joh 3:16–18, or words in the text.');
-    const actions=element('div',null,'feature-actions');
-    actions.append(fileButton(bible?'Replace Bible text':'Import Bible text','.json,.csv,.tsv,.txt,.xml',files=>importBible(files[0])));
-    if (bible) actions.append(button('Remove Bible',async()=>{if(!confirm('Remove the imported Bible from this app?'))return;try{await storedAsset('delete',null,'bible');bible=null;chosen.clear();renderBible();}catch{notify('Could not remove the Bible.');}}));
-    view.append(actions);
-    view.append(element('p',bible?`${bible.name} · ${bible.verses.length.toLocaleString()} verses · Available offline`:'No Bible imported.','feature-help'));
-    const details=element('details');details.append(element('summary','Supported import formats'));
-    details.append(element('p','JSON: {"name":"Bibelen 2011","verses":[{"book":"Johannes","chapter":3,"verse":16,"text":"Your verse text"}]}. CSV/TSV columns: book, chapter, verse, text. Text: one line per verse, Book 1:1 Text. XML: OSIS with verse text inside each verse element, or Zefania. PDF, EPUB and encrypted Bible apps are not import formats.','feature-help'));view.append(details);
-    if (!bible) return;
+    view.append(element('p',bible?bible.name+' · Available offline':'No Bible imported. Add one in Settings → Bible.','feature-help'));
+    if(!bible){view.append(button('Open Bible settings',()=>window.ProMaxSettings.open('bible')));return;}
     const form=element('form',null,'feature-actions');const input=document.createElement('input');input.placeholder='Reference or text…';input.id='bible-search';input.setAttribute('aria-label','Search Bible');
     input.value=bibleQuery;input.autocomplete='off';form.append(input);
     const results=element('div');results.id='bible-results';
@@ -244,11 +248,11 @@
     const bibleChanged=bible!==value.bible;
     const removed=assets.filter(a=>!value.videos.some(v=>v.id===a.id)).map(a=>a.id);
     assets=structuredClone(value.videos);documents=structuredClone(value.documents);bible=value.bible;chosen.clear();
-    await Promise.all([persist('video-list',assets),persist('presentations',documents),...(bibleChanged?[persist('bible',bible)]:[])]);await keepTrash(removed);
+    await Promise.all([persist('video-list',assets),persist('presentations',documents),...(bibleChanged?[persist('bible',bible)]:[])]);await keepTrash(removed);if(bibleChanged)document.dispatchEvent(new Event('promax:bible-changed'));
     for(const asset of assets)if(!cache.has(asset.id))try{await loadAsset(asset);}catch{}
   }};
-  window.ProMaxFeatures={videoUrls,handleKey,importBible,addVideos,playVideo,showDeck,navigate,showTab,saveDocument,openMeetingMedia,externalCue,
-    receiveBible:async value=>{const parsed=ProMaxBible.parse(JSON.stringify(value),'shared-bible.json');await persist('bible',parsed);bible=parsed;chosen.clear();if(tab==='bible')renderBible();window.ProMaxControls?.changed();return parsed;},
+  window.ProMaxFeatures={renderBibleSettings,videoUrls,handleKey,importBible,addVideos,playVideo,showDeck,navigate,showTab,saveDocument,openMeetingMedia,externalCue,
+    receiveBible:async value=>{const parsed=ProMaxBible.parse(JSON.stringify(value),'shared-bible.json');await persist('bible',parsed);bible=parsed;chosen.clear();if(tab==='bible')renderBible();document.dispatchEvent(new Event('promax:bible-changed'));window.ProMaxControls?.changed();return parsed;},
     getBible:()=>bible,getVideos:()=>assets,getDocuments:()=>documents,focusedAsset:()=>focusedAsset,history,removeVideo,removeDocument,persistDocuments,captureDeck,syncDeck,
     passageForDrag:index=>{const v=bibleResults[index];if(!v)return null;const verses=chosen.has(v)?ProMaxBible.ordered([...chosen]):[v];return {type:'bible',title:ProMaxBible.formatReference(verses),slides:buildPassage(verses)};}};
   showTab('songs');

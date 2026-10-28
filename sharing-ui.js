@@ -1,6 +1,6 @@
 (() => {
   const api=window.proMaxShared,host=window.proMaxSharedHost;
-  const dialog=document.createElement('dialog');dialog.id='sharing-dialog';
+  const dialog=document.createElement('div');dialog.id='sharing-dialog';
   dialog.innerHTML=`<div class="sharing-heading"><div><span class="eyebrow">YOUR GROUP</span><h2>Shared library</h2></div><button id="shared-close" aria-label="Close shared library">✕</button></div>
     <p class="sharing-intro">Bring your group's songs together. Your local library works offline.</p>
     <p id="shared-message" role="status" aria-live="polite"></p>
@@ -19,7 +19,7 @@
       <div id="shared-owner" hidden><h3>Invitations & people</h3><p class="sharing-help">Invitations last 30 days. Anyone with the invitation can join. Removing someone also replaces all invitations.</p><div class="sharing-row"><button id="shared-invite">Copy invitation</button><button id="shared-rotate">Replace invitation…</button><button id="shared-people">Manage people</button></div><div id="shared-members"></div></div>
       <details><summary>Access & disconnect</summary><p class="sharing-help">Save your personal access key somewhere private. There is no account or password reset. Anyone with this key can use your group access. Keep the owner's key to recover group management.</p><div class="sharing-row"><button id="shared-backup">Copy my access key</button><button id="shared-disconnect">Disconnect…</button></div></details>
     </div>`;
-  document.body.append(dialog);
+  ProMaxSettings.page('sharing').append(dialog);
   const el=id=>document.getElementById(id);let state={connected:false},busy=false,epoch=0,sharedBible=null;
   window.proMaxSharedBusy=()=>busy;
   function message(text){el('shared-message').textContent=text;}
@@ -65,9 +65,10 @@
   });
   el('shared-bible-use').onclick=()=>run(()=>useBible());
   el('shared-bible-remove').onclick=()=>run(async()=>{if(!confirm('Stop sharing the group Bible? Downloaded local copies are kept.'))return;await call('unpublishBible');await refreshBible();message('Bible removed from Shared library. Local copies are kept.');});
-  el('shared-open').onclick=async()=>{dialog.showModal();if(!api){el('shared-setup').hidden=true;message('Shared groups are available in the installed Windows app. You can still import and export libraries here.');return;}
-    await run(async()=>{state=await call('getState');render();if(state.connected&&state.self.mode!=='none')await refreshBible();});};
-  el('shared-close').onclick=()=>dialog.close();
+  async function openSharing(){if(!api){el('shared-setup').hidden=true;message('Shared groups are available in the installed Windows app. You can still import and export libraries here.');return;}
+    await run(async()=>{state=await call('getState');render();if(state.connected&&state.self.mode!=='none')await refreshBible();});}
+  $('app-settings-dialog').addEventListener('settings-page',event=>{if(event.detail==='sharing')openSharing();});
+  el('shared-close').remove();
   dialog.addEventListener('keydown',e=>e.stopPropagation());
   for(const action of ['create','join'])el('shared-'+action).onclick=()=>run(async()=>{
     const input={displayName:el('shared-name').value,mode:el('shared-choice').value,...(action==='create'?{groupName:el('shared-group-name').value}:{code:el('shared-code').value})};

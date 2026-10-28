@@ -44,7 +44,7 @@ header .brand{flex-shrink:0;font-size:17px}
 header .mark{width:34px;height:34px;font-size:23px;border-radius:9px}
 #status{font-size:11px;margin:0}
 body>main{flex:1;min-height:0;display:grid;grid-template-columns:clamp(180px,17vw,240px) minmax(280px,1fr) clamp(300px,26vw,370px);overflow:hidden}
-body>main>aside,body>main>.workspace,body>main>.control{min-height:0;min-width:0;overflow:auto;overscroll-behavior:contain;scrollbar-gutter:stable;scrollbar-width:thin;scrollbar-color:var(--pm-border) transparent}
+body>main>aside,body>main>.workspace,body>main>.control{min-height:0;min-width:0;overflow:auto;overscroll-behavior:contain;scrollbar-gutter:stable;scrollbar-width:auto;scrollbar-color:auto}
 body>main>aside{padding:22px 14px}
 body>main>.workspace{padding:24px}
 body>main>.control{display:block;grid-column:auto;padding:22px 16px}
@@ -61,7 +61,7 @@ select option,select optgroup{background:var(--pm-panel);color:var(--pm-text)}
   select{align-items:center;gap:12px;border-radius:var(--pm-radius);padding:9px 11px;cursor:pointer}
   select::picker-icon{color:var(--pm-muted);transition:rotate .15s}
   select:open::picker-icon{rotate:180deg}
-  select::picker(select){background:var(--pm-panel);color:var(--pm-text);border:1px solid var(--pm-border-hover);border-radius:10px;padding:5px;box-shadow:0 12px 32px #0008;max-height:300px;overflow:auto;scrollbar-width:thin;scrollbar-color:var(--pm-border) var(--pm-panel)}
+  select::picker(select){background:var(--pm-panel);color:var(--pm-text);border:1px solid var(--pm-border-hover);border-radius:10px;padding:5px;box-shadow:0 12px 32px #0008;max-height:300px;overflow:auto;scrollbar-width:auto;scrollbar-color:auto}
   select option{padding:9px 12px;gap:12px;border-radius:5px;cursor:pointer;font-size:12px}
   select option:hover,select option:focus{background:var(--pm-button-hover);outline:none}
   select option:checked{background:var(--pm-selection-bg);color:var(--pm-selection-text)}
@@ -77,3 +77,56 @@ select option,select optgroup{background:var(--pm-panel);color:var(--pm-text)}
 #open-output::after{content:'F5'}#blackout::after{content:'F6'}
 body>main{grid-template-rows:minmax(0,1fr)}
 body>main>aside,body>main>.workspace,body>main>.control{align-self:stretch;position:relative;top:auto}
+/* Rounded, quiet scrollbars throughout the app; no native arrow buttons. */
+*,select::picker(select){scrollbar-width:auto;scrollbar-color:auto}
+*::-webkit-scrollbar,select::picker(select)::-webkit-scrollbar{width:10px;height:10px}
+*::-webkit-scrollbar-track,select::picker(select)::-webkit-scrollbar-track{background:transparent}
+*::-webkit-scrollbar-thumb,select::picker(select)::-webkit-scrollbar-thumb{background:var(--pm-border);border:3px solid transparent;background-clip:padding-box;border-radius:20px;min-height:36px}
+*::-webkit-scrollbar-thumb:hover{background-color:var(--pm-border-hover)}
+*::-webkit-scrollbar-thumb:active{background-color:var(--pm-accent)}
+*::-webkit-scrollbar-button,select::picker(select)::-webkit-scrollbar-button{display:none;width:0;height:0}
+*::-webkit-scrollbar-corner{background:transparent}
+body>main>aside{contain:layout paint;will-change:scroll-position}
+input[type=range]{appearance:none;-webkit-appearance:none;background:transparent;border:0;box-shadow:none;padding:8px 0;cursor:pointer;height:28px}
+input[type=range]::-webkit-slider-runnable-track{height:5px;background:var(--pm-border);border-radius:8px}
+input[type=range]::-webkit-slider-thumb{appearance:none;-webkit-appearance:none;width:16px;height:16px;border:3px solid var(--pm-panel);border-radius:50%;background:var(--pm-accent);margin-top:-5.5px;box-shadow:0 0 0 1px var(--pm-accent),0 2px 5px #0005}
+input[type=range]:hover::-webkit-slider-thumb{background:var(--pm-accent-hover)}
+input[type=range]::-moz-range-track{height:5px;background:var(--pm-border);border-radius:8px}
+input[type=range]::-moz-range-thumb{width:12px;height:12px;border:2px solid var(--pm-panel);border-radius:50%;background:var(--pm-accent)}
+/* Settings: stable category navigation with one content page at a time. */
+#app-settings-dialog{width:min(920px,94vw);height:min(680px,90dvh);max-height:90dvh;padding:0;overflow:hidden;border-radius:16px;border-color:var(--pm-border);background:var(--pm-panel);color:var(--pm-text)}
+#app-settings-dialog[open]{display:flex;flex-direction:column}
+#app-settings-dialog .settings-heading{flex:none;padding:22px 24px;border-bottom:1px solid var(--pm-border-soft);background:var(--pm-header)}
+#app-settings-dialog .settings-heading h2{font-size:22px}
+#app-settings-dialog .settings-heading p{margin:5px 0 0;color:var(--pm-muted)}
+.settings-layout{display:grid;grid-template-columns:200px minmax(0,1fr);min-height:0;flex:1}
+.settings-nav{padding:18px 12px;display:flex;flex-direction:column;gap:5px;overflow:auto;background:var(--pm-field);border-right:1px solid var(--pm-border-soft)}
+.settings-nav button{flex:none;text-align:left;padding:11px 14px;font-size:12px;border:1px solid transparent;background:transparent;box-shadow:none;color:var(--pm-muted)}
+.settings-nav button:hover{background:var(--pm-button)}
+.settings-nav button[aria-current=page]{background:var(--pm-selection-bg);border-color:var(--pm-selection-border);color:var(--pm-selection-text)}
+.settings-content{min-width:0;min-height:0;overflow:auto;overscroll-behavior:contain;padding:26px 28px;scrollbar-gutter:stable}
+#app-settings-dialog [data-settings-page]{border:0;margin:0;padding:0;min-width:0}
+#app-settings-dialog h3,#app-settings-dialog #editing-help h2{font-size:20px;margin:0 0 12px;color:var(--pm-text)}
+#app-settings-dialog h4{font-size:13px;font-weight:600;margin:0 0 18px;color:var(--pm-text)}
+#app-settings-dialog p,#app-settings-dialog li{color:var(--pm-muted);font-size:12px;line-height:1.7}
+#app-settings-dialog .settings-card{margin-top:24px;padding-top:22px;border-top:1px solid var(--pm-border-soft)}
+#app-settings-dialog .settings-field{color:var(--pm-text);gap:10px}
+#app-settings-dialog .settings-field select{color:var(--pm-text)}
+#app-settings-dialog .settings-actions{margin:22px 0;gap:10px}
+#app-settings-dialog .settings-actions .button{font-size:12px}
+#app-settings-dialog details{margin-top:26px;padding-top:18px;border-top:1px solid var(--pm-border-soft)}
+#app-settings-dialog summary{font-size:12px;color:var(--pm-text);cursor:pointer}
+#app-settings-dialog pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:11px;background:var(--pm-field);padding:16px;border-radius:8px;line-height:1.7}
+#app-settings-dialog .bible-settings-status{padding:14px 16px;background:var(--pm-field);border:1px solid var(--pm-border-soft);border-radius:9px;color:var(--pm-selection-text)}
+#app-settings-dialog #editing-help{width:auto;max-height:none;overflow:visible;padding:0;border:0;background:transparent;box-shadow:none}
+#app-settings-dialog #editing-help dl{grid-template-columns:155px minmax(0,1fr);gap:0;margin:24px 0}
+#app-settings-dialog #editing-help dt,#app-settings-dialog #editing-help dd{padding:11px 0;border-bottom:1px solid var(--pm-border-soft);line-height:1.5}
+#app-settings-dialog #editing-help dd{color:var(--pm-text)}
+#app-settings-dialog #sharing-dialog{padding:0;width:auto;border:0;max-height:none;box-shadow:none}
+#app-settings-dialog .sharing-heading h2{font-size:20px;margin:0;color:var(--pm-text)}
+#app-settings-dialog .sharing-heading .eyebrow{display:none}
+#app-settings-dialog #shared-message{margin:16px 0}
+#app-settings-dialog #sharing-dialog section{border-color:var(--pm-border-soft)}
+@media(max-width:700px){.settings-layout{grid-template-columns:155px minmax(0,1fr)}.settings-nav{padding:12px 7px}.settings-nav button{padding:10px 8px}.settings-content{padding:20px 16px}#app-settings-dialog #editing-help dl{grid-template-columns:115px minmax(0,1fr)}}
+#app-settings-dialog #shared-message:empty{display:none}
+@supports(appearance:base-select){#app-settings-dialog #sharing-dialog select{display:flex}}

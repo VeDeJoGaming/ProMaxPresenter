@@ -77,8 +77,8 @@ app.whenReady().then(async()=>{
     await waitFor(`current().title===${JSON.stringify(title)}`);
     await key('f',{ctrlKey:true});assert.equal(await run('document.activeElement.id'),'search');
     await run("ProMaxControls.select({type:'song',songId:selected})");await key('F2');assert.equal(await run('document.activeElement.id'),'title');
-    await key('F1');assert.equal(await run("document.getElementById('editing-help').open"),true);
-    await key(' ');assert.equal(await run('JSON.stringify(state)===originalLive'),true);await run("document.getElementById('editing-help').close()");
+    await key('F1');assert.equal(await run("document.getElementById('app-settings-dialog').open&&!document.getElementById('settings-page-shortcuts').hidden"),true);
+    await key(' ');assert.equal(await run('JSON.stringify(state)===originalLive'),true);await run("document.getElementById('app-settings-dialog').close()");
     await run("ProMaxControls.mutate('Add presentation',()=>ProMaxFeatures.saveDocument({id:'edit-doc',title:'Slides',slides:['file:///C:/one.png','file:///C:/two.png','file:///C:/three.png']}))");
     await run("ProMaxFeatures.showTab('presentations');ProMaxControls.drop({type:'document-slide',documentId:'edit-doc',index:0},{type:'document-slide',documentId:'edit-doc',index:2},true)");
     assert.equal(await run("ProMaxFeatures.getDocuments()[0].slides[2]"),'file:///C:/one.png');await ProMaxUndo();

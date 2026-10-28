@@ -38,7 +38,7 @@
     if(d.folderId)return {type:'folder',folderId:d.folderId};return null;
   }
   const same=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
-  function select(value){choice=value;scan();}
+  function select(value){if(same(value,choice))return;choice=value;scan();}
   function scan(){
     document.querySelectorAll('.control-selected').forEach(e=>e.classList.remove('control-selected'));
     let visibleSelection=false;
@@ -162,17 +162,23 @@
   }
   function find(){const input=[$('bible-search'),$('meeting-song-search'),meetingSelected?$('meeting-item-search'):$('search')].find(e=>e?.getClientRects().length);input?.focus();input?.select();}
   const tools=document.createElement('div');tools.id='editing-tools';
-  const undo=document.createElement('button'),redo=document.createElement('button'),help=document.createElement('button');undo.textContent='↶';redo.textContent='↷';help.textContent='Shortcuts';
+  const undo=document.createElement('button'),redo=document.createElement('button');undo.textContent='↶';redo.textContent='↷';
   undo.title='Undo · Ctrl+Z';undo.setAttribute('aria-label','Undo');redo.title='Redo · Ctrl+Shift+Z';redo.setAttribute('aria-label','Redo');undo.onclick=()=>history('undo');redo.onclick=()=>history('redo');
-  tools.append(undo,redo,help);document.querySelector('.header-actions').prepend(tools);
+  tools.append(undo,redo);document.querySelector('.header-actions').prepend(tools);
   const dialog=document.createElement('dialog');dialog.id='editing-help';dialog.innerHTML='<h2>Editing shortcuts</h2><p>Click the bottom of a slide to select it. Click its preview to show it live.</p><dl><dt>F5</dt><dd>Presentation on / off</dd><dt>F6</dt><dd>Blackout / restore (also while typing)</dd><dt>Escape</dt><dd>Blackout / restore outside text fields and dialogs</dd><dt>Ctrl+Z</dt><dd>Undo</dd><dt>Ctrl+Shift+Z / Ctrl+Y</dt><dd>Redo</dd><dt>Delete</dt><dd>Remove selected content</dd><dt>Ctrl+D</dt><dd>Duplicate selected slide, song or folder item</dd><dt>Alt+↑ / Alt+↓</dt><dd>Move selected content</dd><dt>F2</dt><dd>Edit slide or rename song/folder</dd><dt>Ctrl+K</dt><dd>Quick open songs and meetings</dd><dt>Ctrl+F</dt><dd>Search the sidebar</dd><dt>Ctrl+S</dt><dd>Save now (changes also save automatically)</dd></dl><p>Drag to change order. Drop songs, passages or media on a folder to add them. Hold Ctrl while dragging a folder item to copy it. Undo history lasts until you close the app.</p><button>Close</button>';
-  dialog.querySelector('button').onclick=()=>dialog.close();help.onclick=()=>dialog.showModal();document.body.append(dialog);
+  dialog.querySelector('button').remove();document.body.append(dialog);
   let renameTarget=null;const renameDialog=document.createElement('dialog');renameDialog.id='rename-item';renameDialog.innerHTML='<form><h2>Rename item</h2><input aria-label="Item name" required maxlength="200"><div><button type="button">Cancel</button><button type="submit" class="primary">Rename</button></div></form>';
   const renameInput=renameDialog.querySelector('input');renameDialog.querySelector('[type=button]').onclick=()=>renameDialog.close();renameDialog.querySelector('form').onsubmit=event=>{event.preventDefault();const target=renameTarget,name=renameInput.value.trim();if(!name)return;renameDialog.close();mutate('Rename',()=>{const item=itemFor(target);if(item)item.title=name;});};document.body.append(renameDialog);
   const search=document.createElement('input');search.id='meeting-item-search';search.placeholder='Find in folder…';search.setAttribute('aria-label','Find in folder');search.oninput=scan;$('meeting-items').before(search);
   const hints=document.createElement('small');hints.className='editing-hint';hints.textContent='Drag to reorder · Delete to remove';$('meeting-items').before(hints);
   function toolbar(){undo.disabled=busy||!undoStack.length;redo.disabled=busy||!redoStack.length;}
   document.addEventListener('pointerdown',event=>{
+    // Native scrollbar drags navigate; do not serialize or scan the library.
+    const pane=event.target;
+    if(pane instanceof HTMLElement&&(pane.scrollHeight>pane.clientHeight||pane.scrollWidth>pane.clientWidth)){
+      const r=pane.getBoundingClientRect(),x=event.clientX-r.left-pane.clientLeft,y=event.clientY-r.top-pane.clientTop;
+      if(x>=pane.clientWidth||y>=pane.clientHeight)return;
+    }
     flushPendingSave();
     if(event.target.closest('#editing-tools'))return;group=editable(event.target)?'input:'+event.target.id:'action:'+ ++action;select(descriptor(event.target));
   },true);
@@ -201,7 +207,7 @@
     else if(modifier&&key==='d'){event.preventDefault();event.stopImmediatePropagation();duplicate();}
     else if(event.altKey&&['arrowup','arrowdown'].includes(key)){event.preventDefault();event.stopImmediatePropagation();move(choice,key==='arrowup'?-1:1);}
     else if(key==='f2'){event.preventDefault();event.stopImmediatePropagation();rename();}
-    else if(key==='f1'){event.preventDefault();event.stopImmediatePropagation();dialog.showModal();}
+    else if(key==='f1'){event.preventDefault();event.stopImmediatePropagation();window.ProMaxSettings?.open('shortcuts');}
     else if(!modifier&&['arrowleft','arrowright',' '].includes(key))group='action:'+ ++action;
   },true);
   function clearDropTargets(){document.getElementById('folder-drop-targets')?.remove();document.querySelectorAll('.drop-before,.drop-after').forEach(e=>e.classList.remove('drop-before','drop-after'));}
@@ -220,7 +226,11 @@
   const originalSave=save;save=function(){normalize();changed();return originalSave();};
   const originalSetMedia=setMedia;setMedia=function(file){backgroundFile=file;const result=originalSetMedia(file);changed();return result;};
   const originalSelectVisual=selectVisual;selectVisual=function(id){if(id&&!ProMaxVisuals.presets.some(p=>p.id===id))return;backgroundFile=null;return originalSelectVisual(id);};
-  new MutationObserver(scan).observe(document.querySelector('main'),{childList:true,subtree:true});
+  // Preview text/animation changes must not rescan every draggable library row.
+  const selectable='.song,.slide-card,.meeting-folder,.meeting-item,.prepared-slide,.asset-row,.youtube-card,.document-slide,.document-deck h3,.verse-row';
+  new MutationObserver(records=>{
+    if(records.some(record=>[...record.addedNodes,...record.removedNodes].some(node=>node.nodeType===1&&(node.matches(selectable)||node.querySelector(selectable)))))scan();
+  }).observe(document.querySelector('main'),{childList:true,subtree:true});
   const ready=Promise.all([ProMaxFeatures.ready,ProMaxYouTubeLibrary.ready,storedAsset('get',null,'background')]).then(([, ,file])=>{if(!backgroundFile&&media&&!settings.visual)backgroundFile=file;normalize();originalSave();setBaseline(take());enabled=true;renderLibrary();renderSlides();scan();toolbar();});
   window.ProMaxControls={ready,changed,undo:()=>history('undo'),redo:()=>history('redo'),remove,duplicate,move,drop,select,refresh,mutate,get busy(){return busy;}};toolbar();
 })();

@@ -40,10 +40,10 @@ async function run() {
       await ProMaxYouTubeLibrary.history.apply([{...ProMaxYouTubeLinks.parse('https://youtu.be/M7lc1UVf-VE'),id:uid(),title:'Test link'}]);
       ProMaxFeatures.showTab('songs');ProMaxMeetings.select(null);
     });
-    await page.locator('#shared-open').click();
+    if(!await page.locator('#app-settings-dialog').isVisible())await page.locator('#app-settings').click();await page.locator('#shared-open').click();
     await page.locator('#sharing-dialog').waitFor();
     assert.equal(await page.locator('#shared-choice').inputValue(),'none');
-    await page.locator('#shared-close').click();
+    await page.locator('#settings-close').click();
     const data=await page.evaluate(()=>proMaxPrepareUpdate());
     stage='backup'; console.log('Desktop check: '+stage);
     const {backupLibrary}=require('../desktop/backup.cjs');

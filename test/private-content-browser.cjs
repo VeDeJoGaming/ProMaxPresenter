@@ -34,7 +34,7 @@ async function run(){
     // Browser reload rebuilds the local media, meetings and document feature state.
     assert.equal(await b.page.evaluate(()=>ProMaxFeatures.getDocuments()[0].title),'Test deck');
     await a.page.evaluate(()=>{songs.find(s=>s.id==='test-song').title='PC edit';save();});await b.page.evaluate(()=>{songs.find(s=>s.id==='test-song').title='Laptop edit';save();});await sync(a);const result=await sync(b);assert.ok(Object.values(result.conflicts).some(c=>c?.key==='song/test-song'));
-    await b.page.locator('#shared-open').click();await b.page.screenshot({path:path.join(repo,'test-results','private-library.png')});
+    await b.page.locator('#app-settings').click();await b.page.locator('#shared-open').click();await b.page.screenshot({path:path.join(repo,'test-results','private-library.png')});
     const conflict=b.page.locator('#private-conflicts details').filter({has:b.page.locator('summary').filter({hasText:'song/test-song'})});await conflict.locator('summary').click();
     await Promise.all([b.page.waitForEvent('load'),conflict.getByRole('button',{name:'Use incoming',exact:true}).click()]);
     await b.page.waitForFunction(()=>window.ProMaxFeatures?.ready);await b.page.evaluate(()=>ProMaxFeatures.ready);

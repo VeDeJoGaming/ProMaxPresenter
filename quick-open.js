@@ -1,6 +1,6 @@
 /* Navigation only: finding content never sends a new cue to the presentation. */
 (() => {
-  const dialog=document.createElement('dialog');dialog.id='quick-open';dialog.setAttribute('aria-labelledby','quick-open-title');
+  const dialog=document.createElement('dialog');dialog.id='quick-open';dialog.setAttribute('closedby','any');dialog.setAttribute('aria-labelledby','quick-open-title');
   dialog.innerHTML='<div class="quick-open-heading"><h2 id="quick-open-title">Quick open</h2><button type="button" aria-label="Close quick open">✕</button></div><p>Find a song or meeting. Opening it keeps the current presentation unchanged.</p><input id="quick-open-search" type="search" placeholder="Song title, lyrics or meeting name…" aria-label="Find songs and meetings" role="combobox" aria-expanded="true" aria-controls="quick-open-results" aria-autocomplete="list" autocomplete="off"><div id="quick-open-results" role="listbox" aria-label="Matching songs and meetings"></div><p id="quick-open-status" role="status"></p><small>↑ ↓ browse · Enter opens · Esc closes</small>';
   document.body.append(dialog);
   const input=$('quick-open-search'),list=$('quick-open-results'),status=$('quick-open-status');let matches=[],index=0,previousFocus=null;

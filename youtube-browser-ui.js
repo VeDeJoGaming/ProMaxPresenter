@@ -10,6 +10,10 @@
   }
   const schedule=()=>{if(!frame)frame=requestAnimationFrame(update);};
   new MutationObserver(schedule).observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['hidden','open']});
-  addEventListener('resize',schedule);addEventListener('scroll',schedule,true);
+  addEventListener('resize',schedule);
+  addEventListener('scroll',event=>{
+    const preview=document.querySelector('[data-native-youtube-preview]');
+    if(preview&&(event.target===document||event.target.contains?.(preview)))schedule();
+  },{capture:true,passive:true});
   window.ProMaxYouTubeBrowserUI={update:schedule};
 })();
