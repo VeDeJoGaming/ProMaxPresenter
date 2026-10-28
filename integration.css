@@ -34,3 +34,46 @@ dialog { background:var(--pm-panel);color:var(--pm-text);border-color:var(--pm-b
 #private-enabled { width:auto; margin:0; }
 #private-connected > label { display:flex; align-items:center; gap:10px; }
 #private-conflicts pre { max-height:240px; overflow:auto; white-space:pre-wrap; overflow-wrap:anywhere; }
+/* Three independent work areas; the app bar stays in place. */
+html,body{height:100%;overflow:hidden}
+body{display:flex;flex-direction:column}
+body>header{flex:none;height:auto;min-height:76px;padding:12px 150px 12px 20px;gap:20px;-webkit-app-region:drag;user-select:none;backdrop-filter:none}
+header .header-actions{justify-content:flex-end;-webkit-app-region:no-drag;gap:8px}
+header button{font-size:12px;padding:8px 11px;white-space:nowrap}
+header .brand{flex-shrink:0;font-size:17px}
+header .mark{width:34px;height:34px;font-size:23px;border-radius:9px}
+#status{font-size:11px;margin:0}
+body>main{flex:1;min-height:0;display:grid;grid-template-columns:clamp(180px,17vw,240px) minmax(280px,1fr) clamp(300px,26vw,370px);overflow:hidden}
+body>main>aside,body>main>.workspace,body>main>.control{min-height:0;min-width:0;overflow:auto;overscroll-behavior:contain;scrollbar-gutter:stable;scrollbar-width:thin;scrollbar-color:var(--pm-border) transparent}
+body>main>aside{padding:22px 14px}
+body>main>.workspace{padding:24px}
+body>main>.control{display:block;grid-column:auto;padding:22px 16px}
+.control .panel{margin-top:18px}
+.workspace-top{flex-wrap:wrap;gap:14px;margin-bottom:22px}
+.workspace-top>div:last-child{flex-wrap:wrap}
+.field{gap:12px}
+.field select{min-width:0;max-width:65%}
+select{color-scheme:dark;background:var(--pm-field);color:var(--pm-text);border:1px solid var(--pm-border);box-shadow:none}
+select option,select optgroup{background:var(--pm-panel);color:var(--pm-text)}
+/* Chromium's accessible native picker, styled with the same ProMax surfaces. */
+@supports (appearance:base-select){
+  select,select::picker(select){appearance:base-select}
+  select{align-items:center;gap:12px;border-radius:var(--pm-radius);padding:9px 11px;cursor:pointer}
+  select::picker-icon{color:var(--pm-muted);transition:rotate .15s}
+  select:open::picker-icon{rotate:180deg}
+  select::picker(select){background:var(--pm-panel);color:var(--pm-text);border:1px solid var(--pm-border-hover);border-radius:10px;padding:5px;box-shadow:0 12px 32px #0008;max-height:300px;overflow:auto;scrollbar-width:thin;scrollbar-color:var(--pm-border) var(--pm-panel)}
+  select option{padding:9px 12px;gap:12px;border-radius:5px;cursor:pointer;font-size:12px}
+  select option:hover,select option:focus{background:var(--pm-button-hover);outline:none}
+  select option:checked{background:var(--pm-selection-bg);color:var(--pm-selection-text)}
+  select option::checkmark{color:var(--pm-accent)}
+  select option:disabled{color:var(--pm-muted);opacity:.55}
+}
+.shortcut-help{color:var(--pm-muted);line-height:1.8}
+#app-settings-dialog .updates-panel{margin:0;padding:0 0 20px;border-top:0}
+@media(max-width:1200px){#status{display:none}body>header{min-height:84px}.brand{gap:8px}body>main>.workspace{padding:20px 16px}}
+@media(max-width:900px){body>header{align-items:flex-start;padding-right:145px;gap:12px}header .header-actions{flex:1}body>main{grid-template-columns:180px minmax(280px,1fr) 300px}}
+@media(max-width:760px){body>main{overflow-x:auto;grid-template-columns:180px 320px 300px}body>header{padding-top:42px;padding-right:16px}.brand{font-size:15px}}
+#open-output::after,#blackout::after{display:inline-block;margin-left:8px;padding:1px 4px;border:1px solid currentColor;border-radius:3px;font-size:9px;opacity:.65;vertical-align:1px}
+#open-output::after{content:'F5'}#blackout::after{content:'F6'}
+body>main{grid-template-rows:minmax(0,1fr)}
+body>main>aside,body>main>.workspace,body>main>.control{align-self:stretch;position:relative;top:auto}

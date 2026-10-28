@@ -139,7 +139,7 @@ function syncOutputButton(){
     $('open-output').textContent=active?'■ Presentation on':'↗ Presentation off';
     $('open-output').setAttribute('aria-pressed',String(active));
     $('open-output').setAttribute('aria-busy',String(presentationBusy));
-    $('open-output').title=active?'Close presentation and release the display':'Show presentation fullscreen on the second display';
+    $('open-output').title=active?'Close presentation and release the display (F5)':'Show presentation fullscreen on the second display (F5)';
     syncLiveStatus();
 }
 function closeOutput(){
@@ -199,7 +199,11 @@ async function openOutput(){
 document.addEventListener('focusout',()=>flushPendingSave());
 document.addEventListener('visibilitychange',()=>{if(document.hidden)flushPendingSave();});
 window.addEventListener('beforeunload',()=>{flushPendingSave();if(lastSavedRaw)window.promaxDesktop?.saveLibrary?.(lastSavedRaw);closeOutput();});
-function handleKey(e){if(window.ProMaxFeatures?.handleKey(e))return;if(document.getElementById('visual-library')?.open||document.getElementById('slide-editor')?.open)return;if(/INPUT|TEXTAREA|SELECT/.test(e.target.tagName)||e.ctrlKey||e.altKey||e.metaKey)return;const key=e.key.toLowerCase();if(key==='arrowright'||key===' '){e.preventDefault();goLive(liveIndex+1);}else if(key==='arrowleft'){e.preventDefault();goLive(liveIndex-1);}else if(key==='escape'){e.preventDefault();toggleBlackout();}else{const matches=current().slides.map((s,i)=>s.key===key?i:-1).filter(i=>i>=0);if(matches.length){e.preventDefault();goLive(matches.find(i=>i>liveIndex)??matches[0]);}}}
+function handleKey(e){
+  // Dedicated presentation controls also work while typing; held keys toggle once.
+  if(e.key==='F5'||e.key==='F6'){e.preventDefault();if(!e.repeat){if(e.key==='F5')openOutput();else toggleBlackout();}return;}
+  if(document.querySelector('dialog[open]'))return;
+  if(window.ProMaxFeatures?.handleKey(e))return;if(document.getElementById('visual-library')?.open||document.getElementById('slide-editor')?.open)return;if(/INPUT|TEXTAREA|SELECT/.test(e.target.tagName)||e.ctrlKey||e.altKey||e.metaKey)return;const key=e.key.toLowerCase();if(key==='arrowright'||key===' '){e.preventDefault();goLive(liveIndex+1);}else if(key==='arrowleft'){e.preventDefault();goLive(liveIndex-1);}else if(key==='escape'){e.preventDefault();toggleBlackout();}else{const matches=current().slides.map((s,i)=>s.key===key?i:-1).filter(i=>i>=0);if(matches.length){e.preventDefault();goLive(matches.find(i=>i>liveIndex)??matches[0]);}}}
 let dbPromise=new Promise((resolve,reject)=>{const request=indexedDB.open('promax-media',1);request.onupgradeneeded=()=>request.result.createObjectStore('assets');request.onsuccess=()=>resolve(request.result);request.onerror=()=>reject(request.error);});
 async function storedAsset(action,value,key='background'){const db=await dbPromise;return new Promise((resolve,reject)=>{const tx=db.transaction('assets',action==='get'?'readonly':'readwrite');const store=tx.objectStore('assets');const req=action==='get'?store.get(key):action==='delete'?store.delete(key):store.put(value,key);tx.oncomplete=()=>resolve(req.result);tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error);});}
 function setMedia(file){settings.visual=null;save();if(media)URL.revokeObjectURL(media.url);media=file?{url:URL.createObjectURL(file),type:file.type}:null;renderSlides();paint();if(typeof updateVisualName==='function')updateVisualName();}

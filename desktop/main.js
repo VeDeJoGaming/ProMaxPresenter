@@ -173,7 +173,7 @@ else {
     youtubeBrowser=require('./youtube-browser').createYouTubeBrowser({getControl:()=>control,getPresentation:()=>presentation,onStatus:value=>control?.webContents.send('youtube:status',value)});
     app.once('will-quit',()=>youtubeHost.close());
     Menu.setApplicationMenu(null);
-    control = new BrowserWindow({ width: 1440, height: 940, minWidth: 850, minHeight: 650, show: false, backgroundColor: '#0d0d0d', title: 'ProMax Presenter', webPreferences: preferences });
+    control = new BrowserWindow({ width: 1440, height: 940, minWidth: 850, minHeight: 650, show: false, titleBarStyle: 'hidden', titleBarOverlay: { color: '#1c1616', symbolColor: '#f4e9e5', height: 36 }, backgroundColor: '#0d0d0d', title: 'ProMax Presenter', webPreferences: preferences });
     secure(control);
     control.webContents.once('did-finish-load',()=>integrations.start());
     control.webContents.on('did-finish-load', sendActive);
