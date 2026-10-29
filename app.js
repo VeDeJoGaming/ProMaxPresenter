@@ -21,14 +21,16 @@ function flushPendingSave(){if(pendingSaveTimer!==null)return save();return true
 function librarySnapshot(){return {schemaVersion:1,savedAt:Date.now(),songs,selected,settings,meetingFolders,meetingSelected};}
 function save(){
   clearTimeout(pendingSaveTimer);pendingSaveTimer=null;pendingSaveSince=0;
+  let raw;
   try{
-    const raw=JSON.stringify(librarySnapshot());
+    raw=JSON.stringify(librarySnapshot());
+    // Recovery must remain independent when localStorage is full or unavailable.
+    if(window.promaxDesktop?.saveLibrary){clearTimeout(nativeSaveTimer);nativeSaveTimer=setTimeout(()=>window.promaxDesktop.saveLibrary(raw),350);}
     localStorage.setItem('promax-library',raw);
     if(lastSavedRaw&&Date.now()-lastShadowAt>10000){try{localStorage.setItem('promax-library-recovery',lastSavedRaw);lastShadowAt=Date.now();}catch{}}
     lastSavedRaw=raw;
-    if(window.promaxDesktop?.saveLibrary){clearTimeout(nativeSaveTimer);nativeSaveTimer=setTimeout(()=>window.promaxDesktop.saveLibrary(lastSavedRaw),350);}
     $('status').textContent='All changes saved';return true;
-  }catch(e){$('status').textContent='Save failed';notify('Could not save automatically. Your latest changes are not saved.');return false;}
+  }catch(e){$('status').textContent='Save failed';notify(raw&&window.promaxDesktop?.saveLibrary?'Could not save to local storage. A separate recovery copy is being attempted in app data.':'Could not save automatically. Your latest changes are not saved.');return false;}
 }
 const libraryRows=new Map();
 let songFavoritesOnly=false;
