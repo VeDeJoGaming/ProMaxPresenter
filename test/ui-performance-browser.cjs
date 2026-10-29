@@ -17,6 +17,15 @@ async function run(){
     browser=await chromium.launch({headless:true,...(process.env.PROMAX_BROWSER_PATH?{executablePath:process.env.PROMAX_BROWSER_PATH}:{})});
     const page=await browser.newPage({viewport:{width:1440,height:940}});page.on('pageerror',error=>errors.push(error.message));
     await page.goto('http://127.0.0.1:'+server.address().port);await page.evaluate(()=>ProMaxControls.ready);
+    // Browser output is an isolated, headless popup, never a physical display.
+    await page.evaluate(async()=>{
+      await ProMaxControls.mutate('Browser live navigation',()=>{songs=['browser-live','browser-preparation'].map((id,index)=>({id,title:id,lyrics:'Synthetic words',lines:4,slides:[0,1,2].map(n=>({id:id+'-'+n,text:id+' '+n,section:'Verse',key:'v'}))}));selected='browser-live';});
+      output=window.open('','promax-headless-output');output.document.body.innerHTML='<div id="stage"></div>';syncOutputButton();goLive(1);window.browserLiveCue=state;selectSong('browser-preparation');
+    });
+    const presentation=page.context().pages().find(p=>p!==page);assert.ok(presentation,'Browser mode creates a separate output document');
+    await page.locator('#meeting-open-live').click();assert.deepEqual(await page.evaluate(()=>({selected,liveIndex,same:state===browserLiveCue})),{selected:'browser-live',liveIndex:1,same:true});assert.equal(await presentation.locator('#stage .screen-text').innerText(),'browser-live 1');
+    await page.locator('#next').click();assert.equal(await presentation.locator('#stage .screen-text').innerText(),'browser-live 2');await page.evaluate(()=>{toggleBlackout();window.browserBlackCue=state;selectSong('browser-preparation');});await page.locator('#meeting-open-live').click();assert.equal(await page.evaluate(()=>state===browserBlackCue&&state.black),true);
+    await page.evaluate(()=>closeOutput());await page.locator('#meeting-open-live').waitFor({state:'hidden'});
     const seed=await page.evaluate(async()=>{
       await ProMaxControls.mutate('Synthetic library',()=>{
         songs=Array.from({length:1000},(_,i)=>({id:'synthetic-'+i,title:'Synthetic song '+i,lyrics:'Synthetic line\n'.repeat(50),lines:4,
@@ -62,7 +71,7 @@ async function run(){
     const failure=await page.evaluate(()=>{const original=Storage.prototype.setItem;Storage.prototype.setItem=()=>{throw new DOMException('Test quota','QuotaExceededError');};const saved=save();Storage.prototype.setItem=original;return {saved,status:$('status').textContent};});
     assert.deepEqual(failure,{saved:false,status:'Save failed'});
     assert.deepEqual(errors,[]);
-    console.log(`PASSED: 1000-song input burst (${seed.inputMs.toFixed(1)} ms), one deferred write, undo/redo, keyed rows, search/reorder/delete, explicit save, blur, bounded autosave, exit/reload and storage failure.`);
+    console.log(`PASSED: headless browser live return/next/blackout, 1000-song input burst (${seed.inputMs.toFixed(1)} ms), one deferred write, undo/redo, keyed rows, search/reorder/delete, explicit save, blur, bounded autosave, exit/reload and storage failure.`);
   }finally{await browser?.close();await new Promise(resolve=>server.close(resolve));}
 }
 run().catch(error=>{console.error(error);process.exitCode=1;});
