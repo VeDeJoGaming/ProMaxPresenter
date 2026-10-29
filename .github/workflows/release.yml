@@ -72,7 +72,7 @@ jobs:
         if: steps.version.outputs.build == 'true'
         shell: pwsh
         run: |
-          foreach ($script in @('test/operator-tools-desktop.cjs','test/meeting-check-desktop.cjs','test/meeting-plan-desktop.cjs','test/quick-open-media-desktop.cjs','test/presentation-keys-desktop.cjs','test/preparation-keys-desktop.cjs','test/video-transport-desktop.cjs','test/video-import-desktop.cjs','test/meeting-live-desktop.cjs','test/recovery-desktop.cjs','test/stellar-visual.cjs')) {
+          foreach ($script in @('test/operator-tools-desktop.cjs','test/meeting-check-desktop.cjs','test/meeting-plan-desktop.cjs','test/quick-open-media-desktop.cjs','test/presentation-keys-desktop.cjs','test/preparation-keys-desktop.cjs','test/file-pickers-desktop.cjs','test/video-transport-desktop.cjs','test/video-import-desktop.cjs','test/meeting-live-desktop.cjs','test/recovery-desktop.cjs','test/stellar-visual.cjs')) {
             node $script
             if ($LASTEXITCODE -ne 0) { throw "Feature verification failed: $script" }
           }
@@ -95,7 +95,7 @@ jobs:
         if: steps.version.outputs.build == 'true'
         shell: pwsh
         run: |
-          foreach ($script in @('test/operator-tools-desktop.cjs','test/meeting-check-desktop.cjs','test/meeting-plan-desktop.cjs','test/quick-open-media-desktop.cjs','test/presentation-keys-desktop.cjs','test/preparation-keys-desktop.cjs','test/video-transport-desktop.cjs','test/video-import-desktop.cjs','test/meeting-live-desktop.cjs','test/recovery-desktop.cjs','test/stellar-visual.cjs')) {
+          foreach ($script in @('test/operator-tools-desktop.cjs','test/meeting-check-desktop.cjs','test/meeting-plan-desktop.cjs','test/quick-open-media-desktop.cjs','test/presentation-keys-desktop.cjs','test/preparation-keys-desktop.cjs','test/file-pickers-desktop.cjs','test/video-transport-desktop.cjs','test/video-import-desktop.cjs','test/meeting-live-desktop.cjs','test/recovery-desktop.cjs','test/stellar-visual.cjs')) {
             node $script "dist/win-unpacked/ProMax Presenter.exe"
             if ($LASTEXITCODE -ne 0) { throw "Packaged feature verification failed: $script" }
           }

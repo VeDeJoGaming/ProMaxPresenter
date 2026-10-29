@@ -228,7 +228,7 @@ async function init(){
   selected=songs.some(s=>s.id===selected)?selected:songs[0].id;
   if(settings.color.toLowerCase()==='#142a39')settings.color='#181818';
   $('color').value=settings.color;$('font-size').value=settings.fontSize;$('align').value=settings.align;$('quick-text').value=settings.quickText||'';$('minutes').value=settings.countdownMinutes||5;
-  bind();bindVisualLibrary();bindSlideEditor();selectSong(selected);paint();
+  bind();ProMaxFilePicker.enhanceLabels();bindVisualLibrary();bindSlideEditor();selectSong(selected);paint();
   if(recovered||invalid)setTimeout(()=>notify(recovered?'Your library was recovered from a saved copy.':'The saved library could not be read. Your media files are still kept in app data.'),900);
   if(native?.notice)setTimeout(()=>notify(native.notice.message),1200);
   try{const file=await storedAsset('get');if(file&&!settings.visual)setMedia(file);}catch(e){notify('Media storage is unavailable in this browser.');}

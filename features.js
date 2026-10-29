@@ -27,18 +27,7 @@
   function element(tag,text,className) { const node=document.createElement(tag);if(text)node.textContent=text;if(className)node.className=className;return node; }
   function button(text,callback,className) { const b=element('button',text,className);b.type='button';b.onclick=callback;return b; }
   function fileButton(text,accept,handler,multiple=false) {
-    const wrapper=element('span',null,'file-picker'),input=document.createElement('input');input.type='file';input.accept=accept;input.hidden=true;input.multiple=multiple;input.setAttribute('aria-label',text);
-    const picker=button(text,()=>input.click(),'button');picker.dataset.filePicker=accept;
-    input.onchange=async()=>{
-      const files=[...input.files];if(!files.length)return;
-      const restoreFocus=document.activeElement===picker;picker.disabled=true;picker.textContent='Importing…';picker.setAttribute('aria-busy','true');
-      try{await handler(files);}catch(error){notify(error.message || 'Could not import this file.');}
-      finally{
-        input.value='';picker.disabled=false;picker.textContent=text;picker.removeAttribute('aria-busy');
-        if(restoreFocus&&document.activeElement===document.body)[...document.querySelectorAll('[data-file-picker]')].find(node=>node.dataset.filePicker===accept&&node.getClientRects().length)?.focus({preventScroll:true});
-      }
-    };
-    wrapper.append(picker,input);return wrapper;
+    return ProMaxFilePicker.create({text,accept,multiple,onFiles:handler});
   }
   async function persist(key,value) { await storedAsset('put',value,key); }
   function heading(title,help) {window.ProMaxVideoControls?.clear();window.ProMaxYouTube?.park(document);view.replaceChildren(element('h2',title),element('p',help,'feature-help'));}
@@ -149,17 +138,18 @@
     const url=URL.createObjectURL(file);cache.set(asset.id,url);return url;
   }
   function addVideos(files) {return videoOperation(async()=>{
-    let added=0;
+    let added=0;const imported=[];
     try{
       for (const file of files) {
         if (!file.type.startsWith('video/') && !/\.(mp4|webm|mov|m4v)$/i.test(file.name)) {notify(`Skipped ${file.name}: choose a video file.`);continue;}
         const asset={id:uid(),name:file.name,size:file.size,type:file.type || 'video/mp4'};
         await persist(`video:${asset.id}`,file);
         const next=[...assets,asset];try{await persist('video-list',next);}catch(error){await storedAsset('delete',null,`video:${asset.id}`);throw error;}
-        assets=next;added++;await loadAsset(asset);
+        assets=next;added++;imported.push(asset);await loadAsset(asset);
       }
     }finally{if(added){warmVideos();window.ProMaxControls?.changed();if(tab==='videos')renderVideos();}}
     if(added)notify(`${added} ${added===1?'video':'videos'} saved. Preparing playback…`);
+    return imported;
   });}
   function videoUrls(){return [...new Set([state.video?.url,cache.get(focusedAsset),...assets.map(a=>cache.get(a.id))].filter(Boolean))].slice(0,3);}
   function warmVideos(){ProMaxPlayback.warm(document,videoUrls());paint();}
