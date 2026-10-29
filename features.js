@@ -10,6 +10,8 @@
   let focusedAsset=null;
   const cache=new Map();
   const videoDurations=new Map();
+  let videoQueue=Promise.resolve();
+  function videoOperation(action){const operation=videoQueue.then(action);videoQueue=operation.catch(()=>{});return operation;}
   const tabs=[['songs','Songs'],['bible','Bible'],['videos','Videos'],['presentations','PowerPoint']];
   for (const [id,label] of tabs) { const b=document.createElement('button');b.textContent=label;b.onclick=()=>showTab(id);b.dataset.tab=id;nav.append(b); }
   function showTab(id,options={}) {
@@ -137,17 +139,19 @@
     const file=await storedAsset('get',null,`video:${asset.id}`);if(!file)throw Error(`The saved video “${asset.name}” is missing.`);
     const url=URL.createObjectURL(file);cache.set(asset.id,url);return url;
   }
-  async function addVideos(files) {
+  function addVideos(files) {return videoOperation(async()=>{
     let added=0;
-    for (const file of files) {
-      if (!file.type.startsWith('video/') && !/\.(mp4|webm|mov|m4v)$/i.test(file.name)) {notify(`Skipped ${file.name}: choose a video file.`);continue;}
-      const asset={id:uid(),name:file.name,size:file.size,type:file.type || 'video/mp4'};
-      await persist(`video:${asset.id}`,file);
-      const next=[...assets,asset];try{await persist('video-list',next);}catch(error){await storedAsset('delete',null,`video:${asset.id}`);throw error;}
-      assets=next;await loadAsset(asset);added++;
-    }
-    warmVideos();renderVideos();notify(`${added} videos saved. Preparing playback…`);
-  }
+    try{
+      for (const file of files) {
+        if (!file.type.startsWith('video/') && !/\.(mp4|webm|mov|m4v)$/i.test(file.name)) {notify(`Skipped ${file.name}: choose a video file.`);continue;}
+        const asset={id:uid(),name:file.name,size:file.size,type:file.type || 'video/mp4'};
+        await persist(`video:${asset.id}`,file);
+        const next=[...assets,asset];try{await persist('video-list',next);}catch(error){await storedAsset('delete',null,`video:${asset.id}`);throw error;}
+        assets=next;added++;await loadAsset(asset);
+      }
+    }finally{if(added){warmVideos();window.ProMaxControls?.changed();if(tab==='videos')renderVideos();}}
+    if(added)notify(`${added} videos saved. Preparing playback…`);
+  });}
   function videoUrls(){return [...new Set([state.video?.url,cache.get(focusedAsset),...assets.map(a=>cache.get(a.id))].filter(Boolean))].slice(0,3);}
   function warmVideos(){ProMaxPlayback.warm(document,videoUrls());paint();}
   async function playVideo(asset,options={}) {
@@ -268,18 +272,18 @@
   function openMeetingMedia(type,id){showTab(type);focusedAsset=id;if(type==='videos'){warmVideos();renderVideos();}else renderDocuments();}
   function externalCue(){deck=null;activeVideo=null;}
   async function keepTrash(ids){const trash=new Set(await storedAsset('get',null,'video-trash')||[]);ids.forEach(id=>trash.add(id));assets.forEach(a=>trash.delete(a.id));await persist('video-trash',[...trash]);}
-  async function removeVideo(id){assets=assets.filter(a=>a.id!==id);await persist('video-list',assets);await keepTrash([id]);renderVideos();}
+  function removeVideo(id){return videoOperation(async()=>{const next=assets.filter(a=>a.id!==id);await persist('video-list',next);assets=next;await keepTrash([id]);window.ProMaxControls?.changed();if(tab==='videos')renderVideos();});}
   async function removeDocument(id){documents=documents.filter(d=>d.id!==id);await persist('presentations',documents);renderDocuments();}
   async function persistDocuments(){await persist('presentations',documents);window.ProMaxControls?.changed();}
   function captureDeck(){return deck?{id:deck.id,meetingItemId:deck.meetingItemId,slide:deck.slides[deck.index],index:deck.index}:null;}
   function syncDeck(previous){if(!deck||!previous)return;const source=previous.meetingItemId?meetingFolders.flatMap(f=>f.items).find(i=>i.id===previous.meetingItemId):documents.find(d=>d.id===previous.id);if(!source)return;deck.slides=source.slides;const index=source.slides.findIndex(s=>typeof s==='string'?s===previous.slide:s.id&&s.id===previous.slide?.id);deck.index=index>=0?index:Math.max(-1,Math.min(previous.index-1,source.slides.length-1));}
-  const history={take:()=>({videos:structuredClone(assets),documents:structuredClone(documents),bible}),apply:async value=>{
+  const history={take:()=>({videos:structuredClone(assets),documents:structuredClone(documents),bible}),apply:value=>videoOperation(async()=>{
     const bibleChanged=bible!==value.bible;
     const removed=assets.filter(a=>!value.videos.some(v=>v.id===a.id)).map(a=>a.id);
     assets=structuredClone(value.videos);documents=structuredClone(value.documents);bible=value.bible;chosen.clear();
     await Promise.all([persist('video-list',assets),persist('presentations',documents),...(bibleChanged?[persist('bible',bible)]:[])]);await keepTrash(removed);if(bibleChanged)document.dispatchEvent(new Event('promax:bible-changed'));
     for(const asset of assets)if(!cache.has(asset.id))try{await loadAsset(asset);}catch{}
-  }};
+  })};
   window.ProMaxFeatures={renderBibleSettings,videoUrls,handleKey,importBible,addVideos,playVideo,showDeck,navigate,showTab,saveDocument,openMeetingMedia,externalCue,seekVideo,videoSnapshot,
     openBibleReference:verse=>{if(!bible?.verses.includes(verse))return false;bibleQuery=ProMaxBible.formatReference([verse]);showTab('bible',{bibleVerse:verse});return true;},
     receiveBible:async value=>{const parsed=ProMaxBible.parse(JSON.stringify(value),'shared-bible.json');await persist('bible',parsed);bible=parsed;chosen.clear();if(tab==='bible')renderBible();document.dispatchEvent(new Event('promax:bible-changed'));window.ProMaxControls?.changed();return parsed;},
