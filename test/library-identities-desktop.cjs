@@ -1,0 +1,21 @@
+/* Repair a synthetic legacy library through the real native recovery bridge. */
+const {_electron:electron}=require('playwright');
+const assert=require('node:assert/strict'),fs=require('node:fs/promises'),path=require('node:path'),os=require('node:os');
+async function run(){
+  const profile=await fs.mkdtemp(path.join(os.tmpdir(),'promax-library-identities-')),executablePath=process.argv[2],env={...process.env,PROMAX_TEST_DATA:profile};delete env.ELECTRON_RUN_AS_NODE;
+  let app;const errors=[];
+  const watchdog=setTimeout(()=>{console.error('Library identity check timed out');app?.process().kill();process.exit(1);},90000);watchdog.unref();
+  async function launch(){app=await electron.launch({executablePath,args:executablePath?[`--user-data-dir=${profile}`]:[path.join(__dirname,'..')],env,timeout:45000});assert.equal(path.resolve(await app.evaluate(({app})=>app.getPath('userData'))).toLowerCase(),path.resolve(profile).toLowerCase());const page=await app.firstWindow();page.on('pageerror',error=>errors.push(error.message));await page.waitForFunction(()=>window.ProMaxControls);await page.evaluate(()=>ProMaxControls.ready);return page;}
+  try{
+    const fixture={schemaVersion:1,savedAt:Date.now(),selected:'identity-song',songs:[{id:'identity-song',title:'Synthetic legacy identity',lyrics:'[Verse 1]\nFirst words\n\n[Verse 2]\nSecond words',lines:4,slides:[{id:'repeat-slide',text:'First words',section:'Verse 1',key:'q'},{id:'repeat-slide',text:'Second words',section:'Verse 2',key:'w'}]}],settings:{},meetingSelected:'repeat-folder',meetingFolders:[{id:'repeat-folder',name:'First synthetic folder',selectedItem:'repeat-item',items:[{id:'repeat-item',type:'song',songId:'identity-song',title:'First folder entry'}]},{id:'repeat-folder',name:'Second synthetic folder',selectedItem:'repeat-item',items:[{id:'repeat-item',type:'song',songId:'identity-song',title:'Second folder entry'},{id:'prepared',type:'text',title:'Prepared example',slides:[{id:'repeat-prepared',text:'Prepared one'},{id:'repeat-prepared',text:'Prepared two'}]}]}]};
+    await fs.mkdir(path.join(profile,'recovery'));await fs.writeFile(path.join(profile,'recovery','library.json'),JSON.stringify(fixture));let page=await launch();
+    const fixed=await page.evaluate(()=>librarySnapshot()),folders=fixed.meetingFolders;assert.equal(new Set(folders.map(f=>f.id)).size,2);assert.equal(new Set(folders.flatMap(f=>f.items.map(i=>i.id))).size,3);assert.equal(new Set(fixed.songs[0].slides.map(s=>s.id)).size,2);assert.equal(new Set(folders[1].items[1].slides.map(s=>s.id)).size,2);
+    assert.equal(folders[1].selectedItem,folders[1].items[0].id);await page.evaluate(id=>ProMaxMeetings.select(id),folders[1].id);assert.equal(await page.evaluate(()=>ProMaxMeetings.folder().items.find(i=>i.id===ProMaxMeetings.folder().selectedItem).title),'Second folder entry');
+    await page.evaluate(()=>{ProMaxMeetings.select(null);goLive(0);window.identityCue=state;});const removed=fixed.songs[0].slides[1].id;
+    await page.evaluate(slideId=>ProMaxControls.remove({type:'slide',songId:'identity-song',slideId}),removed);assert.deepEqual(await page.evaluate(()=>current().slides.map(s=>s.text)),['First words'],'Removing the repaired second slide cannot remove the first');assert.equal(await page.evaluate(()=>state===identityCue),true);
+    await page.evaluate(()=>ProMaxControls.undo());assert.deepEqual(await page.evaluate(()=>current().slides.map(s=>s.id)),fixed.songs[0].slides.map(s=>s.id));
+    const saved=await page.evaluate(()=>({songs,meetingFolders}));await app.close();app=null;page=await launch();assert.deepEqual(await page.evaluate(()=>({songs,meetingFolders})),saved);assert.deepEqual(errors,[]);
+    console.log('PASS: native legacy-ID repair, scoped slide identity, unique folder/items, preserved folder selection/content, exact slide removal/undo, unchanged live cue and stable restart; '+(executablePath||'source'));
+  }finally{clearTimeout(watchdog);await app?.close();if(path.dirname(profile)!==os.tmpdir()||!path.basename(profile).startsWith('promax-library-identities-'))throw Error('Unexpected library identity profile');await fs.rm(profile,{recursive:true,force:true,maxRetries:10,retryDelay:100});}
+}
+run().then(()=>process.exit(0),error=>{console.error(error);process.exit(1);});
