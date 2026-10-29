@@ -17,6 +17,10 @@ async function run(){
     assert.equal(path.resolve(await app.evaluate(({app})=>app.getPath('userData'))).toLowerCase(),path.resolve(profile).toLowerCase());
     const page=await app.firstWindow();page.on('pageerror',error=>errors.push(error.message));page.on('request',request=>{if(/^https?:/.test(request.url()))requests.push(request.url());});
     await page.waitForFunction(()=>window.ProMaxControls);await page.evaluate(()=>ProMaxControls.ready);
+    async function openPicker(locator,key){
+      await app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows()[0].focus());await page.bringToFront();await page.waitForFunction(()=>document.hasFocus());await locator.focus();
+      const chooser=page.waitForEvent('filechooser');await page.keyboard.press(key);return chooser;
+    }
     await page.evaluate(async bytes=>{
       window.pickerBytes=Uint8Array.from(atob(bytes),c=>c.charCodeAt(0));
       await ProMaxYouTubeLibrary.history.apply([{id:'picker-entry',videoId:'abcdefghijk',title:'Synthetic offline attachment',start:0,url:'https://www.youtube.com/watch?v=abcdefghijk'}]);
@@ -24,20 +28,21 @@ async function run(){
     },(await fs.readFile(path.join(__dirname,'../desktop/smoke-video.webm'))).toString('base64'));
     assert.equal(await page.evaluate(()=>ProMaxFeatures.getVideos().find(v=>v.id===ProMaxYouTubeLibrary.list()[0].localAssetId).name),'Intended local copy.webm','An attachment must use its own imported file when another import is queued');
     await page.evaluate(()=>{goLive(0);window.pickerCue=state;document.querySelector('#background').closest('details').open=true;});
-    const background=page.locator('button[data-file-picker="background"]');await background.focus();const backgroundChooser=page.waitForEvent('filechooser');await page.keyboard.press('Space');assert.equal(await page.evaluate(()=>state===pickerCue),true);
-    await (await backgroundChooser).setFiles(path.join(__dirname,'../desktop/smoke-video.webm'));await page.waitForFunction(()=>media?.type==='video/webm');assert.equal(await page.evaluate(()=>state===pickerCue),true);
+    const background=page.locator('button[data-file-picker="background"]'),backgroundChooser=await openPicker(background,'Space');assert.equal(await page.evaluate(()=>state===pickerCue),true);
+    await backgroundChooser.setFiles(path.join(__dirname,'../desktop/smoke-video.webm'));await page.waitForFunction(()=>media?.type==='video/webm');assert.equal(await page.evaluate(()=>state===pickerCue),true);
     await page.evaluate(()=>document.querySelector('#pdf').closest('details').open=true);
-    const pdf=page.locator('button[data-file-picker="pdf"]');await pdf.focus();const canceledChooser=page.waitForEvent('filechooser');await page.keyboard.press('Enter');await (await canceledChooser).setFiles([]);assert.equal(await page.evaluate(()=>state===pickerCue),true,'Canceled file selection keeps the live cue');
-    const pdfFile=path.join(profile,'synthetic-keyboard.pdf');await fs.writeFile(pdfFile,blankPdf());await pdf.focus();const pdfChooser=page.waitForEvent('filechooser');await page.keyboard.press('Space');assert.equal(await page.evaluate(()=>state===pickerCue),true,'Opening a PDF chooser does not cue another slide');await (await pdfChooser).setFiles(pdfFile);await page.waitForFunction(()=>state.pdf?.startsWith('blob:'));
+    const pdf=page.locator('button[data-file-picker="pdf"]'),canceledChooser=await openPicker(pdf,'Enter');await canceledChooser.setFiles([]);assert.equal(await page.evaluate(()=>state===pickerCue),true,'Canceled file selection keeps the live cue');
+    const pdfFile=path.join(profile,'synthetic-keyboard.pdf');await fs.writeFile(pdfFile,blankPdf());const pdfChooser=await openPicker(pdf,'Space');assert.equal(await page.evaluate(()=>state===pickerCue),true,'Opening a PDF chooser does not cue another slide');await pdfChooser.setFiles(pdfFile);await page.waitForFunction(()=>state.pdf?.startsWith('blob:'));
     await page.evaluate(()=>{
       ProMaxFeatures.showTab('videos');window.attachmentCue=state;window.previousAttachment=ProMaxYouTubeLibrary.list()[0].localAssetId;
       window.originalPickerStore=storedAsset;
       storedAsset=async(action,value,key)=>{if(action==='put'&&key?.startsWith('video:')){storedAsset=originalPickerStore;await new Promise(resolve=>window.releaseAttachment=resolve);}return originalPickerStore(action,value,key);};
     });
-    const attach=page.getByRole('button',{name:'Attach local copy',exact:true});await attach.focus();const localChooser=page.waitForEvent('filechooser');await page.keyboard.press('Enter');await (await localChooser).setFiles(path.join(__dirname,'../desktop/smoke-video.webm'));await page.waitForFunction(()=>typeof releaseAttachment==='function');
+    const attach=page.getByRole('button',{name:'Attach local copy',exact:true}),localPicker=await attach.elementHandle(),localChooser=await openPicker(attach,'Enter');await localChooser.setFiles(path.join(__dirname,'../desktop/smoke-video.webm'));await page.waitForFunction(()=>typeof releaseAttachment==='function');
     await page.evaluate(()=>{ProMaxFeatures.showTab('presentations');releaseAttachment();});await page.waitForFunction(async()=>(await storedAsset('get',null,'youtube-list'))[0].localAssetId!==previousAttachment);
+    await page.waitForFunction(picker=>!picker.disabled,localPicker);
     assert.equal(await page.locator('#feature-view h2').innerText(),'PowerPoint','Attachment completion preserves a later workspace choice');assert.equal(await page.evaluate(()=>state===attachmentCue),true);
-    await page.evaluate(()=>{ProMaxFeatures.showTab('videos');window.lastPickerAttachment=ProMaxYouTubeLibrary.list()[0].localAssetId;});await page.getByRole('button',{name:'Attach local copy',exact:true}).focus();const focusedChooser=page.waitForEvent('filechooser');await page.keyboard.press('Space');await (await focusedChooser).setFiles(path.join(__dirname,'../desktop/smoke-video.webm'));
+    await page.evaluate(()=>{ProMaxFeatures.showTab('videos');window.lastPickerAttachment=ProMaxYouTubeLibrary.list()[0].localAssetId;});const finalPicker=await attach.elementHandle(),focusedChooser=await openPicker(attach,'Space');await focusedChooser.setFiles(path.join(__dirname,'../desktop/smoke-video.webm'));await page.waitForFunction(picker=>!picker.disabled,finalPicker);
     await page.waitForFunction(async()=>(await storedAsset('get',null,'youtube-list'))[0].localAssetId!==lastPickerAttachment&&document.activeElement?.dataset.filePicker==='youtube-local:picker-entry'&&!document.activeElement.disabled);
     // Check that restored focus survives the import and attachment render frames.
     await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));assert.equal(await page.evaluate(()=>document.activeElement?.dataset.filePicker),'youtube-local:picker-entry');

@@ -1,15 +1,21 @@
 (() => {
   let entries=[],prepared=null,onlyEntry=null,command=0;
+  let entryQueue=Promise.resolve();
+  function entryOperation(action){const operation=entryQueue.then(action);entryQueue=operation.catch(()=>{});return operation;}
   const statuses=new Map(),outputPositions=new Map(),browserInfo=new Map();
   const nativeBrowser=!!window.promaxDesktop?.prepareYouTubeBrowser;
   const node=(tag,text)=>{const e=document.createElement(tag);if(text)e.textContent=text;return e;};
   const button=(text,action)=>{const b=node('button',text);b.type='button';b.onclick=action;return b;};
-  async function persist(){await storedAsset('put',entries,'youtube-list');}
+  async function persist(next){
+    await storedAsset('put',next,'youtube-list');entries=next;
+    if(prepared)prepared=entries.find(entry=>entry.id===prepared.id)||null;
+    if(onlyEntry&&!entries.some(entry=>entry.id===onlyEntry))onlyEntry=null;
+  }
   function refresh(){ProMaxFeatures.showTab('videos',{preserveFocus:true});window.ProMaxMeetings?.render();}
   function refreshIfVisible(){if(document.querySelector('[data-tab="videos"][aria-pressed="true"]'))refresh();else window.ProMaxMeetings?.render();}
   async function add(url,title){
     const parsed=ProMaxYouTubeLinks.parse(url),entry={...parsed,id:uid(),title:title.trim()||'YouTube · '+parsed.videoId};
-    const next=[...entries,entry];await storedAsset('put',next,'youtube-list');entries=next;await prepare(entry);return entry;
+    await entryOperation(()=>persist([...entries,entry]));await prepare(entry);return entry;
   }
   async function prepare(entry){
     prepared=entry;
@@ -38,7 +44,11 @@
   async function attach(entry,file){
     const [asset]=await ProMaxFeatures.addVideos([file]);
     if(!asset)throw Error('Choose a playable local video file.');
-    entry.localAssetId=asset.id;await persist();refreshIfVisible();notify('Local copy attached. This entry now uses the local video.');
+    return entryOperation(async()=>{
+      if(!entries.some(current=>current.id===entry.id))throw Error('This YouTube entry was removed before attachment. The imported video remains in the Video library.');
+      await persist(entries.map(current=>current.id===entry.id?{...current,localAssetId:asset.id}:current));
+      refreshIfVisible();notify('Local copy attached. This entry now uses the local video.');
+    });
   }
   function render(view){
     window.ProMaxControls?.changed();
@@ -78,8 +88,8 @@
   window.promaxDesktop?.onYouTubeStatus(data=>document.dispatchEvent(new CustomEvent('promax-youtube-status',{detail:data})));
   document.querySelector('.workspace-tabs').addEventListener('click',event=>{if(event.target.closest('[data-tab="videos"]')){onlyEntry=null;refresh();}});
   const ready=(async()=>{try{entries=await storedAsset('get',null,'youtube-list')||[];if(document.querySelector('[data-tab="videos"][aria-pressed="true"]'))refresh();}catch{notify('Could not restore YouTube links.');}})();
-  async function remove(id){entries=entries.filter(e=>e.id!==id);if(onlyEntry===id)onlyEntry=null;await persist();refreshIfVisible();}
-  const history={take:()=>structuredClone(entries),apply:async value=>{entries=structuredClone(value);if(onlyEntry&&!entries.some(e=>e.id===onlyEntry))onlyEntry=null;await persist();}};
+  function remove(id){return entryOperation(async()=>{await persist(entries.filter(e=>e.id!==id));refreshIfVisible();});}
+  const history={take:()=>structuredClone(entries),apply:value=>entryOperation(()=>persist(structuredClone(value)))};
   window.ProMaxYouTubeLibrary={render,add,play,prepare,attach,ready,history,remove,list:()=>entries,prepared:()=>prepared?.localAssetId||nativeBrowser?null:prepared,
     clearFocus:()=>{onlyEntry=null;},focused:()=>entries.find(e=>e.id===onlyEntry),
     open:entry=>{ProMaxFeatures.showTab('videos');onlyEntry=entry.id;refresh();}};
