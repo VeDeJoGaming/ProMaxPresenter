@@ -124,6 +124,7 @@ function syncLiveStatus(){
   const active=window.promaxDesktop?nativeOutputActive:!!output&&!output.closed;
   const indicator=document.querySelector('.live-dot');indicator.textContent=!active?'● OUTPUT OFF':state.black?'● BLACKOUT':'● LIVE';indicator.dataset.mode=!active?'off':state.black?'black':'live';
   $('blackout').setAttribute('aria-pressed',String(state.black));$('blackout').textContent=state.black?'Restore output':'Blackout';
+  window.ProMaxMeetings?.markLive(active);
 }
 function toggleBlackout(){
   const black=!state.black;

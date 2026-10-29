@@ -1,8 +1,31 @@
 (() => {
-  let activeItem=null;
+  let activeItem=null,liveCue=null,marked=null;
+  const liveRows=new Map(),liveFolders=new Map();
+  const liveJump=document.createElement('button');liveJump.id='meeting-open-live';liveJump.type='button';liveJump.className='subtle wide';liveJump.textContent='Open live item';liveJump.hidden=true;liveJump.onclick=returnToLive;$('live-label').after(liveJump);
   const node=(tag,text)=>{const e=document.createElement(tag);if(text)e.textContent=text;return e;};
   const button=(text,action,label)=>{const b=node('button',text);b.type='button';b.onclick=action;if(label)b.setAttribute('aria-label',label);return b;};
   const folder=()=>meetingFolders.find(f=>f.id===meetingSelected);
+  function cueContext(type,id){
+    if(typeof id!=='string'||!id)return null;
+    const f=folder(),item=f?.items.find(i=>i.id===activeItem);if(!item)return null;
+    const matches=type==='prepared'?['bible','text'].includes(item.type)&&item.id===id:item.type===type&&(type==='song'?item.songId:item.assetId)===id;
+    return matches?{folderId:f.id,itemId:item.id}:null;
+  }
+  function trackCue(context){liveCue=context?{...context,cue:state}:null;markLive();}
+  async function returnToLive(){
+    const f=meetingFolders.find(f=>f.id===liveCue?.folderId),item=f?.items.find(i=>i.id===liveCue?.itemId);
+    if(!item||liveCue.cue!==state||$('open-output').getAttribute('aria-pressed')!=='true')return false;
+    meetingSelected=f.id;await open(item);liveRows.get(f.id+':'+item.id)?.article.querySelector('.meeting-item-open')?.focus();return true;
+  }
+  function markLive(active=$('open-output').getAttribute('aria-pressed')==='true'){
+    const valid=active&&liveCue?.cue===state&&meetingFolders.some(f=>f.id===liveCue.folderId&&f.items.some(i=>i.id===liveCue.itemId));
+    if(liveJump.hidden===!!valid)liveJump.hidden=!valid;
+    const row=valid?liveRows.get(liveCue.folderId+':'+liveCue.itemId):null,folderFlag=valid?liveFolders.get(liveCue.folderId):null,mode=valid?(state.black?'blackout':'live'):'';
+    if(marked?.row===row&&marked?.folderFlag===folderFlag&&marked?.mode===mode)return;
+    if(marked?.row){delete marked.row.article.dataset.liveCue;marked.row.flag.hidden=true;}if(marked?.folderFlag)marked.folderFlag.hidden=true;
+    const label=mode==='blackout'?'BLACKOUT':'LIVE';if(row){row.article.dataset.liveCue=mode;row.flag.textContent=label;row.flag.hidden=false;}if(folderFlag){folderFlag.textContent=label;folderFlag.hidden=false;}
+    marked={row,folderFlag,mode};
+  }
   function create(name) {
     const f={id:uid(),name:name.trim()||'Untitled meeting',items:[]};
     meetingFolders.push(f);meetingSelected=f.id;activeItem=null;save();render();showOverview();return f;
@@ -81,15 +104,15 @@
     overview.hidden=false;overview.replaceChildren(node('h2',folder().name),node('p',folder().items.length?'Choose an item in the left sidebar to open its slides or video.':'This folder is empty. Add songs, Bible passages, videos or presentations using the left sidebar.'));
   }
   function render(){
-    const f=folder();$('meeting-folders').replaceChildren();
+    const f=folder();$('meeting-folders').replaceChildren();liveRows.clear();liveFolders.clear();
     $('meeting-folder-browser').hidden=!!f;
     document.querySelector('.workspace-tabs').hidden=!!f;
-    meetingFolders.forEach(entry=>{const b=button('',()=>select(entry.id));b.className='meeting-folder';b.dataset.folderId=entry.id;b.setAttribute('aria-pressed',String(entry===f));b.append(node('span','▱ '+entry.name),node('small',String(entry.items.length)));$('meeting-folders').append(b);});
+    meetingFolders.forEach(entry=>{const b=button('',()=>select(entry.id));b.className='meeting-folder';b.dataset.folderId=entry.id;b.setAttribute('aria-pressed',String(entry===f));const count=node('small',String(entry.items.length)),flag=node('span','LIVE');flag.className='meeting-folder-live';flag.hidden=true;count.append(flag);liveFolders.set(entry.id,flag);b.append(node('span','▱ '+entry.name),count);$('meeting-folders').append(b);});
     $('all-library').setAttribute('aria-pressed',String(!f));
     document.querySelector('[data-tab="songs"]').textContent=f?'Meeting':'Songs';
     $('song-library-area').hidden=!!f;$('meeting-plan').hidden=!f;$('meeting-banner').hidden=!f;
     $('add-song-meeting').hidden=!f||f.items.some(item=>item.type==='song'&&item.songId===selected);
-    if(!f){document.dispatchEvent(new Event('promax:meetings-rendered'));return;}
+    if(!f){markLive();document.dispatchEvent(new Event('promax:meetings-rendered'));return;}
     updateNotes();
     $('meeting-folder-title').textContent=f.name;
     if(document.activeElement!==$('meeting-name'))$('meeting-name').value=f.name;
@@ -99,13 +122,14 @@
       const row=node('div');row.className='meeting-item'+(activeItem===item.id?' active':'');row.dataset.folderId=f.id;row.dataset.itemId=item.id;
       const selectButton=button('',()=>open(item));selectButton.className='meeting-item-open';selectButton.setAttribute('aria-pressed',String(activeItem===item.id));selectButton.append(node('small',`${index+1} · ${item.type==='document'?'PowerPoint':item.type}`),node('span',title(item)));
       const noteFlag=node('small','✎ Operator note');noteFlag.className='meeting-item-note';noteFlag.hidden=!item.operatorNotes?.trim();selectButton.append(noteFlag);
+      const liveFlag=node('small','LIVE');liveFlag.className='meeting-item-live';liveFlag.hidden=true;selectButton.append(liveFlag);liveRows.set(f.id+':'+item.id,{article:row,flag:liveFlag});
       if(planned){const time=planned.rows[index],duration=ProMaxMeetingPlan.minutes(item.plannedMinutes);if(duration!==null||time.start!==null){const badge=node('small',(time.start!==null?ProMaxMeetingPlan.clock(time.start)+(duration!==null?' · ':''):'')+(duration!==null?ProMaxMeetingPlan.durationLabel(duration):''));badge.className='meeting-item-timing';selectButton.append(badge);}}
       const actions=node('div');actions.className='meeting-item-actions';
       actions.append(button('×',()=>remove(index),'Remove '+title(item)+' from this meeting'));
       row.append(selectButton,actions);$('meeting-items').append(row);
     }
     if(!f.items.length)$('meeting-items').append(node('p','Add only what you need for this meeting.'));
-    document.dispatchEvent(new Event('promax:meetings-rendered'));
+    markLive();document.dispatchEvent(new Event('promax:meetings-rendered'));
   }
   function renderPicker(){
     const q=$('meeting-song-search').value;const list=$('meeting-song-options');list.replaceChildren();
@@ -162,6 +186,7 @@
   $('quick-add-meeting').onclick=()=>{const text=$('quick-text').value.trim();if(!text){notify('Write the text you want to add first.');return;}add({type:'text',title:text.split('\n')[0].slice(0,80),slides:[{text,label:'Text'}]});};
   function onTab(){overview.hidden=true;banner.hidden=!folder();document.querySelector('.workspace-tabs').hidden=!!folder();}
   function markSlide(id,index){const grid=$('feature-view').querySelector('.prepared-slides');if(!grid||grid.dataset.meetingItem!==id)return;[...grid.children].forEach((b,i)=>b.setAttribute('aria-pressed',String(i===index)));}
-  window.ProMaxMeetings={create,select,add,addSong,open,move,remove,render,folder,onTab,markSlide,refresh:()=>{const f=folder();const item=f?.items.find(i=>i.id===f.selectedItem);render();if(item)open(item);else if(f)showOverview();else selectSong(selected)}};
+  const originalLive=goLive;goLive=function(index){const context=cueContext('song',selected),before=state,result=originalLive(index);if(state!==before)trackCue(context);return result;};
+  window.ProMaxMeetings={create,select,add,addSong,open,move,remove,render,folder,onTab,markSlide,cueContext,trackCue,markLive,returnToLive,refresh:()=>{const f=folder();const item=f?.items.find(i=>i.id===f.selectedItem);render();if(item)open(item);else if(f)showOverview();else selectSong(selected)}};
   render();if(folder())select(meetingSelected);
 })();

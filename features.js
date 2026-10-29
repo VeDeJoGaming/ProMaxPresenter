@@ -116,8 +116,10 @@
     lyrics:slides.map(s=>`[${s.label}]\n${s.text}`).join('\n\n'),slides:slides.map(s=>({text:s.text,section:s.label,key:'',biblePassage:s.biblePassage}))};songs.push(song);showTab('songs');selectSong(song.id);notify('Passage saved to the song library');}
   function showDeck(value,index) {
     if(!value.slides.length)return;
-    stopTimer();activeVideo=null;deck=value;deck.index=Math.max(0,Math.min(value.slides.length-1,index));const slide=value.slides[deck.index];
+    const meetingContext=Object.hasOwn(value,'meetingContext')?value.meetingContext:value.meetingItemId?window.ProMaxMeetings?.cueContext('prepared',value.meetingItemId):window.ProMaxMeetings?.cueContext('document',value.id);
+    stopTimer();activeVideo=null;deck={...value,meetingContext};deck.index=Math.max(0,Math.min(value.slides.length-1,index));const slide=value.slides[deck.index];
     state=value.type==='bible'?{text:slide.text,biblePassage:slide.biblePassage,black:false,pdf:null}:{text:'',black:false,pdf:null,image:slide};
+    window.ProMaxMeetings?.trackCue(meetingContext);
     $('live-label').textContent=`${value.title} · ${deck.index+1}/${value.slides.length}`;paint();
     window.ProMaxMeetings?.markSlide(value.meetingItemId,deck.index);
     if (tab==='presentations')renderDocuments();
@@ -153,6 +155,7 @@
       if(video?.error)throw Error('This video format cannot be played. Convert it to MP4 (H.264) or WebM.');
       stopTimer();deck=null;activeVideo=asset.id;
       state={text:'',black:false,pdf:null,video:{url,title:asset.name,paused:false,position:options.start||0,at:Date.now(),command:++command,loop:$('video-loop')?.checked || false,muted:$('video-muted')?.checked ?? true}};
+      window.ProMaxMeetings?.trackCue(options.meetingContext!==undefined?options.meetingContext:ProMaxMeetings.cueContext('video',asset.id));
       $('live-label').textContent=asset.name;paint();
       const preview=$('preview').querySelector('video[data-cue]');
       const remember=()=>{if(Number.isFinite(preview?.duration)&&preview.duration>0)videoDurations.set(url,preview.duration);};remember();preview?.addEventListener('loadedmetadata',remember,{once:true});
