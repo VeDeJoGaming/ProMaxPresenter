@@ -24,3 +24,9 @@ test('damaged current and previous copies recover the newest valid retained snap
   await fs.writeFile(path.join(recovery.directory,'library.json'),'{damaged');await fs.writeFile(path.join(recovery.directory,'library-previous.json'),'{damaged');await fs.writeFile(path.join(recovery.directory,'library-9999999999999.json'),'{newest is damaged');await fs.writeFile(path.join(recovery.directory,'library-9999999999998.json'),raw('Newest valid historical copy'));
   assert.equal(recovery.read()?.library.songs[0].title,'Newest valid historical copy');assert.equal(recovery.read()?.recovered,true);
 });
+
+test('oversized recovery reports a clear rejection without discarding an accepted pending save',async t=>{
+  const root=await temporary(t),recovery=createLibraryRecovery(root);recovery.save(raw('Previous accepted copy'));await recovery.flush();
+  recovery.save(raw('Latest accepted copy'));try{assert.throws(()=>recovery.save('x'.repeat(32*1024*1024+1)),{code:'RECOVERY_LIMIT'});}finally{await recovery.flush();}
+  assert.equal(recovery.read().library.songs[0].title,'Latest accepted copy');assert.equal(JSON.parse(await fs.readFile(path.join(recovery.directory,'library-previous.json'),'utf8')).songs[0].title,'Previous accepted copy');
+});

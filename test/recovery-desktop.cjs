@@ -9,6 +9,7 @@ async function run(){
     const rolling=path.join(profile,'recovery','library.json');let stored;
     const deadline=Date.now()+10000;while(Date.now()<deadline){try{stored=JSON.parse(await fs.readFile(rolling,'utf8'));if(stored.songs[0].title==='Historical seed')break;}catch{}await new Promise(r=>setTimeout(r,50));}
     assert.equal(stored?.songs[0].title,'Historical seed');const historical=JSON.stringify(stored);
+    const beforeRejected=await fs.readFile(rolling,'utf8');await page.evaluate(()=>promaxDesktop.saveLibrary('x'.repeat(32*1024*1024+1)));await page.waitForFunction(()=>document.querySelector('#status').textContent==='Recovery copy failed');assert.match(await page.locator('#toast').innerText(),/too large.*No recovery files were changed/);assert.equal(await fs.readFile(rolling,'utf8'),beforeRejected,'Rejected recovery must retain the existing file');
     // Close immediately after an edit, before either autosave debounce has fired.
     await page.evaluate(()=>{document.querySelector('#title').value='Latest edit before closing';document.querySelector('#title').dispatchEvent(new Event('input',{bubbles:true}));});await app.close();app=null;
     const final=JSON.parse(await fs.readFile(rolling,'utf8'));assert.equal(final.songs[0].title,'Latest edit before closing','Native recovery includes the edit made immediately before shutdown');
