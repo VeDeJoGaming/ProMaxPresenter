@@ -48,7 +48,7 @@
         };
         if (video.readyState>=1) synchronize();else video.addEventListener('loadedmetadata',synchronize,{once:true});
       }
-      if (cue.paused) video.pause();else if (video.paused) video.play().catch(()=>{});
+      if (cue.paused) video.pause();else if (video.paused&&!video.ended) video.play().catch(()=>{});
     }
     return true;
   }

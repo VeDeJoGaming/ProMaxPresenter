@@ -9,9 +9,11 @@
   let assets=[], documents=[], deck=null, activeVideo=null, command=0;
   let focusedAsset=null;
   const cache=new Map();
+  const videoDurations=new Map();
   const tabs=[['songs','Songs'],['bible','Bible'],['videos','Videos'],['presentations','PowerPoint']];
   for (const [id,label] of tabs) { const b=document.createElement('button');b.textContent=label;b.onclick=()=>showTab(id);b.dataset.tab=id;nav.append(b); }
   function showTab(id,options={}) {
+    window.ProMaxVideoControls?.clear();
     if(id!=='videos')window.ProMaxYouTube?.pauseAll(document);
     if(!options.preserveFocus){focusedAsset=null;if(id==='videos')window.ProMaxYouTubeLibrary?.clearFocus();}
     tab=id;for (const b of nav.children) b.setAttribute('aria-pressed',String(b.dataset.tab===id));
@@ -28,7 +30,7 @@
     label.append(input);return label;
   }
   async function persist(key,value) { await storedAsset('put',value,key); }
-  function heading(title,help) {window.ProMaxYouTube?.park(document);view.replaceChildren(element('h2',title),element('p',help,'feature-help'));}
+  function heading(title,help) {window.ProMaxVideoControls?.clear();window.ProMaxYouTube?.park(document);view.replaceChildren(element('h2',title),element('p',help,'feature-help'));}
   function ref(v) {return `${v.book} ${v.chapter}:${v.verse}`;}
   function cueText(text,label,biblePassage) {
     deck=null;activeVideo=null;stopTimer();state={text,black:false,pdf:null,biblePassage};$('live-label').textContent=label;paint();
@@ -151,15 +153,33 @@
       if(video?.error)throw Error('This video format cannot be played. Convert it to MP4 (H.264) or WebM.');
       stopTimer();deck=null;activeVideo=asset.id;
       state={text:'',black:false,pdf:null,video:{url,title:asset.name,paused:false,position:options.start||0,at:Date.now(),command:++command,loop:$('video-loop')?.checked || false,muted:$('video-muted')?.checked ?? true}};
-      $('live-label').textContent=asset.name;paint();renderVideos();
+      $('live-label').textContent=asset.name;paint();
+      const preview=$('preview').querySelector('video[data-cue]');
+      const remember=()=>{if(Number.isFinite(preview?.duration)&&preview.duration>0)videoDurations.set(url,preview.duration);};remember();preview?.addEventListener('loadedmetadata',remember,{once:true});
+      if(preview)preview.onended=()=>{if(!preview.ended||state.video?.url!==url||state.video.loop||state.video.ended||state.black)return;state.video={...state.video,position:preview.duration,at:Date.now(),paused:true,ended:true,command:++command};paint();updateVideoControls();};
+      renderVideos();
     }catch(error){notify(error.message);}
   }
   function videoCommand(action) {
     if (!state.video || !activeVideo){notify('Play a video first.');return;}
     const video=$('preview').querySelector('video');const cue=state.video;
     const position=video?.currentTime ?? cue.position;
-    state.video={...cue,position:action==='restart'?0:position,paused:action==='pause'?!cue.paused:cue.paused,at:Date.now(),command:++command};
-    paint();if(tab==='videos')renderVideos();
+    const replay=action==='pause'&&cue.ended;
+    state.video={...cue,position:action==='restart'||replay?0:position,paused:replay?false:action==='pause'?!cue.paused:cue.paused,ended:action==='restart'||replay?false:cue.ended,at:Date.now(),command:++command};
+    paint();updateVideoControls();
+  }
+  function videoSnapshot(){
+    const cue=state.video;if(!cue||!activeVideo)return null;
+    const video=$('preview').querySelector('video[data-cue]');
+    if(video&&Number.isFinite(video.duration)&&video.duration>0)videoDurations.set(cue.url,video.duration);
+    const duration=videoDurations.get(cue.url)||0,position=state.black||!video?cue.position:video.currentTime;
+    return {position:Math.max(0,Math.min(Number(position)||0,duration||Infinity)),duration,paused:cue.paused,ended:cue.ended===true,black:state.black};
+  }
+  function updateVideoControls(){const pause=$('video-pause');if(pause)pause.textContent=state.video?.ended?'Replay':state.video?.paused?'Resume':'Pause';}
+  function seekVideo(value){
+    const snapshot=videoSnapshot();if(!snapshot||!Number.isFinite(value)||!snapshot.duration)return false;
+    const position=Math.max(0,Math.min(value,snapshot.duration)),ended=position>=snapshot.duration;
+    state.video={...state.video,position,at:Date.now(),paused:ended||state.video.paused,ended,command:++command};paint();updateVideoControls();return true;
   }
   function renderVideos() {
     window.ProMaxControls?.changed();
@@ -168,13 +188,14 @@
     if(!focused&&!youtube){const actions=element('div',null,'feature-actions');actions.append(fileButton('Add local videos','video/*,.mp4,.webm,.mov,.m4v',addVideos,true));view.append(actions);}
     const controls=element('div',null,'feature-actions');
     const selectedVideo=focused?.id||youtube?.localAssetId,matchingCue=!selectedVideo||activeVideo===selectedVideo;
-    controls.append(button(state.video?.paused?'Resume':'Pause',()=>videoCommand('pause')),button('Restart',()=>videoCommand('restart')),button('Stop',()=>{cueText('','Nothing live');renderVideos();}));
+    const pause=button(state.video?.ended?'Replay':state.video?.paused?'Resume':'Pause',()=>videoCommand('pause'));pause.id='video-pause';controls.append(pause,button('Restart',()=>videoCommand('restart')),button('Stop',()=>{cueText('','Nothing live');renderVideos();}));
     for(const [id,label,prop,defaultValue] of [['video-loop','Loop','loop',false],['video-muted','Mute audio','muted',true]]) {
       const wrapper=element('label',null,'check-label');const checkbox=document.createElement('input');checkbox.type='checkbox';checkbox.id=id;checkbox.checked=(matchingCue?state.video?.[prop]:undefined) ?? defaultValue;
-      checkbox.onchange=()=>{if(state.video&&matchingCue){state.video={...state.video,[prop]:checkbox.checked,command:++command};paint();}};wrapper.append(checkbox,document.createTextNode(label));controls.append(wrapper);
+      checkbox.onchange=()=>{if(state.video&&matchingCue){const position=videoSnapshot()?.position??state.video.position;state.video={...state.video,position,at:Date.now(),[prop]:checkbox.checked,command:++command};paint();}};wrapper.append(checkbox,document.createTextNode(label));controls.append(wrapper);
     }
     if(!state.video||!activeVideo||selectedVideo&&activeVideo!==selectedVideo)for(const b of controls.querySelectorAll('button'))b.disabled=true;
     if(!youtube||youtube.localAssetId)view.append(controls);
+    if(state.video&&activeVideo&&matchingCue&&(!youtube||youtube.localAssetId))window.ProMaxVideoControls?.mount(view,{snapshot:videoSnapshot,seek:seekVideo});
     if(!assets.length&&!youtube)view.append(element('p','Add videos to prepare them for your service.','empty'));
     const list=element('div',null,'asset-list');
     for (const asset of assets.filter(a=>!youtube&&(!focusedAsset||a.id===focusedAsset))) {
@@ -255,7 +276,7 @@
     await Promise.all([persist('video-list',assets),persist('presentations',documents),...(bibleChanged?[persist('bible',bible)]:[])]);await keepTrash(removed);if(bibleChanged)document.dispatchEvent(new Event('promax:bible-changed'));
     for(const asset of assets)if(!cache.has(asset.id))try{await loadAsset(asset);}catch{}
   }};
-  window.ProMaxFeatures={renderBibleSettings,videoUrls,handleKey,importBible,addVideos,playVideo,showDeck,navigate,showTab,saveDocument,openMeetingMedia,externalCue,
+  window.ProMaxFeatures={renderBibleSettings,videoUrls,handleKey,importBible,addVideos,playVideo,showDeck,navigate,showTab,saveDocument,openMeetingMedia,externalCue,seekVideo,videoSnapshot,
     openBibleReference:verse=>{if(!bible?.verses.includes(verse))return false;bibleQuery=ProMaxBible.formatReference([verse]);showTab('bible',{bibleVerse:verse});return true;},
     receiveBible:async value=>{const parsed=ProMaxBible.parse(JSON.stringify(value),'shared-bible.json');await persist('bible',parsed);bible=parsed;chosen.clear();if(tab==='bible')renderBible();document.dispatchEvent(new Event('promax:bible-changed'));window.ProMaxControls?.changed();return parsed;},
     getBible:()=>bible,getVideos:()=>assets,getDocuments:()=>documents,focusedAsset:()=>focusedAsset,history,removeVideo,removeDocument,persistDocuments,captureDeck,syncDeck,

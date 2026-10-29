@@ -20,6 +20,7 @@ Your songs, folders, imported Bible and media stay local. This development branc
 - Meeting folders and running orders with songs, Bible passages, text, video, YouTube and PowerPoint; drag/drop, undo/redo and automatic saving.
 - Song sections, slide editing, keyboard shortcuts, quick text, countdown, PDF and blackout.
 - Indexed Bible search, full chapter context, previous/next chapter navigation across books, Shift-click range selection and Clear selection; local video library and native YouTube preview/output.
+- Local video transport shows elapsed/remaining time with a seek bar, keyboard seeking and ten-second jumps. Seeking preserves pause and blackout; clips stay at the end until **Replay** is chosen. Preview audio stays muted.
 - PowerPoint import through installed Microsoft PowerPoint on Windows.
 - Native fullscreen presentation on the selected external screen. Use **Extend displays** in Windows, select the screen in Settings and press **Presentation off** to open output.
 - Built-in offline motion backgrounds, custom media, and A/B/C looks, palettes and section-following for the original procedural styles.
