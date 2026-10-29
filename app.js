@@ -18,10 +18,11 @@ function scheduleSave(){
   $('status').textContent='Saving changes...';
 }
 function flushPendingSave(){if(pendingSaveTimer!==null)return save();return true;}
+function librarySnapshot(){return {schemaVersion:1,savedAt:Date.now(),songs,selected,settings,meetingFolders,meetingSelected};}
 function save(){
   clearTimeout(pendingSaveTimer);pendingSaveTimer=null;pendingSaveSince=0;
   try{
-    const raw=JSON.stringify({schemaVersion:1,savedAt:Date.now(),songs,selected,settings,meetingFolders,meetingSelected});
+    const raw=JSON.stringify(librarySnapshot());
     localStorage.setItem('promax-library',raw);
     if(lastSavedRaw&&Date.now()-lastShadowAt>10000){try{localStorage.setItem('promax-library-recovery',lastSavedRaw);lastShadowAt=Date.now();}catch{}}
     lastSavedRaw=raw;
@@ -199,7 +200,7 @@ async function openOutput(){
 }
 document.addEventListener('focusout',()=>flushPendingSave());
 document.addEventListener('visibilitychange',()=>{if(document.hidden)flushPendingSave();});
-window.addEventListener('beforeunload',()=>{flushPendingSave();if(lastSavedRaw)window.promaxDesktop?.saveLibrary?.(lastSavedRaw);closeOutput();});
+window.addEventListener('beforeunload',()=>{flushPendingSave();if(songs.length)window.promaxDesktop?.saveLibrary?.(JSON.stringify(librarySnapshot()));closeOutput();});
 function handleKey(e){
   // Dedicated presentation controls also work while typing; held keys toggle once.
   if(e.key==='F5'||e.key==='F6'){e.preventDefault();if(!e.repeat){if(e.key==='F5')openOutput();else toggleBlackout();}return;}
@@ -215,9 +216,9 @@ async function init(){
   if(!data)try{const raw=localStorage.getItem('promax-library-recovery');if(raw){data=ProMaxLibraryData.parse(raw);recovered=true;}}catch{}
   const native=window.promaxDesktop?.initialData;
   if(data&&native?.library){
-    try{const migrated=ProMaxMigration.reunite(JSON.parse(localStorage.getItem('promax-library')),native.library);if(migrated){data=ProMaxLibraryData.normalize(migrated);recovered=true;}}catch{}
+    try{const migrated=ProMaxMigration.reunite(JSON.parse(localStorage.getItem('promax-library')),structuredClone(native.library));if(migrated){data=ProMaxLibraryData.normalize(migrated);recovered=true;}}catch{}
   }
-  if(native?.library&&(!data||native.library.savedAt>data.savedAt)){data=native.library;recovered=true;}
+  if(native?.library&&(!data||native.library.savedAt>data.savedAt)){data=structuredClone(native.library);recovered=true;}
   if(data){songs=data.songs;selected=data.selected;settings={...settings,...data.settings};meetingFolders=data.meetingFolders;meetingSelected=data.meetingSelected;}
   if(data){cleanEmptySongs();if(!songs.length)songs=[{id:uid(),title:'Untitled song',lyrics:'',lines:4,slides:[]}];}
   if(!songs.length){sample.slides=parseLyrics(sample.lyrics,4);songs=[sample];}

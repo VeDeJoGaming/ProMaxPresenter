@@ -1,4 +1,5 @@
 /* Adapt the shared library to the complete app without replacing its data model. */
+window.proMaxPrepareClose=()=>{flushPendingSave();return JSON.stringify(librarySnapshot());};
 window.proMaxPrepareUpdate = () => {
   if (!save()) throw Error('Library could not be saved');
   window.promaxDesktop?.saveLibrary(lastSavedRaw);

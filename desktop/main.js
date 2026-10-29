@@ -13,7 +13,7 @@ const { presentationDisplay } = require('./displays');
 const { importPowerPoint } = require('./documents');
 const { protectPresentation } = require('./presentation-protection');
 let youtubeHost=null;
-let recovery=null,startupNotice=null,powerBlocker=null,maintenanceBusy=false,quitting=false,starting=true;
+let recovery=null,startupNotice=null,powerBlocker=null,maintenanceBusy=false,quitting=false,quitReady=false,starting=true;
 ipcMain.on('library:read',(event)=>{
   if(event.sender!==control?.webContents){event.returnValue=null;return;}
   let restoredFrom=null;try{restoredFrom=JSON.parse(fs.readFileSync(path.join(app.getPath('userData'),'restored-path.json'),'utf8')).from;}catch{}
@@ -114,6 +114,18 @@ ipcMain.on('presentation:performance',(event,value)=>{if(event.sender===presenta
 function closePresentation() {
   if (presentation && !presentation.isDestroyed()) presentation.close();
 }
+async function flushForQuit(){
+  let timeout;
+  if(control&&!control.isDestroyed()&&!control.webContents.isDestroyed()){
+    control.setEnabled(false);
+    try{
+      const raw=await Promise.race([control.webContents.executeJavaScript('window.proMaxPrepareClose?.()'),new Promise((_,reject)=>{timeout=setTimeout(()=>reject(Error('The control window did not finish preparing its saved library.')),3000);})]);
+      if(typeof raw==='string')recovery.save(raw);
+    }catch(error){console.error('Library before close:',error.message);}
+    finally{clearTimeout(timeout);}
+  }
+  await recovery.flush();
+}
 async function openPresentation(target) {
   displayId = target.id;
   const win = new BrowserWindow({ ...target.bounds, show: false, frame: false, backgroundColor: '#000000', fullscreenable: true, minimizable: false, skipTaskbar: true, autoHideMenuBar: true, webPreferences: {...preferences,backgroundThrottling:false} });
@@ -178,6 +190,7 @@ else {
     secure(control);
     control.webContents.once('did-finish-load',()=>integrations.start());
     control.webContents.on('did-finish-load', sendActive);
+    control.on('close',event=>{if(recovery&&!quitReady){event.preventDefault();if(!quitting)setImmediate(()=>app.quit());}});
     control.on('closed', () => {youtubeBrowser.destroy(); closePresentation(); control = null; });
     screen.on('display-removed', (_event, removed) => { if (removed.id === displayId) closePresentation(); });
     screen.on('display-metrics-changed', (_event, changed) => {
@@ -343,6 +356,6 @@ else {
       } catch (error) { require('node:fs').writeFileSync(path.join(app.getPath('temp'), 'promax-smoke-result.txt'), error.stack); app.exit(1); }
     } else control.show();
   }).catch(error => { if (smoke) require('node:fs').writeFileSync(path.join(app.getPath('temp'), 'promax-smoke-result.txt'), error.stack); console.error(error); app.exit(1); });
-  app.on('before-quit',event=>{if(recovery&&!quitting){event.preventDefault();quitting=true;closePresentation();recovery.flush().catch(console.error).finally(()=>app.quit());}});
+  app.on('before-quit',event=>{if(recovery&&!quitReady){event.preventDefault();if(quitting)return;quitting=true;closePresentation();flushForQuit().catch(console.error).finally(()=>{quitReady=true;app.quit();});}});
   app.on('window-all-closed', () => {if(!starting)app.quit();});
 }

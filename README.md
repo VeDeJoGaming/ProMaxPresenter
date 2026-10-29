@@ -26,6 +26,7 @@ Your songs, folders, imported Bible and media stay local. This development branc
 - Native fullscreen presentation on the selected external screen. Use **Extend displays** in Windows, select the screen in Settings and press **Presentation off** to open output.
 - Built-in offline motion backgrounds, custom media, and A/B/C looks, palettes and section-following for the original procedural styles.
 - Full backup/restore in Settings, including IndexedDB media and converted presentations. Update backups also preserve meeting folders and all presentation settings.
+- Recovery writes are serialized and retryable. Closing the app captures the latest edits; native recovery can preserve them even when browser storage is full. If both rolling recovery files are damaged, the newest valid retained snapshot is used and remains editable.
 - Optional invitation-only shared song library and explicit Bible sharing without accounts. Choose Off, Receive only, or Receive & share. Receive & share automatically uploads all own songs and edits on sync, including new songs and named drafts; received songs stay local.
 
 The app retains the stable application identity and profile folder (`ProMax Presenter`, `com.promax.presenter`). When an early reduced GitHub library and an original recovery copy coexist, songs from both and the original meeting folders are reunited. Keep backups before migrating between computers. Installation cannot recover data that is absent from that computer.
