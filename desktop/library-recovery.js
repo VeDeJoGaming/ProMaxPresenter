@@ -41,9 +41,10 @@ function createLibraryRecovery(userData,onError=()=>{},options={}){
     queue=operation;operation.catch(()=>{});return operation;
   }
   function save(raw){
-    if(typeof raw!=='string'||raw.length>32*1024*1024)return;
+    if(typeof raw!=='string'||raw.length>32*1024*1024)return false;
     parse(raw);pending=raw;clearTimeout(timer);
     timer=setTimeout(()=>{timer=null;drain().catch(error=>console.error('Library recovery:',error.message));},debounceMs);
+    return true;
   }
   function flush(){clearTimeout(timer);timer=null;return drain();}
   return {read,save,flush,directory};

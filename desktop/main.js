@@ -13,14 +13,14 @@ const { presentationDisplay } = require('./displays');
 const { importPowerPoint } = require('./documents');
 const { protectPresentation } = require('./presentation-protection');
 let youtubeHost=null;
-let recovery=null,startupNotice=null,powerBlocker=null,maintenanceBusy=false,quitting=false,quitReady=false,starting=true;
+let recovery=null,startupNotice=null,powerBlocker=null,maintenanceBusy=false,quitting=false,quitReady=false,quitSnapshotCaptured=false,starting=true;
 ipcMain.on('library:read',(event)=>{
   if(event.sender!==control?.webContents){event.returnValue=null;return;}
   let restoredFrom=null;try{restoredFrom=JSON.parse(fs.readFileSync(path.join(app.getPath('userData'),'restored-path.json'),'utf8')).from;}catch{}
   const root=folder=>require('node:url').pathToFileURL(path.join(folder,'presentations')+path.sep).href;
   event.returnValue={...recovery?.read(),notice:startupNotice,presentationRoot:root(app.getPath('userData')),restoredPresentationRoot:restoredFrom?root(restoredFrom):null};
 });
-ipcMain.on('library:save',(event,raw)=>{if(event.sender===control?.webContents)try{recovery?.save(raw);}catch(error){control.webContents.send('library:error',error.message);}});
+ipcMain.on('library:save',(event,raw)=>{if(event.sender===control?.webContents&&!quitSnapshotCaptured)try{recovery?.save(raw);}catch(error){control.webContents.send('library:error',error.message);}});
 ipcMain.handle('settings:info',event=>{
   if(event.sender!==control?.webContents)throw Error('Invalid window.');
   const current=screen.getDisplayMatching(control.getBounds());
@@ -120,7 +120,8 @@ async function flushForQuit(){
     control.setEnabled(false);
     try{
       const raw=await Promise.race([control.webContents.executeJavaScript('window.proMaxPrepareClose?.()'),new Promise((_,reject)=>{timeout=setTimeout(()=>reject(Error('The control window did not finish preparing its saved library.')),3000);})]);
-      if(typeof raw==='string')recovery.save(raw);
+      // The disabled control's final snapshot takes priority over queued autosaves.
+      if(typeof raw==='string')quitSnapshotCaptured=recovery.save(raw)===true;
     }catch(error){console.error('Library before close:',error.message);}
     finally{clearTimeout(timeout);}
   }

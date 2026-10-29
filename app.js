@@ -200,7 +200,7 @@ async function openOutput(){
 }
 document.addEventListener('focusout',()=>flushPendingSave());
 document.addEventListener('visibilitychange',()=>{if(document.hidden)flushPendingSave();});
-window.addEventListener('beforeunload',()=>{flushPendingSave();if(songs.length)window.promaxDesktop?.saveLibrary?.(JSON.stringify(librarySnapshot()));closeOutput();});
+window.addEventListener('beforeunload',()=>{flushPendingSave();clearTimeout(nativeSaveTimer);if(songs.length)window.promaxDesktop?.saveLibrary?.(JSON.stringify(librarySnapshot()));closeOutput();});
 function handleKey(e){
   // Dedicated presentation controls also work while typing; held keys toggle once.
   if(e.key==='F5'||e.key==='F6'){e.preventDefault();if(!e.repeat){if(e.key==='F5')openOutput();else toggleBlackout();}return;}
