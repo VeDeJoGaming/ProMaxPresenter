@@ -6,13 +6,14 @@ Windows presentation software for worship meetings. Version 1.4 adds quick openi
 
 Download the published installer from [GitHub Releases](https://github.com/VeDeJoGaming/ProMaxPresenter/releases/latest). Locally built installers are in `dist/`. Node.js is not needed. Existing installations can use **Update** after a release is published. Close the presentation window before updating.
 
-Your songs, folders, imported Bible and media stay local. Installation includes **29 curated motion backgrounds** with A/B/C looks, including Paint Sweeps, Signal Weave, Chromatic Current, Winter Reverie and Stellar Awakening. Open **Look & feel → Browse motion backgrounds** to search, filter categories, star favorites and compare backgrounds with sample lyrics. No separate visual download is needed.
+Your songs, folders, imported Bible and media stay local. This development branch includes **29 motion backgrounds and 12 still artwork families**, including Paint Sweeps, Winter Reverie, Stellar Awakening, Empty Tomb, Three Crosses and Bethlehem Night. Open **Look & feel → Browse backgrounds** to search, filter categories, star favorites and compare backgrounds with sample lyrics. The procedural families have A/B/C looks; the two recolorable artwork families use manual material colors. No separate visual download is needed.
 
 ## Features
 
-- **Ctrl+K** opens a keyboard finder for song titles, lyrics and meeting names. Opening a result keeps the live cue unchanged.
+- **Ctrl+K** searches song titles and lyrics, meetings, imported Bible references/text, local videos, PowerPoint and saved YouTube links. Use the content filters to narrow results. Bible results open their chapter with the verse marked; media opens for preparation. Opening a result keeps the live cue unchanged.
 - Personal song favorites: mark the selected song with **☆ Favorite** and use **★ Favorites** to filter the library.
 - Operator notes for meetings and individual running-order items save automatically, support undo/redo and stay off the presentation screen.
+- **Running sheet** adds a planned start time and minutes per item, shows timings in the sidebar and exports a PDF or plain text. Missing durations leave later start times unknown. Operator notes are excluded from export until explicitly selected; switch between whole-meeting and selected-item notes in the notes panel.
 - Alphabetical Norwegian song ordering and automatic cleanup of empty, inactive drafts; song order in meetings stays as arranged.
 - Search song titles and lyrics in the library and meeting picker; title matches come first, with lyric excerpts and support for accents and Nordic letters.
 - **Check meeting** checks the running order for missing songs, ungenerated slides, missing video files and local PowerPoint slide images; flags online YouTube entries and offers undoable replacements or slide generation without changing the live cue.

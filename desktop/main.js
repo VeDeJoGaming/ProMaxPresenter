@@ -73,6 +73,7 @@ ipcMain.handle('documents:powerpoint', async event => {
   finally { importingPowerPoint = false; }
 });
 let control = null, presentation = null, latest = null, displayId = null;
+require('./meeting-plan.cjs').registerMeetingPlan({ipcMain,BrowserWindow,dialog,app,getControl:()=>control});
 ipcMain.handle('documents:edit',async(event,request)=>{
   if(event.sender!==control?.webContents||importingPowerPoint)return {error:'Another PowerPoint operation is running.'};
   importingPowerPoint=true;
@@ -170,7 +171,7 @@ else {
     recovery=createLibraryRecovery(app.getPath('userData'),message=>{if(control&&!control.isDestroyed())control.webContents.send('library:error','Could not write the recovery copy: '+message);});
     const integrations=await require('./integrations.cjs').initializeIntegrations({app,getControl:()=>control,hasPresentation:()=>!!presentation||maintenanceBusy,flush:()=>recovery.flush()});
     youtubeHost=await require('./youtube-host').startYouTubeHost();
-    youtubeBrowser=require('./youtube-browser').createYouTubeBrowser({getControl:()=>control,getPresentation:()=>presentation,onStatus:value=>control?.webContents.send('youtube:status',value)});
+    youtubeBrowser=require('./youtube-browser').createYouTubeBrowser({getControl:()=>control,getPresentation:()=>presentation,onStatus:value=>control?.webContents.send('youtube:status',value),onKey:key=>control?.webContents.send('presentation:key',key)});
     app.once('will-quit',()=>youtubeHost.close());
     Menu.setApplicationMenu(null);
     control = new BrowserWindow({ width: 1440, height: 940, minWidth: 850, minHeight: 650, show: false, titleBarStyle: 'hidden', titleBarOverlay: { color: '#1c1616', symbolColor: '#f4e9e5', height: 36 }, backgroundColor: '#0d0d0d', title: 'ProMax Presenter', webPreferences: preferences });

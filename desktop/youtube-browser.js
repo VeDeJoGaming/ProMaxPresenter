@@ -1,7 +1,7 @@
 const {WebContentsView,session}=require('electron');
 const presentationScript=require('node:fs').readFileSync(require('node:path').join(__dirname,'youtube-presentation-page.js'),'utf8');
 
-function createYouTubeBrowser({getControl,getPresentation,onStatus}){
+function createYouTubeBrowser({getControl,getPresentation,onStatus,onKey=()=>{}}){
   let view=null,owner=null,entry=null,bounds=null,live=false,blackout=false,presentationReady=false,lastCommand=null,prepareTimer=null,poll=null,requestedState=null;
   const allowed=value=>{try{const u=new URL(value);return u.protocol==='https:'&&['youtube.com','www.youtube.com','m.youtube.com','youtu.be','accounts.google.com','consent.youtube.com','consent.google.com'].includes(u.hostname);}catch{return false;}};
   const execute=code=>view&&!view.webContents.isDestroyed()&&view.webContents.getURL()?view.webContents.executeJavaScript(code,true).catch(()=>null):Promise.resolve(null);
@@ -27,6 +27,11 @@ function createYouTubeBrowser({getControl,getPresentation,onStatus}){
       const isolated=session.fromPartition('persist:promax-youtube-browser');
       isolated.setPermissionRequestHandler((_contents,_permission,callback)=>callback(false));
       view=new WebContentsView({webPreferences:{session:isolated,nodeIntegration:false,contextIsolation:true,sandbox:true,backgroundThrottling:false,autoplayPolicy:'no-user-gesture-required'}});
+      view.webContents.on('before-input-event',(event,input)=>{
+        if(input.type!=='keyDown'||input.control||input.alt||input.meta)return;
+        if(!['F5','F6'].includes(input.key)&&!(live&&input.key==='Escape'))return;
+        event.preventDefault();if(!input.isAutoRepeat)onKey(input.key);
+      });
       view.webContents.setWindowOpenHandler(({url})=>{if(allowed(url))view.webContents.loadURL(url).catch(()=>{});return {action:'deny'};});
       view.webContents.on('will-navigate',(event,url)=>{
         if(!allowed(url)){event.preventDefault();return;}

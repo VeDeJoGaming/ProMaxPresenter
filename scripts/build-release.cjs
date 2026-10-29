@@ -13,7 +13,7 @@ function releaseSettings(env = process.env, local = {}) {
   return { owner, repo, version };
 }
 
-async function run() {
+async function buildInstaller() {
   const { build, Platform, Arch } = require('electron-builder');
   require('./build-bundled-visuals.cjs');
   const configFile = path.join(__dirname, '..', 'release-config.local.json');
@@ -32,6 +32,10 @@ async function run() {
   for(const name of [`ProMax-Presenter-Setup-${version}.exe`,`ProMax-Presenter-Setup-${version}.exe.blockmap`,'latest.yml']){
     if(!fs.existsSync(path.join(__dirname,'..','dist',name)))throw Error('Release build did not produce '+name);
   }
+}
+async function run(){
+  const cleanup=require('./local-package-manager.cjs').preparePackageManager(path.join(__dirname,'..'));
+  try{await buildInstaller();}finally{cleanup();}
 }
 if (require.main === module) run().catch(error => { console.error(error.message); process.exitCode = 1; });
 module.exports = { releaseSettings };

@@ -17,7 +17,7 @@
     tab=id;for (const b of nav.children) b.setAttribute('aria-pressed',String(b.dataset.tab===id));
     for (const child of workspace.children) if (child!==nav && child!==view) child.hidden=id!=='songs';
     view.hidden=id==='songs';
-    if (id==='bible') renderBible();else if (id==='videos') renderVideos();else if (id==='presentations') renderDocuments();
+    if (id==='bible') renderBible(options.bibleVerse);else if (id==='videos') renderVideos();else if (id==='presentations') renderDocuments();
     window.ProMaxMeetings?.onTab();
   }
   function element(tag,text,className) { const node=document.createElement(tag);if(text)node.textContent=text;if(className)node.className=className;return node; }
@@ -48,7 +48,7 @@
     const details=element('details');details.append(element('summary','Supported import formats'),element('p','JSON, CSV/TSV, plain text, OSIS XML and Zefania XML. PDF, EPUB and encrypted Bible apps are not supported.'));
     const example=element('pre','{"name":"My Bible","verses":[{"book":"Johannes","chapter":3,"verse":16,"text":"Verse text"}]}');details.append(example,element('p','CSV/TSV columns: book, chapter, verse, text. Plain text: one line per verse, for example Johannes 3:16 Verse text.'));container.append(details);
   }
-  function renderBible() {
+  function renderBible(initialVerse=null) {
     window.ProMaxControls?.changed();
     heading('Bible','Search as you type: Mat, Mat 1.1, Joh 3:16–18, or words in the text.');
     view.append(element('p',bible?bible.name+' · Available offline':'No Bible imported. Add one in Settings → Bible.','feature-help'));
@@ -93,6 +93,10 @@
     form.onsubmit=e=>{e.preventDefault();search();};
     view.append(form,selectActions,contextBar,results);
     search();
+    if(initialVerse&&bible.verses.includes(initialVerse)){
+      context=initialVerse;contextHit=initialVerse;bibleResults=ProMaxBible.chapterVerses(bible,initialVerse);draw();
+      const target=results.querySelector('.bible-context-target');target?.scrollIntoView({block:'nearest'});target?.querySelector('.verse-button')?.focus({preventScroll:true});
+    }
   }
   function passage() {
     const verses=ProMaxBible.ordered([...chosen]);
@@ -252,6 +256,7 @@
     for(const asset of assets)if(!cache.has(asset.id))try{await loadAsset(asset);}catch{}
   }};
   window.ProMaxFeatures={renderBibleSettings,videoUrls,handleKey,importBible,addVideos,playVideo,showDeck,navigate,showTab,saveDocument,openMeetingMedia,externalCue,
+    openBibleReference:verse=>{if(!bible?.verses.includes(verse))return false;bibleQuery=ProMaxBible.formatReference([verse]);showTab('bible',{bibleVerse:verse});return true;},
     receiveBible:async value=>{const parsed=ProMaxBible.parse(JSON.stringify(value),'shared-bible.json');await persist('bible',parsed);bible=parsed;chosen.clear();if(tab==='bible')renderBible();document.dispatchEvent(new Event('promax:bible-changed'));window.ProMaxControls?.changed();return parsed;},
     getBible:()=>bible,getVideos:()=>assets,getDocuments:()=>documents,focusedAsset:()=>focusedAsset,history,removeVideo,removeDocument,persistDocuments,captureDeck,syncDeck,
     passageForDrag:index=>{const v=bibleResults[index];if(!v)return null;const verses=chosen.has(v)?ProMaxBible.ordered([...chosen]):[v];return {type:'bible',title:ProMaxBible.formatReference(verses),slides:buildPassage(verses)};}};

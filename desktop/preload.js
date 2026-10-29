@@ -23,6 +23,7 @@ contextBridge.exposeInMainWorld('promaxDesktop', {
   onLibraryError: callback => ipcRenderer.on('library:error',(_event,value)=>callback(value)),
   settingsInfo: () => ipcRenderer.invoke('settings:info'),
   checkPresentationFiles: urls => ipcRenderer.invoke('meeting:check-files',urls),
+  exportMeetingPlan: plan => ipcRenderer.invoke('meeting:export-plan',plan),
   openDataFolder: () => ipcRenderer.invoke('settings:open-data'),
   maintenance: kind => ipcRenderer.invoke('settings:maintenance',kind),
   onMaintenanceProgress: callback => ipcRenderer.on('settings:maintenance-progress',(_event,value)=>callback(value)),

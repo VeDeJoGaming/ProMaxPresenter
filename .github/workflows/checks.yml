@@ -23,6 +23,12 @@ jobs:
         timeout-minutes: 3
       - run: npm run test:desktop
         timeout-minutes: 3
+      - run: node test/meeting-plan-desktop.cjs
+        timeout-minutes: 3
+      - run: node test/quick-open-media-desktop.cjs
+        timeout-minutes: 3
+      - run: node test/presentation-keys-desktop.cjs
+        timeout-minutes: 3
       - run: npm run test:visuals
         timeout-minutes: 3
       - run: npm run test:shared

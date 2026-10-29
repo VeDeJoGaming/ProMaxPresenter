@@ -89,20 +89,23 @@
     document.querySelector('[data-tab="songs"]').textContent=f?'Meeting':'Songs';
     $('song-library-area').hidden=!!f;$('meeting-plan').hidden=!f;$('meeting-banner').hidden=!f;
     $('add-song-meeting').hidden=!f||f.items.some(item=>item.type==='song'&&item.songId===selected);
-    if(!f)return;
+    if(!f){document.dispatchEvent(new Event('promax:meetings-rendered'));return;}
     updateNotes();
     $('meeting-folder-title').textContent=f.name;
     if(document.activeElement!==$('meeting-name'))$('meeting-name').value=f.name;
     $('meeting-items').replaceChildren();$('meeting-count').textContent=`${f.items.length} items`;
+    const planned=window.ProMaxMeetingPlan?.schedule({startTime:ProMaxMeetingPlan.start(f.plannedStart),items:f.items});
     for(const [index,item] of f.items.entries()){
       const row=node('div');row.className='meeting-item'+(activeItem===item.id?' active':'');row.dataset.folderId=f.id;row.dataset.itemId=item.id;
       const selectButton=button('',()=>open(item));selectButton.className='meeting-item-open';selectButton.setAttribute('aria-pressed',String(activeItem===item.id));selectButton.append(node('small',`${index+1} · ${item.type==='document'?'PowerPoint':item.type}`),node('span',title(item)));
       const noteFlag=node('small','✎ Operator note');noteFlag.className='meeting-item-note';noteFlag.hidden=!item.operatorNotes?.trim();selectButton.append(noteFlag);
+      if(planned){const time=planned.rows[index],duration=ProMaxMeetingPlan.minutes(item.plannedMinutes);if(duration!==null||time.start!==null){const badge=node('small',(time.start!==null?ProMaxMeetingPlan.clock(time.start)+(duration!==null?' · ':''):'')+(duration!==null?ProMaxMeetingPlan.durationLabel(duration):''));badge.className='meeting-item-timing';selectButton.append(badge);}}
       const actions=node('div');actions.className='meeting-item-actions';
       actions.append(button('×',()=>remove(index),'Remove '+title(item)+' from this meeting'));
       row.append(selectButton,actions);$('meeting-items').append(row);
     }
     if(!f.items.length)$('meeting-items').append(node('p','Add only what you need for this meeting.'));
+    document.dispatchEvent(new Event('promax:meetings-rendered'));
   }
   function renderPicker(){
     const q=$('meeting-song-search').value;const list=$('meeting-song-options');list.replaceChildren();
@@ -124,13 +127,16 @@
   name.oninput=()=>{const f=folder();if(f){f.name=name.value;scheduleSave();render();}};
   banner.append(name,button('Delete folder',()=>{const f=folder();if(!f)return;if(window.ProMaxControls){ProMaxControls.remove({type:'folder',folderId:f.id});return;}if(!confirm(`Delete the folder “${f.name}”? Songs and media remain in your library.`))return;meetingFolders=meetingFolders.filter(entry=>entry!==f);meetingSelected=null;activeItem=null;save();ProMaxFeatures.showTab('songs');render();}));
   const notes=node('details');notes.id='meeting-notes';const noteHeading=node('summary','Operator notes'),noteInput=node('textarea');noteInput.id='meeting-operator-note';noteInput.rows=3;noteInput.maxLength=8000;noteInput.setAttribute('aria-label','Operator notes');noteInput.placeholder='Reminders for the operator…';
-  notes.append(noteHeading,node('p','Saved with this meeting. These notes never appear on the presentation screen.'),noteInput);banner.append(notes);
-  function noteTarget(){const f=folder();return f?.items.find(item=>item.id===activeItem)||f;}
-  function updateNotes(){const target=noteTarget();if(!target)return;const key=folder().id+':'+target.id;
-    if(noteInput.dataset.target!==key){noteInput.dataset.target=key;noteInput.value=target.operatorNotes||'';notes.open=!!target.operatorNotes?.trim();}
+  const noteScope=node('select');noteScope.id='meeting-notes-scope';noteScope.setAttribute('aria-label','Notes for');const itemScope=node('option','Selected item');itemScope.value='item';const meetingScope=node('option','Whole meeting');meetingScope.value='meeting';noteScope.append(itemScope,meetingScope);const scopeLabel=node('label','Notes for ');scopeLabel.className='meeting-notes-scope';scopeLabel.append(noteScope);
+  notes.append(noteHeading,node('p','Saved with this meeting. These notes never appear on the presentation screen.'),scopeLabel,noteInput);banner.append(notes);
+  function noteTarget(){const f=folder();return (noteScope.value==='item'&&f?.items.find(item=>item.id===activeItem))||f;}
+  function updateNotes(keepOpen=false){const target=noteTarget();if(!target)return;const key=folder().id+':'+target.id;
+    itemScope.disabled=!folder().items.some(item=>item.id===activeItem);
+    if(noteInput.dataset.target!==key){noteInput.dataset.target=key;noteInput.value=target.operatorNotes||'';notes.open=keepOpen||!!target.operatorNotes?.trim();}
     else if(document.activeElement!==noteInput)noteInput.value=target.operatorNotes||'';
     noteHeading.textContent='Operator notes · '+(target===folder()?'Meeting':title(target));
   }
+  noteScope.onchange=()=>updateNotes(true);
   noteInput.oninput=()=>{const target=noteTarget();if(!target)return;target.operatorNotes=noteInput.value;scheduleSave();
     const row=[...$('meeting-items').children].find(row=>row.dataset.itemId===target.id),flag=row?.querySelector('.meeting-item-note');if(flag)flag.hidden=!noteInput.value.trim();
   };

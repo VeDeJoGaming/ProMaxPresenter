@@ -21,10 +21,10 @@
     if(folders.length>10000)throw Error('The saved meeting library is too large.');
     const meetingFolders=folders.map(f=>{
       if(!f||!Array.isArray(f.items))throw Error('A saved meeting folder is invalid.');
-      return {...f,id:id(f.id),name:text(f.name,'Untitled meeting',500),...(f.operatorNotes!==undefined?{operatorNotes:text(f.operatorNotes,'',8000)}:{}),items:f.items.map(item=>{
+      return {...f,id:id(f.id),name:text(f.name,'Untitled meeting',500),...(f.plannedStart!==undefined?{plannedStart:typeof f.plannedStart==='string'&&/^([01]\d|2[0-3]):[0-5]\d$/.test(f.plannedStart)?f.plannedStart:''}:{}),...(f.operatorNotes!==undefined?{operatorNotes:text(f.operatorNotes,'',8000)}:{}),items:f.items.map(item=>{
         if(!item||!['song','bible','text','video','document','youtube'].includes(item.type))throw Error('A saved meeting entry is invalid.');
         if(['bible','text'].includes(item.type)&&(!Array.isArray(item.slides)||item.slides.some(s=>!s||typeof s.text!=='string')))throw Error('A saved meeting passage is invalid.');
-        return {...item,id:id(item.id),title:text(item.title,'Untitled item',500),...(item.operatorNotes!==undefined?{operatorNotes:text(item.operatorNotes,'',8000)}:{}),...(item.slides?{slides:item.slides.map(s=>({...s,id:id(s.id)}))}:{})};
+        return {...item,id:id(item.id),title:text(item.title,'Untitled item',500),...(item.plannedMinutes!==undefined?{plannedMinutes:Number.isInteger(item.plannedMinutes)&&item.plannedMinutes>=0&&item.plannedMinutes<=1440?item.plannedMinutes:null}:{}),...(item.operatorNotes!==undefined?{operatorNotes:text(item.operatorNotes,'',8000)}:{}),...(item.slides?{slides:item.slides.map(s=>({...s,id:id(s.id)}))}:{})};
       })};
     });
     return {schemaVersion:1,savedAt:Number(value.savedAt)||0,songs,selected:songs.some(s=>s.id===value.selected)?value.selected:songs[0].id,settings,meetingFolders,meetingSelected:meetingFolders.some(f=>f.id===value.meetingSelected)?value.meetingSelected:null};
