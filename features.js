@@ -27,9 +27,18 @@
   function element(tag,text,className) { const node=document.createElement(tag);if(text)node.textContent=text;if(className)node.className=className;return node; }
   function button(text,callback,className) { const b=element('button',text,className);b.type='button';b.onclick=callback;return b; }
   function fileButton(text,accept,handler,multiple=false) {
-    const label=element('label',text,'button');const input=document.createElement('input');input.type='file';input.accept=accept;input.hidden=true;input.multiple=multiple;
-    input.onchange=async()=>{try{if(input.files.length)await handler([...input.files]);}catch(error){notify(error.message || 'Could not import this file.');}finally{input.value='';}};
-    label.append(input);return label;
+    const wrapper=element('span',null,'file-picker'),input=document.createElement('input');input.type='file';input.accept=accept;input.hidden=true;input.multiple=multiple;input.setAttribute('aria-label',text);
+    const picker=button(text,()=>input.click(),'button');picker.dataset.filePicker=accept;
+    input.onchange=async()=>{
+      const files=[...input.files];if(!files.length)return;
+      const restoreFocus=document.activeElement===picker;picker.disabled=true;picker.textContent='Importing…';picker.setAttribute('aria-busy','true');
+      try{await handler(files);}catch(error){notify(error.message || 'Could not import this file.');}
+      finally{
+        input.value='';picker.disabled=false;picker.textContent=text;picker.removeAttribute('aria-busy');
+        if(restoreFocus&&document.activeElement===document.body)[...document.querySelectorAll('[data-file-picker]')].find(node=>node.dataset.filePicker===accept&&node.getClientRects().length)?.focus({preventScroll:true});
+      }
+    };
+    wrapper.append(picker,input);return wrapper;
   }
   async function persist(key,value) { await storedAsset('put',value,key); }
   function heading(title,help) {window.ProMaxVideoControls?.clear();window.ProMaxYouTube?.park(document);view.replaceChildren(element('h2',title),element('p',help,'feature-help'));}
@@ -150,7 +159,7 @@
         assets=next;added++;await loadAsset(asset);
       }
     }finally{if(added){warmVideos();window.ProMaxControls?.changed();if(tab==='videos')renderVideos();}}
-    if(added)notify(`${added} videos saved. Preparing playback…`);
+    if(added)notify(`${added} ${added===1?'video':'videos'} saved. Preparing playback…`);
   });}
   function videoUrls(){return [...new Set([state.video?.url,cache.get(focusedAsset),...assets.map(a=>cache.get(a.id))].filter(Boolean))].slice(0,3);}
   function warmVideos(){ProMaxPlayback.warm(document,videoUrls());paint();}

@@ -29,6 +29,8 @@ jobs:
         timeout-minutes: 3
       - run: node test/presentation-keys-desktop.cjs
         timeout-minutes: 3
+      - run: node test/preparation-keys-desktop.cjs
+        timeout-minutes: 3
       - run: node test/video-transport-desktop.cjs
         timeout-minutes: 3
       - run: node test/video-import-desktop.cjs
