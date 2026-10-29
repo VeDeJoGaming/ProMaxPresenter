@@ -58,6 +58,7 @@
     const form=element('form',null,'feature-actions');const input=document.createElement('input');input.placeholder='Reference or text…';input.id='bible-search';input.setAttribute('aria-label','Search Bible');
     input.value=bibleQuery;input.autocomplete='off';form.append(input);
     const results=element('div');results.id='bible-results';
+    const focusContext=()=>{const target=results.querySelector('.bible-context-target');if(target){target.tabIndex=-1;target.scrollIntoView({block:'nearest'});target.focus({preventScroll:true});}};
     const selectActions=element('div',null,'feature-actions');
     const count=element('span','0 selected');
     count.setAttribute('aria-live','polite');
@@ -84,7 +85,7 @@
         checkbox.onchange=()=>{if(checkbox.checked)chosen.add(v);else chosen.delete(v);updateCount();};
         row.append(checkbox,button(`${ref(v)}\n${v.text}`,()=>cueText(`${v.verse} ${v.text}\n\n${ref(v)}`,ref(v),{verses:[v],reference:ref(v)}),'verse-button'));
         if(contextHit===v){row.classList.add('bible-context-target');row.setAttribute('aria-label','Search result: '+ref(v));}
-        if(!context){const more=button('Read chapter',()=>{context=v;contextHit=v;selectionAnchor=null;bibleResults=ProMaxBible.chapterVerses(bible,v);draw();const target=results.querySelector('.bible-context-target');target?.scrollIntoView({block:'nearest'});target?.querySelector('.verse-button')?.focus({preventScroll:true});},'bible-read-context');more.setAttribute('aria-label',`Read verses around ${ref(v)}`);row.append(more);}
+        if(!context){const more=button('Read chapter',()=>{context=v;contextHit=v;selectionAnchor=null;bibleResults=ProMaxBible.chapterVerses(bible,v);draw();focusContext();},'bible-read-context');more.setAttribute('aria-label',`Read verses around ${ref(v)}`);row.append(more);}
         results.append(row);
       }
       if (!bibleResults.length)results.append(element('p',input.value.trim()?'No matching verses. Try a book name or a word.':'Start typing a book, reference or words to see verses.','feature-help'));
@@ -97,7 +98,7 @@
     search();
     if(initialVerse&&bible.verses.includes(initialVerse)){
       context=initialVerse;contextHit=initialVerse;bibleResults=ProMaxBible.chapterVerses(bible,initialVerse);draw();
-      const target=results.querySelector('.bible-context-target');target?.scrollIntoView({block:'nearest'});target?.querySelector('.verse-button')?.focus({preventScroll:true});
+      focusContext();
     }
   }
   function passage() {
@@ -255,7 +256,7 @@
     }
   }
   const originalGoLive=goLive;
-  goLive=function(index){deck=null;activeVideo=null;const result=originalGoLive(index);if(tab==='videos')renderVideos();return result;};
+  goLive=function(index){if(!current()?.slides.length)return originalGoLive(index);deck=null;activeVideo=null;const result=originalGoLive(index);if(tab==='videos')renderVideos();return result;};
   const originalSelectSong=selectSong;
   selectSong=function(id){const result=originalSelectSong(id);showTab('songs');return result;};
   const previous=$('previous').onclick,next=$('next').onclick;

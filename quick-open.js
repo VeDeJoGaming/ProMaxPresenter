@@ -47,7 +47,7 @@
   input.oninput=render;document.addEventListener('promax:bible-changed',()=>{if(dialog.open)render();});
   dialog.addEventListener('close',()=>{input.removeAttribute('aria-activedescendant');if(dialog.returnValue!=='open'&&previousFocus?.isConnected)previousFocus.focus();dialog.returnValue='';});
   window.addEventListener('keydown',event=>{
-    if((event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==='k'&&!event.altKey){if(document.querySelector('dialog[open]')&&!dialog.open)return;event.preventDefault();event.stopImmediatePropagation();if(dialog.open)dialog.close();else open();return;}
+    if((event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==='k'&&!event.altKey){if(document.querySelector('dialog[open]')&&!dialog.open)return;event.preventDefault();event.stopImmediatePropagation();if(event.repeat)return;if(dialog.open)dialog.close();else open();return;}
     if(!dialog.open)return;
     if((event.ctrlKey||event.metaKey)&&['z','y'].includes(event.key.toLowerCase())){event.stopImmediatePropagation();return;}
     if(event.key==='Escape'){event.preventDefault();event.stopImmediatePropagation();dialog.close();return;}

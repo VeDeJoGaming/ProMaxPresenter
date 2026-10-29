@@ -18,11 +18,11 @@ async function run(){
       window.finderPrepareCalls=0;const prepare=ProMaxYouTubeLibrary.prepare;ProMaxYouTubeLibrary.prepare=function(){finderPrepareCalls++;return prepare.apply(this,arguments);};
     },(await fs.readFile(path.join(__dirname,'../desktop/smoke-video.webm'))).toString('base64'));
     async function search(query,filter='all'){
-      await page.keyboard.press('Control+k');await page.locator('#quick-open-search').fill(query);if(filter!=='all')await page.locator('[data-quick-filter="'+filter+'"]').click();
+      await page.keyboard.press('Control+k');await page.evaluate(()=>window.dispatchEvent(new KeyboardEvent('keydown',{key:'k',ctrlKey:true,repeat:true,bubbles:true,cancelable:true})));assert.equal(await page.locator('#quick-open').isVisible(),true,'Holding Ctrl+K opens the finder only once');await page.locator('#quick-open-search').fill(query);if(filter!=='all')await page.locator('[data-quick-filter="'+filter+'"]').click();
     }
     async function unchanged(){assert.equal(await page.evaluate(()=>state.text),'Keep this public cue');assert.equal(await page.evaluate(()=>state.black),false);}
     await search('Joh 3:16','bible');assert.equal(await page.locator('[data-quick-type="bible"]').count(),1);await page.keyboard.press('Enter');
-    assert.equal(await page.locator('.bible-context-target').count(),1);assert.equal(await page.locator('.verse-row').count(),3);assert.equal(await page.locator('#bible-search').inputValue(),'Johannes 3:16');await unchanged();
+    assert.equal(await page.locator('.bible-context-target').count(),1);assert.equal(await page.locator('.verse-row').count(),3);assert.equal(await page.locator('#bible-search').inputValue(),'Johannes 3:16');await unchanged();await page.keyboard.press('Enter');await unchanged();
     await search('unique verse','bible');await page.keyboard.press('Enter');assert.match(await page.locator('.bible-context-target').innerText(),/Unique verse marker/);await unchanged();
     await search('hap sjoen','media');assert.equal(await page.locator('[data-quick-type="video"]').count(),1);await page.keyboard.press('Enter');assert.equal(await page.evaluate(()=>ProMaxFeatures.focusedAsset()),'clip');assert.match(await page.locator('#feature-view h2').innerText(),/Håp/);assert.equal(await page.locator('.meeting-video-preview').evaluate(v=>v.paused),true);await unchanged();
     await search('Welcome deck','media');await page.keyboard.press('Enter');assert.equal(await page.evaluate(()=>ProMaxFeatures.focusedAsset()),'deck');assert.equal(await page.locator('.document-slide').count(),1);await unchanged();
