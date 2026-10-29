@@ -20,6 +20,7 @@ Your songs, folders, imported Bible and media stay local. This development branc
 - Meeting folders and running orders with songs, Bible passages, text, video, YouTube and PowerPoint; drag/drop, undo/redo and automatic saving.
 - **LIVE / BLACKOUT** marks the meeting item actually cued to an open presentation display, independently of the item currently selected for preparation. The mark stays with the correct occurrence when a song appears more than once; output off clears the live marks. **Open live item** returns to its meeting and workspace while keeping the presentation unchanged.
 - Song sections, slide editing, keyboard shortcuts, quick text, countdown, PDF and blackout.
+- Countdowns can pause and resume from the exact remaining time. Blackout keeps their phase; choosing another live cue stops the countdown so it cannot overwrite that cue later.
 - Enter and Space activate focused preparation buttons and file pickers. Enter on a selected slide card presents it; Space outside controls advances slides or pauses/resumes the active video.
 - Indexed Bible search, full chapter context, previous/next chapter navigation across books, Shift-click range selection and Clear selection; local video library and native YouTube preview/output.
 - Local video transport shows elapsed/remaining time with a seek bar, keyboard seeking and ten-second jumps. Seeking preserves pause and blackout; clips stay at the end until **Replay** is chosen. Preview audio stays muted.

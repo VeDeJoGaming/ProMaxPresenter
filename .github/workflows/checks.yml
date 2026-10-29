@@ -35,6 +35,8 @@ jobs:
         timeout-minutes: 3
       - run: node test/youtube-library-desktop.cjs
         timeout-minutes: 3
+      - run: node test/countdown-desktop.cjs
+        timeout-minutes: 3
       - run: node test/video-transport-desktop.cjs
         timeout-minutes: 3
       - run: node test/video-import-desktop.cjs

@@ -266,7 +266,7 @@
   $('previous').onclick=()=>{if(!navigate(-1))previous();};$('next').onclick=()=>{if(!navigate(1))next();};
   for(const id of ['clear','show-text','countdown','pdf']){
     const original=$(id)[id==='pdf'?'onchange':'onclick'];
-    $(id)[id==='pdf'?'onchange':'onclick']=function(event){deck=null;activeVideo=null;const result=original.call(this,event);if(tab==='videos')renderVideos();return result;};
+    $(id)[id==='pdf'?'onchange':'onclick']=function(event){const before=state,result=original.call(this,event);if(state!==before){deck=null;activeVideo=null;if(tab==='videos')renderVideos();}return result;};
   }
   function openMeetingMedia(type,id){showTab(type);focusedAsset=id;if(type==='videos'){warmVideos();renderVideos();}else renderDocuments();}
   function externalCue(){deck=null;activeVideo=null;}
