@@ -18,8 +18,8 @@ async function run(){
     const page=await app.firstWindow();page.on('pageerror',error=>errors.push(error.message));page.on('request',request=>{if(/^https?:/.test(request.url()))requests.push(request.url());});
     await page.waitForFunction(()=>window.ProMaxControls);await page.evaluate(()=>ProMaxControls.ready);
     async function openPicker(locator,key){
-      await app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows()[0].focus());await page.bringToFront();await page.waitForFunction(()=>document.hasFocus());await locator.focus();
-      const chooser=page.waitForEvent('filechooser');await page.keyboard.press(key);return chooser;
+      await app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows()[0].focus());await page.bringToFront();await page.waitForFunction(()=>document.hasFocus());
+      const chooser=page.waitForEvent('filechooser');await locator.press(key);return chooser;
     }
     await page.evaluate(async bytes=>{
       window.pickerBytes=Uint8Array.from(atob(bytes),c=>c.charCodeAt(0));
@@ -28,11 +28,10 @@ async function run(){
     },(await fs.readFile(path.join(__dirname,'../desktop/smoke-video.webm'))).toString('base64'));
     assert.equal(await page.evaluate(()=>ProMaxFeatures.getVideos().find(v=>v.id===ProMaxYouTubeLibrary.list()[0].localAssetId).name),'Intended local copy.webm','An attachment must use its own imported file when another import is queued');
     await page.evaluate(()=>{goLive(0);window.pickerCue=state;document.querySelector('#background').closest('details').open=true;});
-    const background=page.locator('button[data-file-picker="background"]'),backgroundChooser=await openPicker(background,'Space');assert.equal(await page.evaluate(()=>state===pickerCue),true);
-    await backgroundChooser.setFiles(path.join(__dirname,'../desktop/smoke-video.webm'));await page.waitForFunction(()=>media?.type==='video/webm');assert.equal(await page.evaluate(()=>state===pickerCue),true);
+    const background=page.locator('button[data-file-picker="background"]'),backgroundPicker=await background.elementHandle(),backgroundChooser=await openPicker(background,'Space');assert.equal(await page.evaluate(()=>state===pickerCue),true);
+    await backgroundChooser.setFiles(path.join(__dirname,'../desktop/smoke-video.webm'));await page.waitForFunction(picker=>!picker.disabled,backgroundPicker);await page.waitForFunction(()=>media?.type==='video/webm');assert.equal(await page.evaluate(()=>state===pickerCue),true);
     await page.evaluate(()=>document.querySelector('#pdf').closest('details').open=true);
-    const pdf=page.locator('button[data-file-picker="pdf"]'),canceledChooser=await openPicker(pdf,'Enter');await canceledChooser.setFiles([]);assert.equal(await page.evaluate(()=>state===pickerCue),true,'Canceled file selection keeps the live cue');
-    const pdfFile=path.join(profile,'synthetic-keyboard.pdf');await fs.writeFile(pdfFile,blankPdf());const pdfChooser=await openPicker(pdf,'Space');assert.equal(await page.evaluate(()=>state===pickerCue),true,'Opening a PDF chooser does not cue another slide');await pdfChooser.setFiles(pdfFile);await page.waitForFunction(()=>state.pdf?.startsWith('blob:'));
+    const pdf=page.locator('button[data-file-picker="pdf"]'),pdfPicker=await pdf.elementHandle(),pdfFile=path.join(profile,'synthetic-keyboard.pdf');await fs.writeFile(pdfFile,blankPdf());const pdfChooser=await openPicker(pdf,'Enter');assert.equal(await page.evaluate(()=>state===pickerCue),true,'Opening a PDF chooser does not cue another slide');await pdfChooser.setFiles(pdfFile);await page.waitForFunction(picker=>!picker.disabled,pdfPicker);await page.waitForFunction(()=>state.pdf?.startsWith('blob:'));
     await page.evaluate(()=>{
       ProMaxFeatures.showTab('videos');window.attachmentCue=state;window.previousAttachment=ProMaxYouTubeLibrary.list()[0].localAssetId;
       window.originalPickerStore=storedAsset;
@@ -49,6 +48,8 @@ async function run(){
     await fs.mkdir(path.join(__dirname,'../test-results'),{recursive:true});await page.locator('[data-file-picker="youtube-local:picker-entry"]').scrollIntoViewIfNeeded();await page.screenshot({path:path.join(__dirname,'../test-results/file-pickers-video.png')});
     await app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows().find(w=>w.getTitle()==='ProMax Presenter').setSize(850,650));
     assert.equal(await page.locator('main>.workspace').evaluate(el=>el.scrollWidth<=el.clientWidth+1),true);await page.locator('[data-file-picker="youtube-local:picker-entry"]').scrollIntoViewIfNeeded();await page.screenshot({path:path.join(__dirname,'../test-results/file-pickers-compact.png')});
+    // Empty interception is checked last: it is not a native dialog-close signal.
+    const canceledChooser=await openPicker(pdf,'Space');await canceledChooser.setFiles([]);assert.equal(await page.evaluate(()=>state===attachmentCue),true,'Canceled file selection keeps the live cue');
     assert.deepEqual(requests,[],'Attaching local files must not prepare or request remote YouTube content');assert.deepEqual(errors,[]);
     console.log('PASS: background/PDF/local-copy keyboard pickers, cancellation/cue preservation, concurrent attachment identity, later workspace preservation, exact focus return and no external requests; '+(executablePath||'source'));
   }finally{

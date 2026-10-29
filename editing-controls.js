@@ -4,7 +4,7 @@
   const providers=[['features',ProMaxFeatures.history],['youtube',ProMaxYouTubeLibrary.history]];
   const undoStack=[],redoStack=[],bibleIds=new WeakMap(),backgroundIds=new WeakMap();let nextBible=1,nextBackground=1,backgroundFile=null;
   let baseline=null,baselineKey=null,enabled=false,restoring=false,busy=false,hold=0,choice=null,action=0,group='initial',drag=null,liveSong=null;const pendingHistory=[];
-  const originalGoLive=goLive;goLive=function(index){const before=state,result=originalGoLive(index);if(state!==before)liveSong={songId:selected,slideId:current()?.slides[liveIndex]?.id,state};return result;};
+  const originalGoLive=goLive;goLive=function(index){const before=state,result=originalGoLive(index);if(state!==before){liveSong={songId:selected,slideId:current()?.slides[liveIndex]?.id,state};window.ProMaxMeetings?.markLive();}return result;};
   const editable=node=>!!node?.closest('textarea,input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color]):not([type=file]),[contenteditable=true]');
   function normalize(){for(const song of songs)for(const slide of song.slides)slide.id||=uid();for(const f of meetingFolders)for(const item of f.items)for(const slide of item.slides||[])slide.id||=uid();}
   function take(copy=true){normalize();const content={songs,meetingFolders,settings,selected,meetingSelected},value=copy?clone(content):content;value.background=backgroundFile;for(const [name,p]of providers)value[name]=p.take();return value;}

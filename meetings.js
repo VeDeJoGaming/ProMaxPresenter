@@ -12,14 +12,17 @@
     return matches?{folderId:f.id,itemId:item.id}:null;
   }
   function trackCue(context){liveCue=context?{...context,cue:state}:null;markLive();}
+  function liveSongTarget(){const live=window.ProMaxControls?.liveSlide?.();return live&&songs.some(song=>song.id===live.songId&&song.slides.some(slide=>slide.id===live.slideId))?live:null;}
   async function returnToLive(){
+    if($('open-output').getAttribute('aria-pressed')!=='true')return false;
     const f=meetingFolders.find(f=>f.id===liveCue?.folderId),item=f?.items.find(i=>i.id===liveCue?.itemId);
-    if(!item||liveCue.cue!==state||$('open-output').getAttribute('aria-pressed')!=='true')return false;
-    meetingSelected=f.id;await open(item);liveRows.get(f.id+':'+item.id)?.article.querySelector('.meeting-item-open')?.focus();return true;
+    if(item&&liveCue.cue===state){meetingSelected=f.id;await open(item);liveRows.get(f.id+':'+item.id)?.article.querySelector('.meeting-item-open')?.focus();return true;}
+    const song=liveSongTarget();if(!song)return false;select(null);selectSong(song.songId);$('library').querySelector('.song.active')?.focus();return true;
   }
   function markLive(active=$('open-output').getAttribute('aria-pressed')==='true'){
     const valid=active&&liveCue?.cue===state&&meetingFolders.some(f=>f.id===liveCue.folderId&&f.items.some(i=>i.id===liveCue.itemId));
-    if(liveJump.hidden===!!valid)liveJump.hidden=!valid;
+    const canJump=valid||active&&!!liveSongTarget(),jumpLabel=valid?'Open live item':'Open live song';
+    if(liveJump.hidden===!!canJump)liveJump.hidden=!canJump;if(liveJump.textContent!==jumpLabel)liveJump.textContent=jumpLabel;
     const row=valid?liveRows.get(liveCue.folderId+':'+liveCue.itemId):null,folderFlag=valid?liveFolders.get(liveCue.folderId):null,mode=valid?(state.black?'blackout':'live'):'';
     if(marked?.row===row&&marked?.folderFlag===folderFlag&&marked?.mode===mode)return;
     if(marked?.row){delete marked.row.article.dataset.liveCue;marked.row.flag.hidden=true;}if(marked?.folderFlag)marked.folderFlag.hidden=true;

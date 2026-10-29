@@ -75,7 +75,7 @@ function cleanEmptySongs(keepId){
   songs=cleaned;
   for(const folder of meetingFolders)folder.items=folder.items.filter(item=>item.type!=='song'||!removed.has(item.songId));
 }
-function selectSong(id){selected=id;cleanEmptySongs(id);liveIndex=-1;const s=current();$('title').value=s.title;$('lyrics').value=s.lyrics;$('lines').value=s.lines;renderLibrary();renderSlides();save();}
+function selectSong(id){selected=id;cleanEmptySongs(id);const s=current(),live=window.ProMaxControls?.liveSlide?.();liveIndex=live?.songId===id?s.slides.findIndex(slide=>slide.id===live.slideId):-1;$('title').value=s.title;$('lyrics').value=s.lyrics;$('lines').value=s.lines;renderLibrary();renderSlides();save();}
 const backgroundPosters=new Map();
 function addBackgroundPoster(container,url){
   const image=document.createElement('img');image.className='media';image.alt='';container.prepend(image);
