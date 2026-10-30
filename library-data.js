@@ -24,6 +24,7 @@
     });
     const source=value.settings&&typeof value.settings==='object'&&!Array.isArray(value.settings)?value.settings:{};
     const settings={...source,color:/^#[0-9a-f]{6}$/i.test(source.color)?source.color:'#181818',fontSize:Math.max(3,Math.min(9,Number(source.fontSize)||5)),align:source.align==='left'?'left':'center'};
+    if(source.scoreboard!==undefined){const scores=typeof module!=='undefined'&&module.exports?require('./scoreboard.js'):root.ProMaxScoreboard;settings.scoreboard=scores.normalize(source.scoreboard);}
     if(source.songFavorites!==undefined)settings.songFavorites=Array.isArray(source.songFavorites)?[...new Set(source.songFavorites.filter(v=>typeof v==='string'&&v.length<=128))].slice(0,10000):[];
     settings.visualColors=Array.isArray(source.visualColors)&&source.visualColors.length===3&&source.visualColors.every(c=>/^#[0-9a-f]{6}$/i.test(c))?source.visualColors:['#5276f4','#e0edff','#131c43'];
     settings.renderQuality=['auto','quality','performance'].includes(source.renderQuality)?source.renderQuality:'auto';

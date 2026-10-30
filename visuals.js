@@ -361,7 +361,7 @@
   }
   const backgroundStates=new WeakMap();
   function beginBackground(doc,container,value){
-    const bare=!value.black&&!value.pdf&&!value.video&&!value.image&&!value.youtube;
+    const bare=!value.black&&!value.pdf&&!value.video&&!value.image&&!value.youtube&&!value.scoreboard;
     const still=window.ProMaxStillVisuals?.presets.find(p=>p.id===value.settings.visual);
     const key=bare?still?still.id+':'+window.ProMaxStillVisuals.variant(still,{...value.settings,section:value.section}):value.settings.visual||value.media?.url||'solid:'+value.settings.color:null;
     const previous=backgroundStates.get(container);

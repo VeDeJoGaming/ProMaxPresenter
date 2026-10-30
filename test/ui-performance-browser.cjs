@@ -26,6 +26,11 @@ async function run(){
     await page.locator('#meeting-open-live').click();assert.deepEqual(await page.evaluate(()=>({selected,liveIndex,same:state===browserLiveCue})),{selected:'browser-live',liveIndex:1,same:true});assert.equal(await presentation.locator('#stage .screen-text').innerText(),'browser-live 1');
     await page.locator('#next').click();assert.equal(await presentation.locator('#stage .screen-text').innerText(),'browser-live 2');await page.evaluate(()=>{toggleBlackout();window.browserBlackCue=state;selectSong('browser-preparation');});await page.locator('#meeting-open-live').click();assert.equal(await page.evaluate(()=>state===browserBlackCue&&state.black),true);
     await page.evaluate(()=>closeOutput());await page.locator('#meeting-open-live').waitFor({state:'hidden'});
+    await page.evaluate(()=>{output=window.open('','promax-browser-scores');output.document.body.innerHTML='<div id="stage" style="position:relative;width:1280px;height:720px"></div>';ProMaxFeatures.showTab('scores');});
+    await page.locator('#score-show').click();const scoreOutput=page.context().pages().find(p=>p!==page);await scoreOutput.waitForFunction(()=>document.querySelectorAll('.score-tile').length===3&&getComputedStyle(document.querySelector('.score-grid')).display==='grid');
+    await page.locator('.score-plus').first().click();await scoreOutput.waitForFunction(()=>document.querySelector('.score-total').textContent==='1');await page.locator('#score-undo').click();await scoreOutput.waitForFunction(()=>document.querySelector('.score-total').textContent==='0');
+    await page.evaluate(()=>toggleBlackout());assert.equal(await scoreOutput.locator('.score-stage').isVisible(),false);await page.evaluate(()=>toggleBlackout());assert.equal(await scoreOutput.locator('.score-stage').isVisible(),true);
+    await page.evaluate(()=>{closeOutput();ProMaxFeatures.showTab('songs');goLive(0);});
     const seed=await page.evaluate(async()=>{
       await ProMaxControls.mutate('Synthetic library',()=>{
         songs=Array.from({length:1000},(_,i)=>({id:'synthetic-'+i,title:'Synthetic song '+i,lyrics:'Synthetic line\n'.repeat(50),lines:4,

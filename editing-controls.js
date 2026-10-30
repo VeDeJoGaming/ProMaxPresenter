@@ -69,7 +69,7 @@
     if(meetingSelected&&tab!=='songs'&&!ProMaxFeatures.focusedAsset()&&!ProMaxYouTubeLibrary.focused()){ProMaxFeatures.showTab(tab);ProMaxMeetings.render();}
     else if(meetingSelected)await ProMaxMeetings.refresh();else if(tab!=='songs')ProMaxFeatures.showTab(tab);else selectSong(selected);
     if(liveSong?.state===state&&selected===liveSong.songId){liveIndex=current().slides.findIndex(s=>s.id===liveSong.slideId);renderSlides();}
-    updateVisualName();paint();scan();
+    window.ProMaxScores?.sync();updateVisualName();paint();scan();
   }
   async function restore(value,selection){
     const live=ProMaxFeatures.captureDeck();restoring=true;

@@ -12,7 +12,7 @@
   const videoDurations=new Map();
   let videoQueue=Promise.resolve();
   function videoOperation(action){const operation=videoQueue.then(action);videoQueue=operation.catch(()=>{});return operation;}
-  const tabs=[['songs','Songs'],['bible','Bible'],['videos','Videos'],['presentations','PowerPoint']];
+  const tabs=[['songs','Songs'],['bible','Bible'],['videos','Videos'],['presentations','PowerPoint'],['scores','Poengtelling']];
   for (const [id,label] of tabs) { const b=document.createElement('button');b.textContent=label;b.onclick=()=>showTab(id);b.dataset.tab=id;nav.append(b); }
   function showTab(id,options={}) {
     window.ProMaxVideoControls?.clear();
@@ -21,7 +21,7 @@
     tab=id;for (const b of nav.children) b.setAttribute('aria-pressed',String(b.dataset.tab===id));
     for (const child of workspace.children) if (child!==nav && child!==view) child.hidden=id!=='songs';
     view.hidden=id==='songs';
-    if (id==='bible') renderBible(options.bibleVerse);else if (id==='videos') renderVideos();else if (id==='presentations') renderDocuments();
+    if (id==='bible') renderBible(options.bibleVerse);else if (id==='videos') renderVideos();else if (id==='presentations') renderDocuments();else if(id==='scores') window.ProMaxScores?.render(view);
     window.ProMaxMeetings?.onTab();
   }
   function element(tag,text,className) { const node=document.createElement(tag);if(text)node.textContent=text;if(className)node.className=className;return node; }

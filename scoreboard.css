@@ -1,0 +1,14 @@
+.score-stage{position:absolute;inset:0;z-index:3;container-type:size;color:var(--pm-text);font-family:var(--pm-font);background:radial-gradient(ellipse at 15% 0%,#ef534923,transparent 55%),radial-gradient(ellipse at 95% 100%,#ff8a3d18,transparent 55%),var(--pm-bg);overflow:hidden;text-align:left}
+.score-stage[hidden]{display:none}
+.score-stage *{box-sizing:border-box}
+.score-frame{position:absolute;inset:5cqh 4cqw;display:flex;flex-direction:column;gap:2.4cqh}
+.score-stage-top{display:flex;align-items:center;justify-content:space-between;font-size:1.1cqw;letter-spacing:.24em;color:var(--pm-muted)}
+.score-brand{color:var(--pm-red);font-weight:800;letter-spacing:.2em}
+.score-stage-title{font-size:3.5cqw;line-height:1.15;margin:0 0 1cqh;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.score-grid{display:grid;grid-template-columns:repeat(var(--score-columns),minmax(0,1fr));grid-template-rows:repeat(var(--score-rows),minmax(0,1fr));gap:1.5cqw;flex:1;min-height:0}
+.score-tile{position:relative;min-width:0;min-height:0;background:linear-gradient(155deg,#30201d,var(--pm-panel) 70%);border:1px solid var(--pm-border);border-radius:1.1cqw;padding:var(--score-padding);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:var(--score-gap);overflow:hidden;box-shadow:0 .7cqw 2cqw #0003}
+.score-tile:before{content:"";position:absolute;inset:0 0 auto;height:.25cqw;background:var(--pm-red)}
+.score-leading{border-color:var(--pm-accent)}.score-leading:before{background:var(--pm-accent)}
+.score-rank{align-self:flex-start;font-size:min(1.4cqw,var(--score-name-size));color:var(--pm-muted);line-height:1}
+.score-team-name{font-size:var(--score-name-size);line-height:1.2;font-weight:600;text-align:center;overflow-wrap:anywhere;margin:0;width:100%;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.score-total{font-size:var(--score-number-size);line-height:1;font-weight:750;font-variant-numeric:tabular-nums;letter-spacing:-.04em;color:var(--pm-accent-hover);max-width:100%}

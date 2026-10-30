@@ -13,6 +13,7 @@ window.promaxDesktop.onState(value => {
   const finish=ProMaxVisuals.beginBackground(document,stage,value);renderOutput(value);finish();
 });
 function renderOutput(value) {
+  if(ProMaxScoreboard.render(document,stage,value)){previous=value;return;}
   ProMaxYouTube.warm(document,value.prepareYouTube);
   if(ProMaxYouTube.render(document,stage,value,true)){previous=value;return;}
   if(ProMaxVisuals.renderGlass(document,stage,value,true)){ProMaxPlayback.fit(stage);previous=value;return;}
@@ -20,7 +21,7 @@ function renderOutput(value) {
   ProMaxPlayback.warm(document, value.warmVideos || []);
   if (ProMaxPlayback.render(document, stage, value, true)) { previous = value;return; }
   stage.style.background = value.black ? '#000' : value.settings.color;
-  const rebuild = !previous || previous.youtube || previous.image || previous.video || previous.black !== value.black || previous.pdf !== value.pdf || previous.media?.url !== value.media?.url || previous.settings.visual !== value.settings.visual || !!stage.querySelector('canvas[data-glass]');
+  const rebuild = !previous || previous.scoreboard || previous.youtube || previous.image || previous.video || previous.black !== value.black || previous.pdf !== value.pdf || previous.media?.url !== value.media?.url || previous.settings.visual !== value.settings.visual || !!stage.querySelector('canvas[data-glass]');
   const previousText=stage.querySelector('.screen-text');
   if (rebuild) {
     ProMaxPlayback.clear(document,stage);
