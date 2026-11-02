@@ -1,3 +1,9 @@
+## Utgivelse 1.5.0 klargjort — 2. november 2026
+
+- Brukeren har uttrykkelig bedt om å publisere nyeste ProMaxPresenter som GitHub-oppdatering. Ren work/pc-laptop er kontrollert mot origin, utgangspunkt 0a69202; rotens eldre uforente checkout er bevart.
+- Versjon 1.5.0 i package.json og låsefil, oppdaterte utgivelsesnotater og publiseringsbeskrivelse for de 41 visualfamiliene. Alle tidligere ferdige forbedringer siden 1.4.1 inngår, inkludert poengtavle og lysbildebilder. Main trenger ikke endres; utgivelsen knyttes til kontrollert utviklingscommit.
+- Første kontroll: alle 97 enhetstester består. Publisering, kontroll av pakket app og oppdateringsfeed gjenstår til kontrollert bygg er ferdig. Eksisterende utgivelser skal bevares. Ingen private profiler eller innholdsfiler skal lastes opp.
+
 ## Synlig bilde i lysbildekortene — 2. november 2026
 
 - Rettet at felles animert bakgrunn kunne ligge over lysbildets eget bilde i kortets forhåndsvisning. Sang- og forberedte tekst-/Bibelkort monterer nå felles bakgrunn bare når lysbildet ikke har et bilde. Bildet og teksten vises direkte på kortet ved import/redigering uten ny live-cue. Fjerning av bildet gjenoppretter den delte bakgrunnen på kortet; globale innstillinger er bevart.

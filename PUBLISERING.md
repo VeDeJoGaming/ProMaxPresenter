@@ -16,7 +16,7 @@ Manuell kjøring i **Actions → Build Windows release → Run workflow** lager 
 
 `npm ci` etterfulgt av `npm run dist:release` lager installasjon i `dist/`. `release-config.json` angir oppdateringsrepository. `npm run dist` lager en lokal prøveinstallasjon uten oppdateringsfeed.
 
-Alle 29 kuraterte bakgrunner pakkes inn i appen som prosedyrekode og det originale vinterbildet. De gamle SVG-løkkene skal ikke gjeninnføres. `scripts/build-visuals.cjs` bygger den separate, valgfrie gallerisiden fra det gjeldende biblioteket og theme.css.
+Alle 41 kuraterte visualfamilier pakkes inn i appen som prosedyrekode og originale bilder. De gamle SVG-løkkene skal ikke gjeninnføres. `scripts/build-visuals.cjs` bygger den separate, valgfrie gallerisiden fra det gjeldende biblioteket og theme.css.
 
 En vanlig oppdatering krever en ny versjon og en publisert GitHub-utgivelse; å sende kode til `work/pc-laptop` oppdaterer ikke installerte apper. En uttrykkelig bestilt utgivelse kan publiseres fra en kontrollert commit på utviklingsgrenen uten å endre main. Test kildekoden og ferdigpakket app først, last opp kun den nye installasjonsfilen, dens `.blockmap`, `latest.yml` og `SHA256SUMS.txt` til et nytt utkast, og publiser dette som siste stabile utgave etter kontroll. Overskriv aldri en gammel utgivelse. Kontroller at oppdateringsklienten i en eldre installasjon finner den nye versjonen.
 
