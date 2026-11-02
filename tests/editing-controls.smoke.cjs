@@ -55,7 +55,7 @@ app.whenReady().then(async()=>{
     await run(`(async()=>{
       const item=ProMaxMeetings.folder().items.find(i=>i.id===noteId);await ProMaxMeetings.open(item);
       await ProMaxControls.drop({type:'prepared-slide',folderId:firstFolder,itemId:noteId,slideId:item.slides[0].id},{type:'prepared-slide',folderId:firstFolder,itemId:noteId,slideId:item.slides[1].id},true);
-      document.querySelector('.prepared-slide').click();window.originalLive=JSON.stringify(state);
+      document.querySelector('.prepared-slide .thumbnail').click();window.originalLive=JSON.stringify(state);
       const changed=ProMaxMeetings.folder().items.find(i=>i.id===noteId);
       await ProMaxControls.drop({type:'prepared-slide',folderId:firstFolder,itemId:noteId,slideId:changed.slides[0].id},{type:'prepared-slide',folderId:firstFolder,itemId:noteId,slideId:changed.slides[1].id},true);
     })()`);

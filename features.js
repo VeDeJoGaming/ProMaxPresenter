@@ -119,7 +119,7 @@
     if(!value.slides.length)return;
     const meetingContext=Object.hasOwn(value,'meetingContext')?value.meetingContext:value.meetingItemId?window.ProMaxMeetings?.cueContext('prepared',value.meetingItemId):window.ProMaxMeetings?.cueContext('document',value.id);
     stopTimer();activeVideo=null;deck={...value,meetingContext};deck.index=Math.max(0,Math.min(value.slides.length-1,index));const slide=value.slides[deck.index];
-    state=value.type==='bible'?{text:slide.text,biblePassage:slide.biblePassage,black:false,pdf:null}:{text:'',black:false,pdf:null,image:slide};
+    state=value.type==='bible'?{text:slide.text,biblePassage:slide.biblePassage,...(slide.image?{image:slide.image}:{}),black:false,pdf:null}:{text:'',black:false,pdf:null,image:slide};
     window.ProMaxMeetings?.trackCue(meetingContext);
     $('live-label').textContent=`${value.title} · ${deck.index+1}/${value.slides.length}`;paint();
     window.ProMaxMeetings?.markSlide(value.meetingItemId,deck.index);

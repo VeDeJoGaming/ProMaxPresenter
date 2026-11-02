@@ -83,11 +83,18 @@
     view.hidden=false;view.replaceChildren(node('h2',item.title),node('p','Prepared for this meeting · Click a slide to show it live'));
     const grid=node('div');grid.className='prepared-slides';
     item.slides.forEach((slide,index)=>{
-      const b=button('',()=>ProMaxFeatures.showDeck({type:'bible',meetingItemId:item.id,title:item.title,slides:item.slides},index));
-      b.className='prepared-slide';b.dataset.folderId=folder().id;b.dataset.itemId=item.id;b.dataset.slideId=slide.id;b.setAttribute('aria-label',item.title+', slide '+(index+1));b.setAttribute('aria-pressed','false');
-      const thumbnail=node('div');thumbnail.className='thumbnail';thumbnail.style.background=settings.color;addMedia(thumbnail,true,slide.section);
+      const b=node('div');
+      b.className='prepared-slide';b.dataset.folderId=folder().id;b.dataset.itemId=item.id;b.dataset.slideId=slide.id;b.setAttribute('role','group');b.setAttribute('aria-label',item.title+', slide '+(index+1));b.dataset.selected='false';
+      const thumbnail=button('',()=>ProMaxFeatures.showDeck({type:'bible',meetingItemId:item.id,title:item.title,slides:item.slides},index), 'Show slide '+(index+1));thumbnail.className='thumbnail';thumbnail.setAttribute('aria-pressed','false');thumbnail.style.background=settings.color;addMedia(thumbnail,true,slide.section);
       const text=node('div');text.className='caption';ProMaxPlayback.renderText(text,slide);thumbnail.append(text);
-      const label=node('span',`${index+1} · ${slide.label||'Text'}`);label.className='prepared-slide-label';b.append(thumbnail,label);grid.append(b);
+      if(slide.image){
+        const image=node('img');image.src=slide.image;image.alt='';image.style.cssText='position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#000';
+        thumbnail.prepend(image);text.style.cssText='position:absolute;bottom:4%;left:5%;width:90%;background:#000b;border-radius:4px;padding:3px';
+      }
+      const footer=node('div');footer.className='card-footer';
+      const label=node('span',`${index+1} · ${slide.section||slide.label||'Text'}`);
+      const edit=button('Edit',()=>openPreparedSlideEditor(folder().id,item.id,slide.id),'Edit slide '+(index+1));edit.className='slide-edit-button';
+      footer.append(label,edit);b.append(thumbnail,footer);grid.append(b);
     });grid.dataset.meetingItem=item.id;view.append(grid);
     if(live)ProMaxFeatures.showDeck({type:'bible',meetingItemId:item.id,title:item.title,slides:item.slides},0);
   }
@@ -188,7 +195,7 @@
   document.querySelector('.workspace-tabs').addEventListener('click',()=>{$('meeting-banner').hidden=!folder();});
   $('quick-add-meeting').onclick=()=>{const text=$('quick-text').value.trim();if(!text){notify('Write the text you want to add first.');return;}add({type:'text',title:text.split('\n')[0].slice(0,80),slides:[{text,label:'Text'}]});};
   function onTab(){overview.hidden=true;banner.hidden=!folder();document.querySelector('.workspace-tabs').hidden=!!folder();}
-  function markSlide(id,index){const grid=$('feature-view').querySelector('.prepared-slides');if(!grid||grid.dataset.meetingItem!==id)return;[...grid.children].forEach((b,i)=>b.setAttribute('aria-pressed',String(i===index)));}
+  function markSlide(id,index){const grid=$('feature-view').querySelector('.prepared-slides');if(!grid||grid.dataset.meetingItem!==id)return;[...grid.children].forEach((b,i)=>{b.dataset.selected=String(i===index);b.querySelector('.thumbnail').setAttribute('aria-pressed',String(i===index));});}
   const originalLive=goLive;goLive=function(index){const context=cueContext('song',selected),before=state,result=originalLive(index);if(state!==before)trackCue(context);return result;};
   window.ProMaxMeetings={create,select,add,addSong,open,move,remove,render,folder,onTab,markSlide,cueContext,trackCue,markLive,returnToLive,refresh:()=>{const f=folder();const item=f?.items.find(i=>i.id===f.selectedItem);render();if(item)open(item);else if(f)showOverview();else selectSong(selected)}};
   render();if(folder())select(meetingSelected);

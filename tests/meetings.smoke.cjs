@@ -31,9 +31,9 @@ app.whenReady().then(async()=>{
   await execute("ProMaxMeetings.open(ProMaxMeetings.folder().items[0])");
   assert.equal(await execute("document.querySelectorAll('.prepared-slide').length"),1);
   assert.equal(await execute("state.text"),'','Selecting a passage must not send it live');
-  await execute("document.querySelector('.prepared-slide').click()");
+  await execute("document.querySelector('.prepared-slide .thumbnail').click()");
   assert.equal(await execute("document.querySelectorAll('#preview .verse-number').length"),2);
-  assert.equal(await execute("document.querySelector('.prepared-slide').getAttribute('aria-pressed')"),'true');
+  assert.equal(await execute("document.querySelector('.prepared-slide .thumbnail').getAttribute('aria-pressed')"),'true');
   const previousPassage=await execute('state.text');
   await execute("ProMaxMeetings.open(ProMaxMeetings.folder().items[1]);document.querySelector('.slide-edit-button').click();document.getElementById('slide-edit-text').value='Automatically saved words';document.getElementById('slide-edit-text').dispatchEvent(new Event('input'))");
   assert.equal(await execute('state.text'),previousPassage,'Selecting a song preserves the live passage');
@@ -99,7 +99,7 @@ app.whenReady().then(async()=>{
   assert.equal(await execute("meetingFolders[0].items.length"),1);
   await execute("document.getElementById('quick-text').value='Welcome to the meeting';document.getElementById('quick-text').dispatchEvent(new Event('input'));document.getElementById('quick-add-meeting').click()");
   assert.equal(await execute("ProMaxMeetings.folder().items[0].type"),'text');
-  await execute("ProMaxMeetings.open(ProMaxMeetings.folder().items[0]);document.querySelector('.prepared-slide').click()");
+  await execute("ProMaxMeetings.open(ProMaxMeetings.folder().items[0]);document.querySelector('.prepared-slide .thumbnail').click()");
   assert.equal(await execute("state.text"),'Welcome to the meeting');
   assert.equal(await execute("JSON.parse(localStorage.getItem('promax-library')).settings.quickText"),'Welcome to the meeting');
   await execute("ProMaxMeetings.select(meetingFolders[0].id)");

@@ -37,6 +37,8 @@ jobs:
         timeout-minutes: 3
       - run: node test/scoreboard-desktop.cjs
         timeout-minutes: 3
+      - run: node test/prepared-slide-editing-desktop.cjs
+        timeout-minutes: 3
       - run: node test/countdown-desktop.cjs
         timeout-minutes: 3
       - run: node test/slide-regeneration-desktop.cjs

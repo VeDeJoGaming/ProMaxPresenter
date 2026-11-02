@@ -35,6 +35,15 @@
       }
     }
     container.style.background='#000';
+    if(state.image){
+      let text=container.querySelector('.screen-text');
+      if(state.text){
+        if(!text){text=doc.createElement('div');text.className='screen-text';container.append(text);}
+        renderText(text,state);
+        text.style.cssText='position:absolute;left:5%;bottom:4%;width:90%;padding:.2em .4em;border-radius:.12em;background:#000c;color:#fff;text-align:center;white-space:pre-line;line-height:1.2;text-shadow:0 2px 5px #000;box-sizing:border-box;font-size:'+(container.clientWidth*.045)+'px';
+        fit(container);
+      }else text?.remove();
+    }
     if (state.video) {
       const cue=state.video, video=container.querySelector('video');
       video.loop=cue.loop;video.muted=!isOutput || cue.muted;
