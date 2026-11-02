@@ -85,7 +85,7 @@
     item.slides.forEach((slide,index)=>{
       const b=node('div');
       b.className='prepared-slide';b.dataset.folderId=folder().id;b.dataset.itemId=item.id;b.dataset.slideId=slide.id;b.setAttribute('role','group');b.setAttribute('aria-label',item.title+', slide '+(index+1));b.dataset.selected='false';
-      const thumbnail=button('',()=>ProMaxFeatures.showDeck({type:'bible',meetingItemId:item.id,title:item.title,slides:item.slides},index), 'Show slide '+(index+1));thumbnail.className='thumbnail';thumbnail.setAttribute('aria-pressed','false');thumbnail.style.background=settings.color;addMedia(thumbnail,true,slide.section);
+      const thumbnail=button('',()=>ProMaxFeatures.showDeck({type:'bible',meetingItemId:item.id,title:item.title,slides:item.slides},index), 'Show slide '+(index+1));thumbnail.className='thumbnail';thumbnail.setAttribute('aria-pressed','false');thumbnail.style.background=settings.color;if(!slide.image)addMedia(thumbnail,true,slide.section);
       const text=node('div');text.className='caption';ProMaxPlayback.renderText(text,slide);thumbnail.append(text);
       ProMaxPlayback.addSlideImage(thumbnail,text,slide.image);
       const footer=node('div');footer.className='card-footer';

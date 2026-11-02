@@ -106,7 +106,7 @@ function renderSlides(){
   const fragment=document.createDocumentFragment();
   s.slides.forEach((slide,i)=>{
     const card=document.createElement('div');card.className='slide-card'+(i===liveIndex?' active':'');card.dataset.songId=s.id;card.dataset.slideId=slide.id;
-    const thumb=document.createElement('div');thumb.className='thumbnail';thumb.style.background=settings.color;addMedia(thumb,true,slide.section);
+    const thumb=document.createElement('div');thumb.className='thumbnail';thumb.style.background=settings.color;if(!slide.image)addMedia(thumb,true,slide.section);
     const caption=document.createElement('div');caption.className='caption';ProMaxPlayback.renderText(caption,slide);thumb.append(caption);thumb.onclick=()=>goLive(i);
     ProMaxPlayback.addSlideImage(thumb,caption,slide.image);
     const footer=document.createElement('div');footer.className='card-footer';const label=document.createElement('span');label.textContent=`${i+1} · ${slide.section}`;

@@ -37,6 +37,7 @@ async function run(){
  try{
   let page=await launch(profile);const errors=[];page.on('pageerror',e=>errors.push(e.message));
   await page.evaluate(async()=>{
+   settings.visual='neon-depth';
    window.preparedTestImage='data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600"><rect width="800" height="600" fill="#ff7f32"/></svg>');
    ProMaxMeetings.create('Synthetic entertainment');
    ProMaxMeetings.add({type:'text',title:'Fetch game',slides:[{id:uid(),text:'FETCH A PEN',section:'Slide',key:''},{id:uid(),text:'FETCH MARKUS',section:'Slide',key:'',image:preparedTestImage}]});
@@ -44,12 +45,15 @@ async function run(){
    await ProMaxMeetings.open(ProMaxMeetings.folder().items[0]);goLive(0);window.priorEditCue=JSON.stringify(state);window.priorSlideSettings=JSON.stringify(settings);
   });
   assert.equal(await page.locator('.prepared-slide .slide-edit-button').count(),2);
+  assert.equal(await page.locator('.prepared-slide').nth(1).locator('.thumbnail canvas,.thumbnail .shade').count(),0,'A pictured slide must not be covered by the shared animated background');
   await page.locator('.prepared-slide .slide-edit-button').nth(1).click();
   const png=Buffer.from(await page.evaluate(()=>{const c=document.createElement('canvas');c.width=800;c.height=600;c.getContext('2d').fillRect(0,0,800,600);return c.toDataURL('image/png').split(',')[1];}),'base64');
   const upload=()=>page.locator('#slide-image-editor input[type=file]').setInputFiles({name:'synthetic.png',mimeType:'image/png',buffer:png});
   await upload();await page.waitForFunction(()=>ProMaxMeetings.folder().items[0].slides[1].image.startsWith('data:image/webp;'));
   await page.locator('#slide-remove-image').click();assert.equal(await page.evaluate(()=>!!ProMaxMeetings.folder().items[0].slides[1].image),false);
+  assert.equal(await page.locator('.prepared-slide').nth(1).locator('.thumbnail canvas').count(),1,'Removing the photo restores the shared background in its card');
   await upload();await page.waitForFunction(()=>ProMaxMeetings.folder().items[0].slides[1].image?.startsWith('data:image/webp;'));
+  assert.equal(await page.locator('.prepared-slide').nth(1).locator('.thumbnail canvas,.thumbnail .shade').count(),0,'Import refreshes the card without sending a live cue');
   await page.evaluate(()=>{preparedTestImage=ProMaxMeetings.folder().items[0].slides[1].image;});
   await page.locator('#slide-image-editor input[type=file]').setInputFiles({name:'broken.png',mimeType:'image/png',buffer:Buffer.from('not a valid image')});
   await page.waitForFunction(()=>!document.querySelector('[data-file-picker="slide-image"]').disabled);
@@ -78,6 +82,7 @@ async function run(){
   await page.evaluate(()=>{ProMaxMeetings.select(null);selectSong(songs[0].id);});
   await page.locator('.slide-edit-button').first().click();await page.locator('#slide-edit-text').fill('Edited synthetic song');
   await upload();await page.waitForFunction(()=>current().slides[0].image?.startsWith('data:image/webp;'));
+  assert.equal(await page.locator('.slide-card').first().locator('.thumbnail canvas,.thumbnail .shade').count(),0,'Song cards show the photo too');
   await page.locator('#slide-save-live').click();await page.waitForFunction(()=>!!state.image);
   assert.equal(await page.locator('#preview .image-caption').innerText(),'Edited synthetic song');
   await page.locator('.slide-edit-button').first().click();await page.locator('#slide-remove-image').click();
