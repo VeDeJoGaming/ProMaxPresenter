@@ -1,6 +1,6 @@
 const stage = document.getElementById('stage');
 let previous = null;
-addEventListener('resize',()=>{const text=stage.querySelector('.screen-text');if(text&&previous){text.style.fontSize=previous.settings.fontSize+'vw';ProMaxPlayback.fit(stage);}});
+addEventListener('resize',()=>{const text=stage.querySelector('.screen-text');if(previous){if(text)text.style.fontSize=previous.settings.fontSize+'vw';ProMaxPlayback.fit(stage);}});
 let performanceCanvas=null,lastFrames=0,lastSample=performance.now();
 setInterval(()=>{
   const canvas=stage.querySelector('canvas[data-glass]'),stats=canvas?.getRenderStats?.(),now=performance.now();

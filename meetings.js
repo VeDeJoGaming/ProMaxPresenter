@@ -87,10 +87,7 @@
       b.className='prepared-slide';b.dataset.folderId=folder().id;b.dataset.itemId=item.id;b.dataset.slideId=slide.id;b.setAttribute('role','group');b.setAttribute('aria-label',item.title+', slide '+(index+1));b.dataset.selected='false';
       const thumbnail=button('',()=>ProMaxFeatures.showDeck({type:'bible',meetingItemId:item.id,title:item.title,slides:item.slides},index), 'Show slide '+(index+1));thumbnail.className='thumbnail';thumbnail.setAttribute('aria-pressed','false');thumbnail.style.background=settings.color;addMedia(thumbnail,true,slide.section);
       const text=node('div');text.className='caption';ProMaxPlayback.renderText(text,slide);thumbnail.append(text);
-      if(slide.image){
-        const image=node('img');image.src=slide.image;image.alt='';image.style.cssText='position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#000';
-        thumbnail.prepend(image);text.style.cssText='position:absolute;bottom:4%;left:5%;width:90%;background:#000b;border-radius:4px;padding:3px';
-      }
+      ProMaxPlayback.addSlideImage(thumbnail,text,slide.image);
       const footer=node('div');footer.className='card-footer';
       const label=node('span',`${index+1} · ${slide.section||slide.label||'Text'}`);
       const edit=button('Edit',()=>openPreparedSlideEditor(folder().id,item.id,slide.id),'Edit slide '+(index+1));edit.className='slide-edit-button';

@@ -20,7 +20,7 @@
       const old=matched[index];let id=old?.id;
       if(typeof id!=='string'||!id||ids.has(id))id=slide.id;
       while(typeof id!=='string'||!id||ids.has(id))id=createId();ids.add(id);
-      return {...slide,id,key:typeof old?.key==='string'?old.key:slide.key,...(old?.biblePassage!==undefined&&slide.biblePassage===undefined?{biblePassage:old.biblePassage}:{})};
+      return {...slide,id,key:typeof old?.key==='string'?old.key:slide.key,...(old?.biblePassage!==undefined&&slide.biblePassage===undefined?{biblePassage:old.biblePassage}:{}),...(old?.image!==undefined?{image:old.image}:{})};
     });
   }
   const api={reconcile};if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.ProMaxSlideRegeneration=api;

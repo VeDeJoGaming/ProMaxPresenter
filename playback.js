@@ -36,9 +36,9 @@
     }
     container.style.background='#000';
     if(state.image){
-      let text=container.querySelector('.screen-text');
+      let text=container.querySelector('.image-caption');
       if(state.text){
-        if(!text){text=doc.createElement('div');text.className='screen-text';container.append(text);}
+        if(!text){text=doc.createElement('div');text.className='image-caption';container.append(text);}
         renderText(text,state);
         text.style.cssText='position:absolute;left:5%;bottom:4%;width:90%;padding:.2em .4em;border-radius:.12em;background:#000c;color:#fff;text-align:center;white-space:pre-line;line-height:1.2;text-shadow:0 2px 5px #000;box-sizing:border-box;font-size:'+(container.clientWidth*.045)+'px';
         fit(container);
@@ -62,7 +62,8 @@
     return true;
   }
   function fit(container) {
-    const text=container.querySelector('.screen-text');if (!text || !container.clientHeight) return;
+    const text=container.querySelector('.screen-text,.image-caption');if (!text || !container.clientHeight) return;
+    if(text.classList.contains('image-caption'))text.style.fontSize=container.clientWidth*.045+'px';
     const size=parseFloat(text.ownerDocument.defaultView.getComputedStyle(text).fontSize);
     const minimum=container.id==='preview'?5:12;
     const height=container.clientHeight*.88,width=container.clientWidth*.94;
@@ -116,5 +117,10 @@
     }
     return true;
   }
-  window.ProMaxPlayback={warm,render,fit,renderText,renderLiveText,release,clear};
+  function addSlideImage(thumbnail,caption,imageUrl){
+    if(!imageUrl)return;
+    const image=thumbnail.ownerDocument.createElement('img');image.src=imageUrl;image.alt='';image.style.cssText='position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#000';
+    thumbnail.prepend(image);caption.style.cssText='position:absolute;bottom:4%;left:5%;width:90%;background:#000b;border-radius:4px;padding:3px';
+  }
+  window.ProMaxPlayback={warm,render,fit,renderText,renderLiveText,release,clear,addSlideImage};
 })();

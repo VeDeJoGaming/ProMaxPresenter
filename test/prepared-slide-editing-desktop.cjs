@@ -41,10 +41,19 @@ async function run(){
    ProMaxMeetings.create('Synthetic entertainment');
    ProMaxMeetings.add({type:'text',title:'Fetch game',slides:[{id:uid(),text:'FETCH A PEN',section:'Slide',key:''},{id:uid(),text:'FETCH MARKUS',section:'Slide',key:'',image:preparedTestImage}]});
    ProMaxMeetings.add({type:'bible',title:'Synthetic passage',slides:[{id:uid(),text:'Synthetic original',section:'Text',biblePassage:{reference:'Test 1:1',verses:[{verse:1,text:'Synthetic original'}]}}]});
-   await ProMaxMeetings.open(ProMaxMeetings.folder().items[0]);goLive(0);window.priorEditCue=JSON.stringify(state);
+   await ProMaxMeetings.open(ProMaxMeetings.folder().items[0]);goLive(0);window.priorEditCue=JSON.stringify(state);window.priorSlideSettings=JSON.stringify(settings);
   });
   assert.equal(await page.locator('.prepared-slide .slide-edit-button').count(),2);
   await page.locator('.prepared-slide .slide-edit-button').nth(1).click();
+  const png=Buffer.from(await page.evaluate(()=>{const c=document.createElement('canvas');c.width=800;c.height=600;c.getContext('2d').fillRect(0,0,800,600);return c.toDataURL('image/png').split(',')[1];}),'base64');
+  const upload=()=>page.locator('#slide-image-editor input[type=file]').setInputFiles({name:'synthetic.png',mimeType:'image/png',buffer:png});
+  await upload();await page.waitForFunction(()=>ProMaxMeetings.folder().items[0].slides[1].image.startsWith('data:image/webp;'));
+  await page.locator('#slide-remove-image').click();assert.equal(await page.evaluate(()=>!!ProMaxMeetings.folder().items[0].slides[1].image),false);
+  await upload();await page.waitForFunction(()=>ProMaxMeetings.folder().items[0].slides[1].image?.startsWith('data:image/webp;'));
+  await page.evaluate(()=>{preparedTestImage=ProMaxMeetings.folder().items[0].slides[1].image;});
+  await page.locator('#slide-image-editor input[type=file]').setInputFiles({name:'broken.png',mimeType:'image/png',buffer:Buffer.from('not a valid image')});
+  await page.waitForFunction(()=>!document.querySelector('[data-file-picker="slide-image"]').disabled);
+  assert.equal(await page.evaluate(()=>ProMaxMeetings.folder().items[0].slides[1].image===preparedTestImage),true,'Invalid images keep the existing photo');
   await page.locator('#slide-edit-text').fill('FETCH MARKUS!\nWelcome to the stage');
   await page.locator('#slide-edit-section').fill('Final task');
   await page.locator('#slide-edit-key').fill('m');
@@ -56,7 +65,7 @@ async function run(){
   await page.waitForFunction(()=>state.text==='FETCH MARKUS!\nWelcome to the stage');
   assert.equal(await page.evaluate(()=>state.image===preparedTestImage),true,'Editing keeps the slide photo');
   await page.waitForFunction(()=>{const img=document.querySelector('#preview img[data-cue=image]');return img?.complete&&img.naturalWidth===800;});
-  assert.equal(await page.locator('#preview .screen-text').innerText(),'FETCH MARKUS!\nWelcome to the stage');
+  assert.equal(await page.locator('#preview .image-caption').innerText(),'FETCH MARKUS!\nWelcome to the stage');
   for(let n=0;n<3;n++){await page.evaluate(()=>ProMaxControls.undo());await page.waitForFunction(()=>!ProMaxControls.busy);}
   assert.equal(await page.evaluate(()=>ProMaxMeetings.folder().items[0].slides[1].text),'FETCH MARKUS');
   assert.equal(await page.evaluate(()=>state.text),'FETCH MARKUS!\nWelcome to the stage','Undo preserves live text');
@@ -67,8 +76,17 @@ async function run(){
   await page.locator('#slide-edit-cancel').click();
   // Song editor still updates lyrics without requiring the song to be live.
   await page.evaluate(()=>{ProMaxMeetings.select(null);selectSong(songs[0].id);});
-  await page.locator('.slide-edit-button').first().click();await page.locator('#slide-edit-text').fill('Edited synthetic song');await page.locator('#slide-edit-cancel').click();
+  await page.locator('.slide-edit-button').first().click();await page.locator('#slide-edit-text').fill('Edited synthetic song');
+  await upload();await page.waitForFunction(()=>current().slides[0].image?.startsWith('data:image/webp;'));
+  await page.locator('#slide-save-live').click();await page.waitForFunction(()=>!!state.image);
+  assert.equal(await page.locator('#preview .image-caption').innerText(),'Edited synthetic song');
+  await page.locator('.slide-edit-button').first().click();await page.locator('#slide-remove-image').click();
+  assert.equal(await page.evaluate(()=>!!state.image),true,'Removing a saved photo waits for an explicit cue');
+  await page.locator('#slide-save-live').click();
+  assert.equal(await page.evaluate(()=>!!state.image),false);assert.equal(await page.locator('#preview .image-caption').count(),0);
+  assert.equal(await page.locator('#preview .screen-text').evaluate(e=>e.style.bottom),'','Normal lyrics regain centered layout');
   assert.equal(await page.evaluate(()=>current().lyrics.includes('Edited synthetic song')),true);
+  assert.equal(await page.evaluate(()=>JSON.stringify(settings)===priorSlideSettings),true,'Per-slide pictures leave shared appearance settings unchanged');
   await page.evaluate(()=>{ProMaxMeetings.select(meetingFolders[0].id);flushPendingSave();});
   await page.evaluate(()=>ProMaxMeetings.open(ProMaxMeetings.folder().items[0]));
   const saved=await page.evaluate(()=>JSON.parse(localStorage.getItem('promax-library')));
@@ -77,7 +95,7 @@ async function run(){
   await close();page=await launch(profile);
   assert.deepEqual(await page.evaluate(()=>meetingFolders),saved.meetingFolders);
   assert.equal(await page.evaluate(()=>songs[0].slides[0].text),'Edited synthetic song');
-  assert.equal(await page.evaluate(()=>meetingFolders[0].items[0].slides[1].image.startsWith('data:image/svg+xml,')),true,'Photo survives restart');
+  assert.equal(await page.evaluate(()=>meetingFolders[0].items[0].slides[1].image.startsWith('data:image/webp;')),true,'Imported photo survives restart');
   assert.deepEqual(errors,[]);
   console.log('PASS: Edit/F2 for prepared text and Bible, autosave, cue isolation, explicit Show slide, undo/redo, song regression, restart; hidden native '+executable);
  }finally{await close();clearTimeout(watchdog);/* Keep isolated evidence if a check fails; no private user data. */}

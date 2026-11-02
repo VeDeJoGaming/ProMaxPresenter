@@ -130,3 +130,6 @@ aside{position:sticky;top:0;align-self:start;max-height:100vh;overflow-y:auto}#m
 #meeting-check-repair{padding:16px;margin:12px 0;border:1px solid var(--pm-selection-border);border-radius:10px}#meeting-check-repair h3{font-size:14px;margin-top:0}#meeting-repair-search{width:100%}#meeting-repair-options{display:grid;gap:7px;max-height:220px;overflow:auto;margin:12px 0}#meeting-repair-options button{text-align:left}
 
 #meeting-check .check-label{display:inline-flex;align-items:center;gap:8px;white-space:nowrap}#meeting-check .check-label input{width:auto;flex:none;margin:0}
+
+#slide-image-editor{margin:0 0 16px}.slide-image-actions{display:flex;gap:8px;flex-wrap:wrap}#slide-image-preview{display:block;max-width:100%;max-height:140px;object-fit:contain;margin-top:10px;border-radius:7px;background:var(--pm-bg)}#slide-image-preview[hidden]{display:none}#slide-image-editor p{margin:8px 0 0}
+#slide-editor .slide-edit-actions{position:sticky;bottom:-24px;background:var(--pm-field);padding:12px 0;margin-bottom:-12px;z-index:2}

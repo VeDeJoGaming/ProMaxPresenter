@@ -20,3 +20,8 @@ test('changed text gets a fresh ID and does not retain old Bible metadata',()=>{
 test('repeated regeneration is stable and duplicate legacy IDs are repaired',()=>{
   const next=[slide('One'),slide('Two')],first=reconcile([slide('One','Verse','q','duplicate'),slide('Two','Verse','w','duplicate')],next,ids());assert.equal(new Set(first.map(s=>s.id)).size,2);assert.deepEqual(reconcile(first,next,ids()),first);
 });
+test('photos follow matched slides through regeneration without moving onto unrelated text',()=>{
+  const before=[{...slide('One','Verse','v','one'),image:'data:image/webp;base64,synthetic'},slide('Two','Verse','v','two')];
+  const next=reconcile(before,[slide('Two'),slide('One','Opening'),slide('New')],ids());
+  assert.equal(next[0].image,undefined);assert.equal(next[1].image,before[0].image);assert.equal(next[2].image,undefined);
+});

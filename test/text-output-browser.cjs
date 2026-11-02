@@ -30,6 +30,13 @@ async function run(){
         };
         const node=()=>stage.querySelector('.screen-text');
         for(const visual of [null,'golden-hour','paint-sweeps']){
+          style.visual=visual;
+          cue('Photo title',{image:'data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600"><rect width="800" height="600" fill="orange"/></svg>')});
+          const photoTitle=stage.querySelector('.image-caption');checks.push(!!photoTitle&&photoTitle.textContent==='Photo title');
+          cue('Centered after photo');
+          checks.push(!!node()&&node().style.bottom===''&&node().style.background==='');
+          const bounds=node().getBoundingClientRect(),area=stage.getBoundingClientRect();
+          checks.push(Math.abs((bounds.top+bounds.bottom)/2-(area.top+area.bottom)/2)<area.height*.1);
           style.visual=visual;cue('',{black:true});cue('Initial lyric');
           const entrance=node().getAnimations()[0];checks.push(entrance.effect.getTiming().duration===650);entrance.finish();
           const background=stage.querySelector('.media');cue('Second lyric');

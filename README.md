@@ -40,6 +40,8 @@ The app retains the stable application identity and profile folder (`ProMax Pres
 
 Prepared meeting text and Bible slides have an **Edit** button in the card footer. Select the footer and press **F2** to use the same editor. Changes save automatically; **Close** keeps the changes and **Show slide** explicitly updates the presentation. Editing, undo and redo preserve the current live cue. Run `node test/prepared-slide-editing-desktop.cjs` (optionally followed by an installed executable path) for an isolated hidden native regression check.
 
+In any song or prepared text/Bible slide editor, **Legg til / bytt bilde** selects a picture for that slide and **Fjern bilde** removes it. Pictures are fitted without cropping, resized to at most 1600 pixels and embedded as WebP for offline storage. The caption stays editable; returning to an ordinary slide restores its normal text layout. Regenerating unchanged song slides retains their pictures.
+
 ```sh
 npm ci
 npm test
