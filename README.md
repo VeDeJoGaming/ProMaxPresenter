@@ -57,3 +57,7 @@ npm start
 `npm run dist:release` builds a Windows installer with the GitHub update feed and all backgrounds. A version increase on `main` triggers a verified release; manually dispatched builds produce drafts. See [PUBLISERING.md](PUBLISERING.md).
 
 Private libraries, app profiles, transfer packages, tokens and imported Bible texts must never be committed or bundled. [SHARED-LIBRARY.md](SHARED-LIBRARY.md) documents group sharing. [ORIGINAL-FEATURES.md](ORIGINAL-FEATURES.md) preserves the original feature guide.
+
+### Gjett prisen
+
+Åpne **Gjett prisen** i arbeidsflaten, eller **Add content → Gjett prisen** i en møtemappe. Skriv varenavn og riktig pris, legg eventuelt til et bilde og velg **Lag lysbilder**. Hver vare får et spørsmål og en fasit på neste lysbilde. Prisene vises først på fasiten. Velg **Rediger varer og priser** for å endre konkurransen senere. Kladden lagres lokalt, og ferdige konkurranser lagres med møtemappen og fungerer offline. Forberedelser og oppdateringer endrer ikke gjeldende live-bilde.

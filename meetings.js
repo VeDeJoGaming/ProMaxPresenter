@@ -81,13 +81,15 @@
     const view=$('feature-view');
     for(const child of document.querySelector('.workspace').children)if(child!==view&&child.id!=='meeting-banner'&&!child.classList.contains('workspace-tabs'))child.hidden=true;
     view.hidden=false;view.replaceChildren(node('h2',item.title),node('p','Prepared for this meeting · Click a slide to show it live'));
+    if(item.priceGame)view.append(button('Rediger varer og priser',()=>ProMaxPriceGameUI.edit(folder().id,item.id)));
     const grid=node('div');grid.className='prepared-slides';
     item.slides.forEach((slide,index)=>{
       const b=node('div');
       b.className='prepared-slide';b.dataset.folderId=folder().id;b.dataset.itemId=item.id;b.dataset.slideId=slide.id;b.setAttribute('role','group');b.setAttribute('aria-label',item.title+', slide '+(index+1));b.dataset.selected='false';
-      const thumbnail=button('',()=>ProMaxFeatures.showDeck({type:'bible',meetingItemId:item.id,title:item.title,slides:item.slides},index), 'Show slide '+(index+1));thumbnail.className='thumbnail';thumbnail.setAttribute('aria-pressed','false');thumbnail.style.background=settings.color;if(!slide.image)addMedia(thumbnail,true,slide.section);
+      const image=slide.priceRound?window.ProMaxPriceGame?.image(item,slide):slide.image;
+      const thumbnail=button('',()=>ProMaxFeatures.showDeck({type:'bible',meetingItemId:item.id,title:item.title,slides:item.slides},index), 'Show slide '+(index+1));thumbnail.className='thumbnail';thumbnail.setAttribute('aria-pressed','false');thumbnail.style.background=settings.color;if(!image)addMedia(thumbnail,true,slide.section);
       const text=node('div');text.className='caption';ProMaxPlayback.renderText(text,slide);thumbnail.append(text);
-      ProMaxPlayback.addSlideImage(thumbnail,text,slide.image);
+      ProMaxPlayback.addSlideImage(thumbnail,text,image);if(slide.priceRound)text.hidden=true;
       const footer=node('div');footer.className='card-footer';
       const label=node('span',`${index+1} · ${slide.section||slide.label||'Text'}`);
       const edit=button('Edit',()=>openPreparedSlideEditor(folder().id,item.id,slide.id),'Edit slide '+(index+1));edit.className='slide-edit-button';
@@ -150,7 +152,7 @@
   const planHeading=$('meeting-plan').querySelector('.section-title'),count=$('meeting-count');
   const folderTitle=node('span');folderTitle.id='meeting-folder-title';planHeading.replaceChildren(folderTitle,count);
   const addMenu=node('details');addMenu.id='meeting-add-content';addMenu.append(node('summary','＋ Add content'));
-  for(const [label,tab] of [['Bible passages','bible'],['Videos & YouTube','videos'],['PowerPoint','presentations']])addMenu.append(button(label,()=>{addMenu.open=false;ProMaxFeatures.showTab(tab);render();}));
+  for(const [label,tab] of [['Bible passages','bible'],['Videos & YouTube','videos'],['PowerPoint','presentations'],['Gjett prisen','price-game']])addMenu.append(button(label,()=>{addMenu.open=false;ProMaxFeatures.showTab(tab);render();}));
   addMenu.append(button('Text',()=>{addMenu.open=false;$('quick-text').closest('details').open=true;$('quick-text').focus();}));
   $('meeting-plan').append(addMenu);
   const banner=node('div');banner.id='meeting-banner';banner.hidden=true;

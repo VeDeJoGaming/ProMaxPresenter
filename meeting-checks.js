@@ -6,7 +6,7 @@
     const rows=(folder.items||[]).map((item,position)=>{
       const result={itemId:item.id,position,type:item.type,title:item.title||'Untitled item',status:'attention',message:'Content is missing.',action:'replace'};
       function slides(list,allowGenerate=false){
-        const count=list?.length||0,blank=list?.filter(s=>!String(s?.text||'').trim()).length||0;
+        const count=list?.length||0,blank=list?.filter(s=>!String(s?.text||'').trim()&&!s?.image&&!(s?.priceRound&&item.priceGame?.rounds?.some(r=>r.id===s.priceRound.id&&r.name&&Number.isFinite(r.price)))).length||0;
         if(!count){result.message=allowGenerate?'Lyrics saved, but slides have not been generated.':'No prepared slides.';result.action=allowGenerate?'generate':null;}
         else if(blank){result.message=`${blank} of ${count} slides are blank. Check whether these are intentional.`;result.action=null;}
         else{result.status='ready';result.message=`${count} prepared ${count===1?'slide':'slides'} · Available offline`;result.action=null;}

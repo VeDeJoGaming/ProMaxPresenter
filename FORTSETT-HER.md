@@ -1,3 +1,10 @@
+## Gjett prisen — funksjon ferdig, lokal oppdatering pågår — 7. november 2026
+
+- Ny «Gjett prisen»-fane og Add content-valg. Varenavn, pris med norsk desimalkomma, valgfritt lokalt bilde, valuta og 1–30 varer. Spørsmål/fasit per vare genereres til ett tekstinnslag i valgt eller ny møtemappe. Rekkefølge, fjerning, forhåndsvisning og senere strukturert redigering støttes. Privat kladd i IndexedDB; bilder lagres én gang per vare og fungerer offline. Spørsmålets output inneholder ikke fasitprisen. Eksisterende neste/forrige, blackout, undo/redo og cue-isolasjon beholdes.
+- 100 enhetstester og headless visuell kontroll består. Native kildekontroll av reell output, fasit, redigering og omstart fullføres før installasjon. theme.css er uendret; nye kontroller bruker variablene derfra. Ingen nye visualfamilier eller privat brukerinnhold i Git.
+- Samtidig arbeid med nettleserutvidelser/nedtelling endrer app.js, desktop-filer, package.json/låsefil og to andre scriptinnslag i index.html. Disse endringene er bevart og inngår ikke i denne oppgavens commit. Bygg/installasjon for denne oppgaven lages fra isolert, kontrollert checkout for å unngå å installere halvferdig parallelt arbeid. Rotens eldre checkout er bevart.
+- Gjenstår i denne pågående oppgaven: ferdig native test, isolert bygg/pakket test, fersk profil-/installasjonskopi, lokal installasjon (brukeren har lukket ProMax), kontroll av installert exe og profilbevaring, sluttstatus og push-verifisering. Ingen release eller main-endring er autorisert.
+
 ## Utgivelse 1.5.0 publisert og installert — 2. november 2026
 
 - Brukeren har uttrykkelig bedt om å publisere nyeste ProMaxPresenter som GitHub-oppdatering. Ren work/pc-laptop er kontrollert mot origin, utgangspunkt 0a69202; rotens eldre uforente checkout er bevart.

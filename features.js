@@ -12,7 +12,7 @@
   const videoDurations=new Map();
   let videoQueue=Promise.resolve();
   function videoOperation(action){const operation=videoQueue.then(action);videoQueue=operation.catch(()=>{});return operation;}
-  const tabs=[['songs','Songs'],['bible','Bible'],['videos','Videos'],['presentations','PowerPoint'],['scores','Poengtelling']];
+  const tabs=[['songs','Songs'],['bible','Bible'],['videos','Videos'],['presentations','PowerPoint'],['scores','Poengtelling'],['price-game','Gjett prisen']];
   for (const [id,label] of tabs) { const b=document.createElement('button');b.textContent=label;b.onclick=()=>showTab(id);b.dataset.tab=id;nav.append(b); }
   function showTab(id,options={}) {
     window.ProMaxVideoControls?.clear();
@@ -22,6 +22,7 @@
     for (const child of workspace.children) if (child!==nav && child!==view) child.hidden=id!=='songs';
     view.hidden=id==='songs';
     if (id==='bible') renderBible(options.bibleVerse);else if (id==='videos') renderVideos();else if (id==='presentations') renderDocuments();else if(id==='scores') window.ProMaxScores?.render(view);
+    else if(id==='price-game')window.ProMaxPriceGameUI?.render(view);
     window.ProMaxMeetings?.onTab();
   }
   function element(tag,text,className) { const node=document.createElement(tag);if(text)node.textContent=text;if(className)node.className=className;return node; }
@@ -119,7 +120,9 @@
     if(!value.slides.length)return;
     const meetingContext=Object.hasOwn(value,'meetingContext')?value.meetingContext:value.meetingItemId?window.ProMaxMeetings?.cueContext('prepared',value.meetingItemId):window.ProMaxMeetings?.cueContext('document',value.id);
     stopTimer();activeVideo=null;deck={...value,meetingContext};deck.index=Math.max(0,Math.min(value.slides.length-1,index));const slide=value.slides[deck.index];
-    state=value.type==='bible'?{text:slide.text,biblePassage:slide.biblePassage,...(slide.image?{image:slide.image}:{}),black:false,pdf:null}:{text:'',black:false,pdf:null,image:slide};
+    const prepared=value.meetingItemId?meetingFolders.flatMap(f=>f.items).find(item=>item.id===value.meetingItemId):null;
+    const image=slide.priceRound?window.ProMaxPriceGame?.image(prepared,slide):slide.image;
+    state=value.type==='bible'?{text:slide.text,biblePassage:slide.biblePassage,...(image?{image}:{}),black:false,pdf:null}:{text:'',black:false,pdf:null,image:slide};
     window.ProMaxMeetings?.trackCue(meetingContext);
     $('live-label').textContent=`${value.title} · ${deck.index+1}/${value.slides.length}`;paint();
     window.ProMaxMeetings?.markSlide(value.meetingItemId,deck.index);

@@ -10,6 +10,7 @@ function openSlideEditor(index) {
 function openPreparedSlideEditor(folderId,itemId,slideId) {
   const folder=meetingFolders.find(f=>f.id===folderId),item=folder?.items.find(i=>i.id===itemId);
   if(!item||!['text','bible'].includes(item.type))return;
+  if(item.priceGame){window.ProMaxPriceGameUI?.edit(folderId,itemId,slideId);return;}
   const index=item.slides.findIndex(s=>s.id===slideId),slide=item.slides[index];
   if(!slide)return;
   editingSlide={folder,item,slide,index,originalText:slide.text};
