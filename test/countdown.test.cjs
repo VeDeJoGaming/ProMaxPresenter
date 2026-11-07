@@ -1,4 +1,4 @@
-const {test}=require('node:test'),assert=require('node:assert/strict'),{create,format}=require('../countdown');
+const {test}=require('node:test'),assert=require('node:assert/strict'),{create,createStopwatch,format}=require('../countdown');
 function fixture(){let at=0,next=0;const active=new Map(),events=[];const clock=create({now:()=>at,onChange:value=>events.push(value),schedule:fn=>{active.set(++next,fn);return next;},cancel:id=>active.delete(id)});return {clock,events,active,advance(ms,tick=true){at+=ms;if(tick)for(const fn of [...active.values()])fn();}};}
 test('countdown formats whole minutes and validates a new duration without interrupting a running one',()=>{
   assert.deepEqual([0,59,60,3661,-1,NaN].map(format),['0:00','0:59','1:00','61:01','0:00','0:00']);const f=fixture();f.clock.start(60000);
@@ -16,4 +16,11 @@ test('restart and stop cancel prior timers, and unchanged seconds do not repaint
 });
 test('pausing at the deadline completes instead of allowing a zero-length resume',()=>{
   const f=fixture();f.clock.start(1000);f.advance(1000,false);f.clock.pause();assert.equal(f.clock.snapshot().phase,'finished');assert.equal(f.clock.resume(),false);assert.equal(f.active.size,0);
+});
+test('stopwatch retains exact elapsed time across pause/resume, restart and delayed ticks',()=>{
+  let at=0,next=0;const active=new Map(),changes=[];
+  const clock=createStopwatch({now:()=>at,onChange:value=>changes.push(value),schedule:fn=>{active.set(++next,fn);return next;},cancel:id=>active.delete(id)});
+  clock.start();at=1270;clock.pause();assert.deepEqual(clock.snapshot(),{phase:'paused',elapsedMs:1270,seconds:1});assert.equal(active.size,0);
+  at=9000;assert.equal(clock.snapshot().elapsedMs,1270);clock.resume();assert.equal(clock.resume(),false);at+=60050;for(const fn of active.values())fn();assert.equal(clock.snapshot().elapsedMs,61320);assert.equal(clock.snapshot().seconds,61);assert.equal(format(clock.snapshot().seconds),'1:01');
+  clock.start();assert.equal(clock.snapshot().seconds,0);assert.equal(active.size,1);clock.stop();assert.equal(active.size,0);assert.equal(clock.snapshot().phase,'idle');assert.equal(clock.pause(),false);assert.equal(clock.resume(),false);
 });

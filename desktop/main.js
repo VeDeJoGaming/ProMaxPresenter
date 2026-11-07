@@ -46,7 +46,21 @@ ipcMain.handle('settings:maintenance',async(event,kind)=>{
     app.relaunch();app.quit();return {restarting:true};
   }catch(error){return {error:error.message};}finally{maintenanceBusy=false;}
 });
-let youtubeBrowser=null,browserQueue=Promise.resolve();
+let youtubeBrowser=null,browserExtensions=null,browserQueue=Promise.resolve();
+ipcMain.handle('extensions:command',async(event,action,input)=>{
+  if(event.sender!==control?.webContents)throw Error('Invalid window.');
+  try{
+    if(action==='add-folder'){
+      if(presentation)throw Error('Turn off Presentation before changing browser extensions.');
+      const choice=await dialog.showOpenDialog(control,{title:'Choose an unpacked Chrome extension folder',properties:['openDirectory']});
+      if(choice.canceled)return {...browserExtensions.getState(),canceled:true};
+      input={folder:choice.filePaths[0]};
+    }
+    const result=await browserExtensions.command(action,input);
+    if(!['list','options'].includes(action))youtubeBrowser?.invalidate();
+    return result;
+  }catch(error){return {...browserExtensions.getState(),error:error.message};}
+});
 function browserOperation(action){const operation=browserQueue.then(action);browserQueue=operation.catch(()=>{});return operation;}
 ipcMain.handle('youtube:browser-prepare',(event,value)=>{
   if(event.sender!==control?.webContents)throw Error('Invalid window.');
@@ -184,7 +198,8 @@ else {
     recovery=createLibraryRecovery(app.getPath('userData'),message=>{if(control&&!control.isDestroyed())control.webContents.send('library:error','Could not write the recovery copy: '+message);});
     const integrations=await require('./integrations.cjs').initializeIntegrations({app,getControl:()=>control,hasPresentation:()=>!!presentation||maintenanceBusy,flush:()=>recovery.flush()});
     youtubeHost=await require('./youtube-host').startYouTubeHost();
-    youtubeBrowser=require('./youtube-browser').createYouTubeBrowser({getControl:()=>control,getPresentation:()=>presentation,onStatus:value=>control?.webContents.send('youtube:status',value),onKey:key=>control?.webContents.send('presentation:key',key)});
+    browserExtensions=await require('./browser-extensions.cjs').createBrowserExtensions({userData:app.getPath('userData'),getControl:()=>control,isPresenting:()=>!!presentation});
+    youtubeBrowser=require('./youtube-browser').createYouTubeBrowser({getControl:()=>control,getPresentation:()=>presentation,onStatus:value=>control?.webContents.send('youtube:status',value),onKey:key=>control?.webContents.send('presentation:key',key),extensions:browserExtensions});
     app.once('will-quit',()=>youtubeHost.close());
     Menu.setApplicationMenu(null);
     control = new BrowserWindow({ width: 1440, height: 940, minWidth: 850, minHeight: 650, show: false, titleBarStyle: 'hidden', titleBarOverlay: { color: '#1c1616', symbolColor: '#f4e9e5', height: 36 }, backgroundColor: '#0d0d0d', title: 'ProMax Presenter', webPreferences: preferences });
@@ -192,7 +207,7 @@ else {
     control.webContents.once('did-finish-load',()=>integrations.start());
     control.webContents.on('did-finish-load', sendActive);
     control.on('close',event=>{if(recovery&&!quitReady){event.preventDefault();if(!quitting)setImmediate(()=>app.quit());}});
-    control.on('closed', () => {youtubeBrowser.destroy(); closePresentation(); control = null; });
+    control.on('closed', () => {youtubeBrowser.destroy();browserExtensions.close();closePresentation(); control = null; });
     screen.on('display-removed', (_event, removed) => { if (removed.id === displayId) closePresentation(); });
     screen.on('display-metrics-changed', (_event, changed) => {
       if (presentation && changed.id === displayId) { presentation.setFullScreen(false); presentation.setBounds(changed.bounds); presentation.setFullScreen(true); }

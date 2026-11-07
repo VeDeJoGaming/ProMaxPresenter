@@ -16,5 +16,16 @@
     function stop(){halt();phase='idle';remaining=0;emit();}
     return {start,pause,resume,stop,snapshot};
   }
-  const api={create,format};if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.ProMaxCountdown=api;
+  function createStopwatch({onChange=()=>{},now=()=>performance.now(),schedule=setInterval,cancel=clearInterval}={}){
+    let phase='idle',elapsed=0,started=0,timer=null,lastKey='';
+    const snapshot=()=>{const elapsedMs=elapsed+(phase==='running'?Math.max(0,now()-started):0);return {phase,elapsedMs,seconds:Math.floor(elapsedMs/1000)};};
+    function halt(){if(timer!==null){cancel(timer);timer=null;}}
+    function emit(){const value=snapshot(),key=value.phase+':'+value.seconds;if(key!==lastKey){lastKey=key;onChange(value);}return value;}
+    function start(){halt();phase='running';elapsed=0;started=now();lastKey='';timer=schedule(emit,200);emit();}
+    function pause(){if(phase!=='running')return false;elapsed=snapshot().elapsedMs;phase='paused';halt();emit();return true;}
+    function resume(){if(phase!=='paused')return false;phase='running';started=now();timer=schedule(emit,200);emit();return true;}
+    function stop(){halt();phase='idle';elapsed=0;emit();}
+    return {start,pause,resume,stop,snapshot};
+  }
+  const api={create,createStopwatch,format};if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.ProMaxCountdown=api;
 })(globalThis);

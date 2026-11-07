@@ -24,7 +24,10 @@
     "test:text": "node test/text-output-browser.cjs"
   },
   "dependencies": {
-    "electron-updater": "6.8.9"
+    "electron-chrome-extensions": "4.10.0",
+    "electron-updater": "6.8.9",
+    "esbuild": "0.25.12",
+    "extract-zip": "2.0.1"
   },
   "devDependencies": {
     "electron": "44.9.1",
@@ -76,7 +79,8 @@
     },
     "publish": null,
     "asarUnpack": [
-      "**/*.ps1"
+      "**/*.ps1",
+      "**/node_modules/@esbuild/**"
     ]
   }
 }

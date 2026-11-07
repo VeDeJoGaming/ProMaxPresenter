@@ -10,7 +10,7 @@ setInterval(()=>{
 },2000);
 document.addEventListener('promax-youtube-status',event=>window.promaxDesktop.youtubeStatus(event.detail));
 window.promaxDesktop.onState(value => {
-  const finish=ProMaxVisuals.beginBackground(document,stage,value);renderOutput(value);finish();
+  const finish=ProMaxVisuals.beginBackground(document,stage,value);renderOutput(value);finish();ProMaxCountdownOverlay.render(document,stage,value);
 });
 function renderOutput(value) {
   if(ProMaxScoreboard.render(document,stage,value)){previous=value;return;}

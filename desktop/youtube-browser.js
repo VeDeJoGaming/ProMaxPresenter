@@ -1,10 +1,12 @@
 const {WebContentsView,session}=require('electron');
 const presentationScript=require('node:fs').readFileSync(require('node:path').join(__dirname,'youtube-presentation-page.js'),'utf8');
+const countdownScript=require('node:fs').readFileSync(require('node:path').join(__dirname,'../countdown-overlay.js'),'utf8');
 
-function createYouTubeBrowser({getControl,getPresentation,onStatus,onKey=()=>{}}){
+function createYouTubeBrowser({getControl,getPresentation,onStatus,onKey=()=>{},extensions}){
   let view=null,owner=null,entry=null,bounds=null,live=false,blackout=false,presentationReady=false,lastCommand=null,prepareTimer=null,poll=null,requestedState=null;
   const allowed=value=>{try{const u=new URL(value);return u.protocol==='https:'&&['youtube.com','www.youtube.com','m.youtube.com','youtu.be','accounts.google.com','consent.youtube.com','consent.google.com'].includes(u.hostname);}catch{return false;}};
   const execute=code=>view&&!view.webContents.isDestroyed()&&view.webContents.getURL()?view.webContents.executeJavaScript(code,true).catch(()=>null):Promise.resolve(null);
+  const updateCountdown=()=>execute(`(()=>{${countdownScript}\nconst player=document.querySelector('[data-promax-presentation]');if(player)ProMaxCountdownOverlay.render(document,player,${JSON.stringify({countdown:requestedState?.countdown,black:requestedState?.black})});})()`);
   function transfer(window){
     if(!view||!window||window.isDestroyed())return;
     if(owner!==window){if(owner&&!owner.isDestroyed())owner.contentView.removeChildView(view);window.contentView.addChildView(view);owner=window;}
@@ -24,9 +26,10 @@ function createYouTubeBrowser({getControl,getPresentation,onStatus,onKey=()=>{}}
   async function prepare(value){
     if(!/^[\w-]{11}$/.test(value.videoId||''))throw Error('Invalid YouTube video.');
     if(!view){
-      const isolated=session.fromPartition('persist:promax-youtube-browser');
+      const isolated=extensions?.session||session.fromPartition('persist:promax-youtube-browser');
       isolated.setPermissionRequestHandler((_contents,_permission,callback)=>callback(false));
       view=new WebContentsView({webPreferences:{session:isolated,nodeIntegration:false,contextIsolation:true,sandbox:true,backgroundThrottling:false,autoplayPolicy:'no-user-gesture-required'}});
+      extensions?.registerTab(view.webContents,getControl());
       view.webContents.on('before-input-event',(event,input)=>{
         if(input.type!=='keyDown'||input.control||input.alt||input.meta)return;
         if(!['F5','F6'].includes(input.key)&&!(live&&input.key==='Escape'))return;
@@ -70,11 +73,16 @@ function createYouTubeBrowser({getControl,getPresentation,onStatus,onKey=()=>{}}
     if(!view||entry?.id!==cue.id)return;
     if(state.black){blackout=true;await pause();if(view)view.setVisible(false);return;}
     const resumeAfterBlack=blackout;blackout=false;
-    clearTimeout(prepareTimer);live=true;presentationReady=false;layout(false);
-    const result=await execute(presentationScript);
-    if(!result?.ready){await park();throw Error('YouTube video is not ready to show. Wait for the browser preview and try again.');}
+    clearTimeout(prepareTimer);
+    if(!live||!presentationReady){
+      live=true;presentationReady=false;layout(false);
+      const result=await execute(presentationScript);
+      if(!result?.ready){await park();throw Error('YouTube video is not ready to show. Wait for the browser preview and try again.');}
+    }
     if(requestedState?.black||!requestedState?.youtube?.nativeBrowser)return;
     presentationReady=true;
+    await updateCountdown();
+    if(requestedState?.black||!requestedState?.youtube?.nativeBrowser)return;
     view.setVisible(true);
     view.webContents.setAudioMuted(!!cue.muted);
     if(lastCommand!==cue.command){
@@ -88,6 +96,6 @@ function createYouTubeBrowser({getControl,getPresentation,onStatus,onKey=()=>{}}
   }
   function destroy(){clearTimeout(prepareTimer);clearInterval(poll);if(view&&!view.webContents.isDestroyed())view.webContents.close();view=null;owner=null;}
   function immediate(state){requestedState=state;if(view&&live&&(state.black||!state.youtube?.nativeBrowser)){view.setVisible(false);view.webContents.setAudioMuted(true);}}
-  return {prepare,setBounds,sync,park,command,destroy,immediate,resize:layout,getView:()=>view};
+  return {prepare,setBounds,sync,park,command,destroy,immediate,invalidate:()=>{entry=null;clearTimeout(prepareTimer);},resize:()=>{layout();if(live)updateCountdown();},getView:()=>view};
 }
 module.exports={createYouTubeBrowser};

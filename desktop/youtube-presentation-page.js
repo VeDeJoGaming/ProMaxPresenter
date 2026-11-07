@@ -3,6 +3,7 @@
   window.__promaxRestorePlayer=()=>{
     const saved=window[key];if(!saved)return;
     saved.style.remove();
+    saved.player.querySelector('[data-promax-countdown]')?.remove();
     if(saved.parent.isConnected){
       const next=saved.next?.parentNode===saved.parent?saved.next:null;
       if(saved.parent.moveBefore)saved.parent.moveBefore(saved.player,next);

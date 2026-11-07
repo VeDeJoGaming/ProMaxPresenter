@@ -43,6 +43,10 @@ jobs:
         timeout-minutes: 3
       - run: node test/prepared-slide-editing-desktop.cjs
         timeout-minutes: 3
+      - run: node test/youtube-timers-desktop.cjs
+        timeout-minutes: 3
+      - run: node test/browser-extensions-desktop.cjs
+        timeout-minutes: 3
       - run: node test/countdown-desktop.cjs
         timeout-minutes: 3
       - run: node test/slide-regeneration-desktop.cjs
