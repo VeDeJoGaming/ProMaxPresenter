@@ -41,6 +41,7 @@ async function run(){
   await page.locator('[data-tab="price-game"]').click();
   await page.locator('[data-price-field=name]').fill('Kaffe fra fjellbutikken');
   await page.locator('[data-price-field=price]').fill('1234,90');
+  await page.locator('[data-price-field=description]').fill('250 g hele bønner\nMørkbrent kaffe.');
   const photo=Buffer.from(await page.evaluate(()=>{const c=document.createElement('canvas');c.width=400;c.height=500;const x=c.getContext('2d');x.fillStyle='#b52822';x.fillRect(70,80,260,350);x.fillStyle='#ffe8ba';x.fillRect(90,200,220,150);x.fillStyle='#4b2a18';x.font='bold 36px Arial';x.fillText('KAFFE',138,285);return c.toDataURL('image/png').split(',')[1];}),'base64');
   await page.locator('.price-game-photo input').setInputFiles({name:'synthetic-coffee.png',mimeType:'image/png',buffer:photo});
   await page.waitForSelector('.price-game-photo img');
@@ -60,6 +61,7 @@ async function run(){
   assert.equal(await page.locator('[data-price-field=name]').first().inputValue(),'Kaffe fra fjellbutikken');
   await page.waitForTimeout(300);await page.reload({waitUntil:'domcontentloaded',timeout:15000});await page.evaluate(()=>ProMaxControls.ready);await page.locator('[data-tab="price-game"]').click();
   assert.equal(await page.locator('[data-price-field=price]').first().inputValue(),'1234,90');
+  assert.equal(await page.locator('[data-price-field=description]').first().inputValue(),'250 g hele bønner\nMørkbrent kaffe.');
   await page.locator('[data-price-generate]').click();await page.waitForSelector('.prepared-slide');
   assert.equal(await page.locator('.prepared-slide').count(),4);
   assert.equal(await page.evaluate(()=>!!state.image),false,'Generation never shows the new deck live');
@@ -67,7 +69,7 @@ async function run(){
   await page.locator('.prepared-slide .thumbnail').first().click();
   await page.waitForFunction(()=>document.querySelector('#preview img')?.naturalWidth===1600);
   let question=await page.evaluate(()=>decodeURIComponent(state.image.split(',')[1]));
-  assert.ok(question.includes('? kr'));assert.ok(!question.includes('234,90'),'Question cue cannot leak the answer');
+  assert.ok(question.includes('250 g hele bønner'));assert.ok(question.includes('Mørkbrent kaffe.'));assert.ok(question.includes('? kr'));assert.ok(!question.includes('234,90'),'Question cue cannot leak the answer');
 
   await page.evaluate(async()=>{await promaxDesktop.toggle();});
   let output;for(let i=0;i<100;i++){output=browser.contexts()[0].pages().find(p=>p.url().endsWith('/desktop/output.html'));if(output)break;await page.waitForTimeout(50);}assert(output);
@@ -84,12 +86,14 @@ async function run(){
   await page.evaluate(()=>window.priceBeforeEdit=state.image);
   await page.getByRole('button',{name:'Rediger varer og priser',exact:true}).click();
   await page.locator('[data-price-field=price]').first().fill('2345,60');
+  await page.locator('[data-price-field=description]').first().fill('500 g hele bønner');
   await page.locator('[data-price-generate]').click();await page.waitForSelector('.prepared-slide');
   assert.equal(await page.evaluate(()=>state.image===priceBeforeEdit),true,'Updating a deck preserves the live cue');
   assert.equal(await page.evaluate(()=>ProMaxMeetings.folder().items[0].slides[0].id),firstId,'Edits retain cue identities');
   await page.locator('#next').click();assert.ok((await page.evaluate(()=>decodeURIComponent(state.image))).includes('345,60'));
   await page.evaluate(()=>ProMaxControls.undo());await page.waitForFunction(()=>!ProMaxControls.busy);
   assert.equal(await page.evaluate(()=>ProMaxMeetings.folder().items[0].priceGame.rounds[0].price),1234.9);
+  assert.equal(await page.evaluate(()=>ProMaxMeetings.folder().items[0].priceGame.rounds[0].description),'250 g hele bønner\nMørkbrent kaffe.');
   await page.evaluate(()=>ProMaxControls.redo());await page.waitForFunction(()=>!ProMaxControls.busy);
   assert.equal(await page.evaluate(()=>ProMaxMeetings.folder().items[0].priceGame.rounds[0].price),2345.6);
   await page.evaluate(()=>ProMaxMeetings.open(ProMaxMeetings.folder().items[0]));
@@ -99,6 +103,7 @@ async function run(){
   await page.evaluate(()=>{flushPendingSave();window.promaxDesktop?.saveLibrary(JSON.stringify(librarySnapshot()));});await page.waitForTimeout(700);
   await close();page=await launch(profile);
   assert.equal(await page.evaluate(()=>meetingFolders[0].items[0].priceGame.rounds[0].price),2345.6);
+  assert.equal(await page.evaluate(()=>meetingFolders[0].items[0].priceGame.rounds[0].description),'500 g hele bønner');
   assert.equal(await page.evaluate(()=>meetingFolders[0].items[0].priceGame.rounds[0].image.startsWith('data:image/webp;')),true);
   await page.getByRole('button',{name:'Rediger varer og priser',exact:true}).click();
   assert.equal(await page.locator('[data-price-field=name]').count(),2);

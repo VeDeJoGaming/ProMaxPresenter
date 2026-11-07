@@ -29,3 +29,14 @@ test('meeting checks recognize generated offline slides and flag missing source 
   assert.equal(checks.assess({items:[item]},{}).rows[0].status,'ready');
   item.priceGame.rounds=[];assert.equal(checks.assess({items:[item]},{}).rows[0].status,'attention');
 });
+
+test('optional descriptions persist, escape markup and render on both slides without changing older games',()=>{
+  const item=game.makeItem({...draft,rounds:[{...draft.rounds[0],description:'250 g & <hele bønner>\r\nMørkbrent.'}]});
+  assert.equal(item.priceGame.rounds[0].description,'250 g & <hele bønner>\nMørkbrent.');
+  for(const slide of item.slides){const svg=game.svg(item,slide);assert.ok(svg.includes('250 g &amp; &lt;hele bønner&gt;'));assert.ok(svg.includes('Mørkbrent.'));}
+  const restored=library.normalize({songs:[{id:'song',slides:[]}],meetingFolders:[{id:'meeting',items:[{...item,id:'game'}]}]});
+  assert.deepEqual(restored.meetingFolders[0].items[0].priceGame,item.priceGame);
+  assert.equal(game.makeItem(draft).priceGame.rounds[0].description,'');
+  delete item.priceGame.rounds[0].description;assert.ok(game.svg(item,item.slides[0]).includes('? kr'));
+  assert.throws(()=>game.makeItem({...draft,rounds:[{...draft.rounds[0],description:'x'.repeat(201)}]}),/maks 200/);
+});

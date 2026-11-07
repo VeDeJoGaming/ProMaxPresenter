@@ -8,7 +8,7 @@ async function run(){
   browser=await chromium.launch({headless:true,...(process.env.PROMAX_BROWSER_PATH?{executablePath:process.env.PROMAX_BROWSER_PATH}:{})});
   const page=await browser.newPage({viewport:{width:1440,height:1000}});const errors=[];page.on('pageerror',e=>errors.push(e.message));
   await page.goto('http://127.0.0.1:'+server.address().port);await page.evaluate(()=>ProMaxControls.ready);await page.locator('[data-tab="price-game"]').click();
-  await page.locator('[data-price-field=name]').fill('Kaffe fra fjellbutikken');await page.locator('[data-price-field=price]').fill('149,90');
+  await page.locator('[data-price-field=name]').fill('Kaffe fra fjellbutikken');await page.locator('[data-price-field=price]').fill('149,90');await page.locator('[data-price-field=description]').fill('250 g hele bønner\nMørkbrent kaffe fra et lite brenneri.');
   const photo=Buffer.from(await page.evaluate(()=>{const c=document.createElement('canvas');c.width=400;c.height=500;const x=c.getContext('2d');x.fillStyle='#b52822';x.fillRect(70,80,260,350);x.fillStyle='#ffe8ba';x.fillRect(90,200,220,150);x.fillStyle='#4b2a18';x.font='bold 36px Arial';x.fillText('KAFFE',138,285);return c.toDataURL('image/png').split(',')[1];}),'base64');
   await page.locator('.price-game-photo input').setInputFiles({name:'synthetic.png',mimeType:'image/png',buffer:photo});await page.waitForSelector('.price-game-photo img');
   await page.locator('[data-price-add]').click();await page.locator('[data-price-field=name]').nth(1).fill('En stor sjokolade');await page.locator('[data-price-field=price]').nth(1).fill('39');
@@ -25,6 +25,11 @@ async function run(){
    const source=await page.evaluate(i=>{const item=ProMaxMeetings.folder().items[0];return ProMaxPriceGame.svg(item,item.slides[i]);},i);
    await stage.setContent('<style>body{margin:0;background:#000}svg{display:block;width:100vw;height:100vh}</style>'+source);await stage.screenshot({path:path.join(evidence,name+'.png')});
   }
+  const stress=await page.evaluate(()=>{const item=structuredClone(ProMaxMeetings.folder().items[0]);item.priceGame.rounds[0].name='En veldig lang produktbetegnelse som også skal få plass sammen med beskrivelsen';item.priceGame.rounds[0].description='Dette er en lang beskrivelse som forklarer varen med størrelse, innhold, kvalitet og andre detaljer. Den skal være lett å lese og skal ikke overlappe prisen selv om varen også har et langt produktnavn.';return ProMaxPriceGame.svg(item,item.slides[0]);});
+  await stage.setContent('<style>body{margin:0;background:#000}svg{display:block;width:100vw;height:100vh}</style>'+stress);
+  const bounds=await stage.locator('svg').evaluate(svg=>[...svg.querySelectorAll('text')].filter(t=>[...t.querySelectorAll('tspan')].some(s=>s.getAttribute('x')==='810')).map(t=>{const b=t.getBBox();return {right:b.x+b.width,bottom:b.y+b.height};}));
+  assert(bounds.every(b=>b.right<=1520&&b.bottom<600),'Long product text stays above the price and within the slide');
+  await stage.screenshot({path:path.join(evidence,'description-long.png')});
   assert.deepEqual(errors,[]);console.log('PASS: responsive price editor, reorder, preview, generation and full-size slide visual evidence');
  }finally{await browser?.close();await new Promise(r=>server.close(r));}
 }

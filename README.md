@@ -60,4 +60,4 @@ Private libraries, app profiles, transfer packages, tokens and imported Bible te
 
 ### Gjett prisen
 
-Åpne **Gjett prisen** i arbeidsflaten, eller **Add content → Gjett prisen** i en møtemappe. Skriv varenavn og riktig pris, legg eventuelt til et bilde og velg **Lag lysbilder**. Hver vare får et spørsmål og en fasit på neste lysbilde. Prisene vises først på fasiten. Velg **Rediger varer og priser** for å endre konkurransen senere. Kladden lagres lokalt, og ferdige konkurranser lagres med møtemappen og fungerer offline. Forberedelser og oppdateringer endrer ikke gjeldende live-bilde.
+Åpne **Gjett prisen** i arbeidsflaten, eller **Add content → Gjett prisen** i en møtemappe. Skriv varenavn og riktig pris, legg eventuelt til en beskrivelse (maks 200 tegn) og et bilde og velg **Lag lysbilder**. Hver vare får et spørsmål og en fasit på neste lysbilde. Prisene vises først på fasiten. Velg **Rediger varer og priser** for å endre konkurransen senere. Kladden lagres lokalt, og ferdige konkurranser lagres med møtemappen og fungerer offline. Forberedelser og oppdateringer endrer ikke gjeldende live-bilde.

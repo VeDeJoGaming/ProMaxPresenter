@@ -1,7 +1,7 @@
 /* Prepare privately, then explicitly add or update an ordinary meeting deck. */
 (() => {
   const model=ProMaxPriceGame;
-  const row=()=>({id:uid(),name:'',price:'',image:''});
+  const row=()=>({id:uid(),name:'',description:'',price:'',image:''});
   let draft={title:'Gjett prisen',currency:'kr',rounds:[row()]},target=null,selected=0,answer=false,view=null,loaded=false,writes=Promise.resolve();
   const node=(tag,text,className)=>{const e=document.createElement(tag);if(text)e.textContent=text;if(className)e.className=className;return e;};
   const button=(text,action,className)=>{const b=node('button',text,className);b.type='button';b.onclick=action;return b;};
@@ -56,11 +56,14 @@
       const name=field('Varenavn',r.name,value=>{r.name=value;selected=index;}),price=field('Riktig pris',r.price,value=>{r.price=value;selected=index;price.input.setAttribute('aria-invalid',String(model.price(value)===null));});
       name.input.maxLength=80;name.input.placeholder='F.eks. en pose kaffe';price.input.inputMode='decimal';price.input.placeholder='149,90';name.input.dataset.priceField='name';price.input.dataset.priceField='price';
       fields.append(name.label,price.label);
+      const descriptionLabel=node('label','Beskrivelse (valgfritt)'),description=node('textarea');descriptionLabel.className='price-game-description';
+      description.value=r.description||'';description.rows=3;description.maxLength=200;description.placeholder='F.eks. 250 g · hele bønner · mørkbrent';description.dataset.priceField='description';
+      description.oninput=()=>{r.description=description.value;selected=index;error('');remember();preview();};descriptionLabel.append(description);
       const photo=node('div',null,'price-game-photo');
       if(r.image){const img=node('img');img.src=r.image;img.alt=r.name||'Varebilde';photo.append(img);}
       photo.append(ProMaxFilePicker.create({text:r.image?'Bytt bilde':'Legg til bilde',key:'price-photo-'+r.id,accept:'image/png,image/jpeg,image/webp',onFiles:files=>importPhoto(files[0],r)}));
       if(r.image)photo.append(button('Fjern bilde',()=>{r.image='';remember();renderRows();preview();},'subtle'));
-      card.addEventListener('focusin',()=>{selected=index;preview();});card.append(heading,fields,photo);list.append(card);
+      card.addEventListener('focusin',()=>{selected=index;preview();});card.append(heading,fields,descriptionLabel,photo);list.append(card);
     });
     view.querySelector('[data-price-add]').disabled=draft.rounds.length>=model.MAX_ROUNDS;
   }
