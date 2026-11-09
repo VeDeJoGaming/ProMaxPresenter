@@ -1,3 +1,10 @@
+## Shared library-lenke og GitHub kontrollert — 9. november 2026
+
+- Fast Shared library-adresse: https://promax-shared-library-vedejo.honest-jam-0776.chatgpt.site, hentet fra shared-config.json og kontrollert med HTTP 200. Gruppens hemmelige invitasjonslenke kopieres separat fra Shared library → Copy invitation i appen.
+- origin er hentet og work/pc-laptop er kontrollert med fast-forward: allerede oppdatert på funksjonscommit 6d373299e239fd1baad0df2f4b6694cb597a38a5 (valgfri varebeskrivelse i Gjett prisen). Alle 103 enhetstester består. Ingen ucommittede filer i den aktive felles checkouten før dette notatet.
+- De endrede filene i de separate pris-/timerbyggene er sammenlignet med fellesgrenen. Funksjonene er allerede inkludert; fellesgrenen har i tillegg nyere kontroll av den virkelige uBlock-nedlastingen. Rotens historiske, uforente checkout er bevart som tidligere og skal ikke lastes opp over den nyere fellesgrenen.
+- Ingen applikasjonskode er endret i denne oppgaven; installasjonen fra 7. november beholdes. Ingen ny release, main-endring, nettjenestepublisering eller opplasting av privat innhold. Aktiv utviklingscheckout er fortsatt C:\ProMaxPresenter\artifacts\local-update. Dette statusnotatet lagres og sendes på samme fellesgren.
+
 ## Valgfri varebeskrivelse i Gjett prisen — 7. november 2026
 
 - Hver vare har nå «Beskrivelse (valgfritt)», opptil 200 tegn med linjeskift. Feltet følger varen gjennom kladdlagring, bildeimport, rekkefølge, generering og senere redigering. Beskrivelsen vises under varenavnet på både spørsmål og fasit. Oppsettet tilpasser tekststørrelsen når navn og beskrivelse er lange, slik at teksten holder seg over prisen. Eldre konkurranser uten beskrivelse fungerer som før. Eksisterende angre/gjenta og uendret live-cue under forberedelser beholdes.
