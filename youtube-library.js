@@ -89,8 +89,12 @@
   document.querySelector('.workspace-tabs').addEventListener('click',event=>{if(event.target.closest('[data-tab="videos"]')){onlyEntry=null;refresh();}});
   const ready=(async()=>{try{entries=await storedAsset('get',null,'youtube-list')||[];if(document.querySelector('[data-tab="videos"][aria-pressed="true"]'))refresh();}catch{notify('Could not restore YouTube links.');}})();
   function remove(id){return entryOperation(async()=>{await persist(entries.filter(e=>e.id!==id));refreshIfVisible();});}
+  function reorder(sourceId,targetId,after){return entryOperation(async()=>{
+    const next=entries.slice(),i=next.findIndex(e=>e.id===sourceId),j=next.findIndex(e=>e.id===targetId);if(i<0||j<0||i===j)return;
+    const [entry]=next.splice(i,1);next.splice(j+(after?1:0)-(i<j?1:0),0,entry);await persist(next);
+  });}
   const history={take:()=>structuredClone(entries),apply:value=>entryOperation(()=>persist(structuredClone(value)))};
-  window.ProMaxYouTubeLibrary={render,add,play,prepare,attach,ready,history,remove,list:()=>entries,prepared:()=>prepared?.localAssetId||nativeBrowser?null:prepared,
+  window.ProMaxYouTubeLibrary={render,add,play,prepare,attach,ready,history,remove,reorder,list:()=>entries,prepared:()=>prepared?.localAssetId||nativeBrowser?null:prepared,
     clearFocus:()=>{onlyEntry=null;},focused:()=>entries.find(e=>e.id===onlyEntry),
     open:entry=>{ProMaxFeatures.showTab('videos');onlyEntry=entry.id;refresh();}};
 })();

@@ -43,6 +43,12 @@ jobs:
         timeout-minutes: 3
       - run: node test/prepared-slide-editing-desktop.cjs
         timeout-minutes: 3
+      - run: node test/drag-drop-desktop.cjs
+        timeout-minutes: 3
+      - run: node test/drag-drop-desktop.cjs
+        env:
+          PROMAX_DRAG_BROWSER: '1'
+        timeout-minutes: 3
       - run: node test/youtube-timers-desktop.cjs
         timeout-minutes: 3
       - run: node test/browser-extensions-desktop.cjs

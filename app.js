@@ -39,7 +39,10 @@ function toggleSongFavorite(){const ids=songFavorites();if(ids.has(selected))ids
 function renderLibrary(){
   const term=$('search').value,list=$('library'),visible=[],ids=new Set(songs.map(song=>song.id)),favorites=songFavorites();
   const source=songFavoritesOnly?songs.filter(song=>favorites.has(song.id)):songs;
-  for(const {song,snippet} of ProMaxSongSearch.search(source,term)){
+  const results=ProMaxSongSearch.search(source,term);
+  if(settings.songOrder==='manual')results.sort((a,b)=>a.index-b.index);
+  if($('song-order'))$('song-order').value=settings.songOrder==='manual'?'manual':'alphabetical';
+  for(const {song,snippet} of results){
     let row=libraryRows.get(song.id);
     if(!row){
       const button=document.createElement('button'),title=document.createTextNode(''),count=document.createElement('small');

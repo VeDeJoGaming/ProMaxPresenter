@@ -277,6 +277,13 @@
   function removeVideo(id){return videoOperation(async()=>{const next=assets.filter(a=>a.id!==id);await persist('video-list',next);assets=next;await keepTrash([id]);window.ProMaxControls?.changed();if(tab==='videos')renderVideos();});}
   async function removeDocument(id){documents=documents.filter(d=>d.id!==id);await persist('presentations',documents);renderDocuments();}
   async function persistDocuments(){await persist('presentations',documents);window.ProMaxControls?.changed();}
+  function reorderAsset(type,sourceId,targetId,after){return videoOperation(async()=>{
+    const list=type==='video'?assets:documents,next=list.slice(),i=next.findIndex(a=>a.id===sourceId),j=next.findIndex(a=>a.id===targetId);
+    if(i<0||j<0||i===j)return;
+    const [item]=next.splice(i,1);next.splice(j+(after?1:0)-(i<j?1:0),0,item);
+    await persist(type==='video'?'video-list':'presentations',next);
+    if(type==='video')assets=next;else documents=next;
+  });}
   function captureDeck(){return deck?{id:deck.id,meetingItemId:deck.meetingItemId,slide:deck.slides[deck.index],index:deck.index}:null;}
   function syncDeck(previous){if(!deck||!previous)return;const source=previous.meetingItemId?meetingFolders.flatMap(f=>f.items).find(i=>i.id===previous.meetingItemId):documents.find(d=>d.id===previous.id);if(!source)return;deck.slides=source.slides;const index=source.slides.findIndex(s=>typeof s==='string'?s===previous.slide:s.id&&s.id===previous.slide?.id);deck.index=index>=0?index:Math.max(-1,Math.min(previous.index-1,source.slides.length-1));}
   const history={take:()=>({videos:structuredClone(assets),documents:structuredClone(documents),bible}),apply:value=>videoOperation(async()=>{
@@ -289,7 +296,7 @@
   window.ProMaxFeatures={renderBibleSettings,videoUrls,handleKey,importBible,addVideos,playVideo,showDeck,navigate,showTab,saveDocument,openMeetingMedia,externalCue,seekVideo,videoSnapshot,
     openBibleReference:verse=>{if(!bible?.verses.includes(verse))return false;bibleQuery=ProMaxBible.formatReference([verse]);showTab('bible',{bibleVerse:verse});return true;},
     receiveBible:async value=>{const parsed=ProMaxBible.parse(JSON.stringify(value),'shared-bible.json');await persist('bible',parsed);bible=parsed;chosen.clear();if(tab==='bible')renderBible();document.dispatchEvent(new Event('promax:bible-changed'));window.ProMaxControls?.changed();return parsed;},
-    getBible:()=>bible,getVideos:()=>assets,getDocuments:()=>documents,focusedAsset:()=>focusedAsset,history,removeVideo,removeDocument,persistDocuments,captureDeck,syncDeck,
+    getBible:()=>bible,getVideos:()=>assets,getDocuments:()=>documents,focusedAsset:()=>focusedAsset,history,removeVideo,removeDocument,persistDocuments,reorderAsset,captureDeck,syncDeck,
     passageForDrag:index=>{const v=bibleResults[index];if(!v)return null;const verses=chosen.has(v)?ProMaxBible.ordered([...chosen]):[v];return {type:'bible',title:ProMaxBible.formatReference(verses),slides:buildPassage(verses)};}};
   showTab('songs');
   window.ProMaxFeatures.ready=(async()=>{
