@@ -46,7 +46,14 @@ async function run(){
           cue('Rapid third lyric');checks.push(node().textContent==='Rapid third lyric'&&stage.querySelectorAll('.text-outgoing').length===2);
           checks.push(background===stage.querySelector('.media'));
           fade=node().getAnimations()[0];cue('Rapid third lyric');checks.push(node().getAnimations()[0]===fade);
-          cue('');checks.push(!stage.querySelector('.text-outgoing')&&node().getAnimations().length===0);
+          cue('');
+          const outgoing=[...stage.querySelectorAll('.text-outgoing')];checks.push(outgoing.length>0&&node().textContent===''&&node().getAnimations().length===0);
+          for(const old of outgoing){const fade=old.getAnimations()[0];checks.push(fade.effect.getTiming().duration===450);fade.pause();fade.currentTime=225;}
+          checks.push(background===stage.querySelector('.media'));
+          cue('Immediate new lyric');checks.push(node().textContent==='Immediate new lyric');
+          for(const old of outgoing)old.getAnimations().forEach(a=>a.finish());
+          await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+          checks.push(node().textContent==='Immediate new lyric'&&!stage.querySelector('.text-outgoing'));
           cue('After clear');node().getAnimations()[0].finish();cue('',{black:true});checks.push(!node());
           cue('',{biblePassage:{verses:[{verse:1,text:'Synthetic verse'}],reference:'Test 1:1'}});node().getAnimations()[0].finish();
           cue('',{biblePassage:{verses:[{verse:2,text:'Second verse'}],reference:'Test 1:2'}});
@@ -61,7 +68,7 @@ async function run(){
       await page.close();
     }
     assert.deepEqual(errors,[]);
-    console.log('PASSED: preview and actual desktop renderer; gentle entrance, text crossfades, rapid advance without losing outgoing layers, clear/blackout/restore, Bible and background changes.');
+    console.log('PASSED: preview and actual desktop renderer; lyric crossfades, 450 ms clear from current opacity, rapid clear/new cue without losing new text, continuous backgrounds, blackout/restore and Bible changes.');
   }finally{await browser?.close();await new Promise(resolve=>server.close(resolve));}
 }
 run().catch(error=>{console.error(error);process.exitCode=1;});

@@ -44,6 +44,8 @@ function renderOutput(value) {
   previous = value;
 }
 document.addEventListener('keydown', event => {
+  const command=ProMaxPresentationKeys.command(event);
+  if(command){event.preventDefault();if(!event.repeat)window.promaxDesktop.key({command});return;}
   if (event.ctrlKey || event.altKey || event.metaKey) return;
   if(event.repeat&&['F5','F6','Escape'].includes(event.key)){event.preventDefault();return;}
   event.preventDefault(); window.promaxDesktop.key(event.key);

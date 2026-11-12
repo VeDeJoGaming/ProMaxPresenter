@@ -47,6 +47,7 @@ body>main{flex:1;min-height:0;display:grid;grid-template-columns:clamp(180px,17v
 body>main>aside,body>main>.workspace,body>main>.control{min-height:0;min-width:0;overflow:auto;overscroll-behavior:contain;scrollbar-gutter:stable;scrollbar-width:auto;scrollbar-color:auto}
 body>main>aside{padding:22px 14px}
 body>main>.workspace{padding:24px}
+.workspace-tabs{position:sticky;top:0;z-index:6;background:var(--pm-bg)}
 body>main>.control{display:block;grid-column:auto;padding:22px 16px}
 .control .panel{margin-top:18px}
 .workspace-top{flex-wrap:wrap;gap:14px;margin-bottom:22px}
@@ -74,7 +75,8 @@ select option,select optgroup{background:var(--pm-panel);color:var(--pm-text)}
 @media(max-width:900px){body>header{align-items:flex-start;padding-right:145px;gap:12px}header .header-actions{flex:1}body>main{grid-template-columns:180px minmax(280px,1fr) 300px}}
 @media(max-width:760px){body>main{overflow-x:auto;grid-template-columns:180px 320px 300px}body>header{padding-top:42px;padding-right:16px}.brand{font-size:15px}}
 #open-output::after,#blackout::after{display:inline-block;margin-left:8px;padding:1px 4px;border:1px solid currentColor;border-radius:3px;font-size:9px;opacity:.65;vertical-align:1px}
-#open-output::after{content:'F5'}#blackout::after{content:'F6'}
+#open-output::after{content:'Ctrl+Enter'}#blackout::after{content:'Ctrl+B'}#clear::after{content:'Ctrl+Shift+C';font-size:9px;opacity:.65}
+#blackout::after,#clear::after{display:block;margin:4px 0 0}
 body>main{grid-template-rows:minmax(0,1fr)}
 body>main>aside,body>main>.workspace,body>main>.control{align-self:stretch;position:relative;top:auto}
 /* Rounded, quiet scrollbars throughout the app; no native arrow buttons. */

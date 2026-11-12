@@ -13,7 +13,7 @@
   let videoQueue=Promise.resolve();
   function videoOperation(action){const operation=videoQueue.then(action);videoQueue=operation.catch(()=>{});return operation;}
   const tabs=[['songs','Songs'],['bible','Bible'],['videos','Videos'],['presentations','PowerPoint'],['scores','Poengtelling'],['price-game','Gjett prisen']];
-  for (const [id,label] of tabs) { const b=document.createElement('button');b.textContent=label;b.onclick=()=>showTab(id);b.dataset.tab=id;nav.append(b); }
+  for (const [id,label] of tabs) { const b=document.createElement('button');b.textContent=label;b.onclick=()=>id==='songs'&&window.ProMaxMeetings?.folder()?ProMaxMeetings.refresh():showTab(id);b.dataset.tab=id;nav.append(b); }
   function showTab(id,options={}) {
     window.ProMaxVideoControls?.clear();
     if(id!=='videos')window.ProMaxYouTube?.pauseAll(document);
@@ -195,7 +195,8 @@
     window.ProMaxControls?.changed();
     const focused=assets.find(a=>a.id===focusedAsset),youtube=window.ProMaxYouTubeLibrary?.focused();
     heading(focused?.name||youtube?.title||'Video library',focused||youtube?'Choose when to show this video on the presentation.':'Videos are copied into the app and prepared before playback. Audio is played only on the presentation display; preview stays muted.');
-    if(!focused&&!youtube){const actions=element('div',null,'feature-actions');actions.append(fileButton('Add local videos','video/*,.mp4,.webm,.mov,.m4v',addVideos,true));view.append(actions);}
+    if(!focused)window.ProMaxYouTubeLibrary?.render(view);
+    if(!focused&&!youtube){view.append(element('h2','Local videos'));const actions=element('div',null,'feature-actions');actions.append(fileButton('Add local videos','video/*,.mp4,.webm,.mov,.m4v',addVideos,true));view.append(actions);}
     const controls=element('div',null,'feature-actions');
     const selectedVideo=focused?.id||youtube?.localAssetId,matchingCue=!selectedVideo||activeVideo===selectedVideo;
     const pause=button(state.video?.ended?'Replay':state.video?.paused?'Resume':'Pause',()=>videoCommand('pause'));pause.id='video-pause';controls.append(pause,button('Restart',()=>videoCommand('restart')),button('Stop',()=>{cueText('','Nothing live');renderVideos();}));
@@ -230,7 +231,6 @@
       }));list.append(row);
     }
     view.append(list);
-    if(!focused)window.ProMaxYouTubeLibrary?.render(view);
   }
   async function importDocument() {
     if(!window.promaxDesktop){notify('PowerPoint import is available in the desktop app.');return;}
@@ -269,7 +269,7 @@
   $('previous').onclick=()=>{if(!navigate(-1))previous();};$('next').onclick=()=>{if(!navigate(1))next();};
   for(const id of ['clear','show-text','countdown','pdf']){
     const original=$(id)[id==='pdf'?'onchange':'onclick'];
-    $(id)[id==='pdf'?'onchange':'onclick']=function(event){const before=state,result=original.call(this,event);if(state!==before){deck=null;activeVideo=null;if(tab==='videos')renderVideos();}return result;};
+    $(id)[id==='pdf'?'onchange':'onclick']=function(event){const before=state,result=original.call(this,event);if(state!==before&&id!=='clear'){deck=null;activeVideo=null;if(tab==='videos')renderVideos();}return result;};
   }
   function openMeetingMedia(type,id){showTab(type);focusedAsset=id;if(type==='videos'){warmVideos();renderVideos();}else renderDocuments();}
   function externalCue(){deck=null;activeVideo=null;}

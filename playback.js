@@ -37,12 +37,13 @@
     container.style.background='#000';
     if(state.image){
       let text=container.querySelector('.image-caption');
-      if(state.text){
+      if(state.text||state.biblePassage||text){
         if(!text){text=doc.createElement('div');text.className='image-caption';container.append(text);}
-        renderText(text,state);
+        text.hidden=false;
         text.style.cssText='position:absolute;left:5%;bottom:4%;width:90%;padding:.2em .4em;border-radius:.12em;background:#000c;color:#fff;text-align:center;white-space:pre-line;line-height:1.2;text-shadow:0 2px 5px #000;box-sizing:border-box;font-size:'+(container.clientWidth*.045)+'px';
+        renderLiveText(text,state);text.hidden=!text.textContent.trim();
         fit(container);
-      }else text?.remove();
+      }
     }
     if (state.video) {
       const cue=state.video, video=container.querySelector('video');
@@ -92,6 +93,13 @@
     return true;
   }
   const entrances=new WeakMap();
+  function fadeOutgoing(node){
+    const opacity=Number(node.ownerDocument.defaultView.getComputedStyle(node).opacity);
+    for(const old of node.getAnimations()){old.onfinish=null;old.oncancel=null;old.cancel();}
+    node.style.opacity=String(opacity);
+    const fade=node.animate?.([{opacity},{opacity:0}],{duration:450,easing:'ease-in-out',fill:'forwards'});
+    if(fade){fade.onfinish=()=>node.remove();fade.oncancel=()=>node.remove();}else node.remove();
+  }
   function renderLiveText(text,state){
     const hadText=!!text.textContent.trim();
     const previousKey=text.dataset.textKey;
@@ -103,15 +111,17 @@
       const style=win.getComputedStyle(text);
       ghost=text.cloneNode(true);ghost.className='text-outgoing';ghost.removeAttribute('id');ghost.setAttribute('aria-hidden','true');
       ghost.style.cssText=`position:absolute;pointer-events:none;z-index:2;left:${text.offsetLeft}px;top:${text.offsetTop}px;width:${text.clientWidth}px;height:${text.clientHeight}px;opacity:${style.opacity}`;
-      for(const property of ['font','letter-spacing','line-height','color','text-shadow','white-space','text-align','word-break','overflow-wrap'])ghost.style.setProperty(property,style.getPropertyValue(property));
+      for(const property of ['font','letter-spacing','line-height','color','text-shadow','white-space','text-align','word-break','overflow-wrap','background','padding','border-radius','box-sizing'])ghost.style.setProperty(property,style.getPropertyValue(property));
       parent.append(ghost);
     }
     if(!renderText(text,state))return false;
     entrances.get(text)?.cancel();entrances.delete(text);
     if(!text.textContent.trim()){
-      for(const old of parent?.querySelectorAll('.text-outgoing')||[]){old.getAnimations().forEach(a=>a.cancel());old.remove();}
+      // Clear every visible text layer from its current opacity, including a
+      // lyric change that was still crossfading when Clear was pressed.
+      for(const old of parent?.querySelectorAll('.text-outgoing')||[])fadeOutgoing(old);
     }else{
-      if(ghost){const fade=ghost.animate?.([{opacity:Number(ghost.style.opacity)},{opacity:0}],{duration:450,easing:'ease-in-out',fill:'forwards'});if(fade){fade.onfinish=()=>ghost.remove();fade.oncancel=()=>ghost.remove();}else ghost.remove();}
+      if(ghost)fadeOutgoing(ghost);
       const animation=text.animate?.([{opacity:0},{opacity:1}],{duration:hadText?450:650,easing:'ease-in-out'});
       if(animation)entrances.set(text,animation);
     }

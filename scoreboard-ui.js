@@ -19,6 +19,8 @@
   const confirmDialog=el('dialog',null,'score-confirm');confirmDialog.id='score-confirm';
   const question=el('h2'),hint=el('p','Du kan angre endringen med Ctrl+Z.'),actions=el('div',null,'dialog-actions');let confirmed=null;
   actions.append(button('Avbryt','score-confirm-cancel',()=>confirmDialog.close()),button('Bekreft','score-confirm-accept',()=>{confirmDialog.close();confirmed?.();},'primary'));
+  actions.querySelector('#score-confirm-accept').dataset.dialogAccept='';actions.querySelector('#score-confirm-accept').setAttribute('aria-keyshortcuts','Enter');
+  actions.querySelector('#score-confirm-cancel').dataset.dialogCancel='';actions.querySelector('#score-confirm-cancel').setAttribute('aria-keyshortcuts','Escape');
   confirmDialog.append(question,hint,actions);document.body.append(confirmDialog);
   function confirmChange(text,action){question.textContent=text;confirmed=action;confirmDialog.showModal();$('score-confirm-cancel').focus();}
   function field(label,input){const wrap=el('label',null,'score-field');wrap.append(el('span',label),input);return wrap;}

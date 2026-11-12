@@ -185,7 +185,8 @@ ipcMain.on('presentation:state', (event, value) => {
   if (presentation && !presentation.isDestroyed()) presentation.webContents.send('presentation:state', value);
 });
 ipcMain.on('presentation:key', (event, value) => {
-  if (event.sender === presentation?.webContents && typeof value === 'string' && value.length < 32) control?.webContents.send('presentation:key', value);
+  const valid=typeof value==='string'&&value.length<32||require('../presentation-keys.js').isCommand(value?.command);
+  if(event.sender===presentation?.webContents&&valid)control?.webContents.send('presentation:key',value);
 });
 if (!smoke && !app.requestSingleInstanceLock()) app.quit();
 else {

@@ -115,7 +115,7 @@
   function render(){
     const f=folder();$('meeting-folders').replaceChildren();liveRows.clear();liveFolders.clear();
     $('meeting-folder-browser').hidden=!!f;
-    document.querySelector('.workspace-tabs').hidden=!!f;
+    document.querySelector('.workspace-tabs').hidden=false;
     meetingFolders.forEach(entry=>{const b=button('',()=>select(entry.id));b.className='meeting-folder';b.dataset.folderId=entry.id;b.setAttribute('aria-pressed',String(entry===f));const count=node('small',String(entry.items.length)),flag=node('span','LIVE');flag.className='meeting-folder-live';flag.hidden=true;count.append(flag);liveFolders.set(entry.id,flag);b.append(node('span','▱ '+entry.name),count);$('meeting-folders').append(b);});
     $('all-library').setAttribute('aria-pressed',String(!f));
     document.querySelector('[data-tab="songs"]').textContent=f?'Meeting':'Songs';
@@ -174,7 +174,7 @@
   noteInput.oninput=()=>{const target=noteTarget();if(!target)return;target.operatorNotes=noteInput.value;scheduleSave();
     const row=[...$('meeting-items').children].find(row=>row.dataset.itemId===target.id),flag=row?.querySelector('.meeting-item-note');if(flag)flag.hidden=!noteInput.value.trim();
   };
-  workspace.insertBefore(banner,workspace.firstChild);
+  workspace.insertBefore(banner,workspace.querySelector('.workspace-tabs').nextSibling);
   const overview=node('section');overview.id='meeting-overview';overview.hidden=true;workspace.append(overview);
   const lyrics=document.querySelector('.editor');const fold=node('details');fold.id='lyrics-fold';fold.open=false;fold.append(node('summary','Edit lyrics & slide settings'));lyrics.replaceWith(fold);fold.append(lyrics);
   for(const panel of document.querySelectorAll('.control .panel')){
@@ -194,7 +194,7 @@
   // Feature tabs hide other workspace content; the meeting context remains visible.
   document.querySelector('.workspace-tabs').addEventListener('click',()=>{$('meeting-banner').hidden=!folder();});
   $('quick-add-meeting').onclick=()=>{const text=$('quick-text').value.trim();if(!text){notify('Write the text you want to add first.');return;}add({type:'text',title:text.split('\n')[0].slice(0,80),slides:[{text,label:'Text'}]});};
-  function onTab(){overview.hidden=true;banner.hidden=!folder();document.querySelector('.workspace-tabs').hidden=!!folder();}
+  function onTab(){overview.hidden=true;banner.hidden=!folder();document.querySelector('.workspace-tabs').hidden=false;}
   function markSlide(id,index){const grid=$('feature-view').querySelector('.prepared-slides');if(!grid||grid.dataset.meetingItem!==id)return;[...grid.children].forEach((b,i)=>{b.dataset.selected=String(i===index);b.querySelector('.thumbnail').setAttribute('aria-pressed',String(i===index));});}
   const originalLive=goLive;goLive=function(index){const context=cueContext('song',selected),before=state,result=originalLive(index);if(state!==before)trackCue(context);return result;};
   window.ProMaxMeetings={create,select,add,addSong,open,move,remove,render,folder,onTab,markSlide,cueContext,trackCue,markLive,returnToLive,refresh:()=>{const f=folder();const item=f?.items.find(i=>i.id===f.selectedItem);render();if(item)open(item);else if(f)showOverview();else selectSong(selected)}};

@@ -1,6 +1,7 @@
 const {WebContentsView,session}=require('electron');
 const presentationScript=require('node:fs').readFileSync(require('node:path').join(__dirname,'youtube-presentation-page.js'),'utf8');
 const countdownScript=require('node:fs').readFileSync(require('node:path').join(__dirname,'../countdown-overlay.js'),'utf8');
+const presentationKeys=require('../presentation-keys.js');
 
 function createYouTubeBrowser({getControl,getPresentation,onStatus,onKey=()=>{},extensions}){
   let view=null,owner=null,entry=null,bounds=null,live=false,blackout=false,presentationReady=false,lastCommand=null,prepareTimer=null,poll=null,requestedState=null;
@@ -31,9 +32,10 @@ function createYouTubeBrowser({getControl,getPresentation,onStatus,onKey=()=>{},
       view=new WebContentsView({webPreferences:{session:isolated,nodeIntegration:false,contextIsolation:true,sandbox:true,backgroundThrottling:false,autoplayPolicy:'no-user-gesture-required'}});
       extensions?.registerTab(view.webContents,getControl());
       view.webContents.on('before-input-event',(event,input)=>{
-        if(input.type!=='keyDown'||input.control||input.alt||input.meta)return;
-        if(!['F5','F6'].includes(input.key)&&!(live&&input.key==='Escape'))return;
-        event.preventDefault();if(!input.isAutoRepeat)onKey(input.key);
+        if(input.type!=='keyDown')return;
+        const command=presentationKeys.command({key:input.key,ctrlKey:input.control,shiftKey:input.shift,altKey:input.alt,metaKey:input.meta});
+        if(command){event.preventDefault();if(!input.isAutoRepeat)onKey(input.control?{command}:input.key);return;}
+        if(live&&input.key==='Escape'&&!input.control&&!input.alt&&!input.meta){event.preventDefault();if(!input.isAutoRepeat)onKey(input.key);}
       });
       view.webContents.setWindowOpenHandler(({url})=>{if(allowed(url))view.webContents.loadURL(url).catch(()=>{});return {action:'deny'};});
       view.webContents.on('will-navigate',(event,url)=>{

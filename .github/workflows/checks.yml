@@ -31,6 +31,10 @@ jobs:
         timeout-minutes: 3
       - run: node test/presentation-keys-desktop.cjs
         timeout-minutes: 3
+      - run: node test/clear-text-desktop.cjs
+        timeout-minutes: 3
+      - run: node test/operator-access-desktop.cjs
+        timeout-minutes: 3
       - run: node test/preparation-keys-desktop.cjs
         timeout-minutes: 3
       - run: node test/file-pickers-desktop.cjs
