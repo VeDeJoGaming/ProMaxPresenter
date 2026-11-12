@@ -77,6 +77,11 @@ aside{position:sticky;top:0;align-self:start;max-height:100vh;overflow-y:auto}#m
 #meeting-items{min-height:56px}#song-order{width:100%;margin:10px 0;font-size:11px}
 #folder-drop-targets{position:fixed;right:auto;margin:0;max-height:42vh;overflow:auto;border-color:var(--pm-selection-border);box-shadow:0 8px 28px #0009;z-index:50}
 .content-dragging .thumbnail img,.content-dragging .caption,.content-dragging .document-slide img{pointer-events:none}
+.meeting-item{position:relative;user-select:none}.meeting-item-open{padding-right:44px;cursor:grab}.meeting-item-open:before{content:none}
+.meeting-item-drag-handle{position:absolute;right:7px;top:7px;padding:3px 6px;min-width:27px;min-height:27px;background:transparent;border-color:transparent;color:var(--pm-muted);cursor:grab;touch-action:none}
+.meeting-item-drag-handle:hover{color:var(--pm-accent);border-color:var(--pm-border-hover)}.pointer-drag-source{opacity:.45}
+#meeting-drag-preview{position:fixed;z-index:100;pointer-events:none;max-width:280px;padding:10px 14px;border:1px solid var(--pm-accent);border-radius:var(--pm-radius);background:var(--pm-card);color:var(--pm-text);box-shadow:0 8px 28px #0009;font-size:13px}
+.content-dragging,.content-dragging .meeting-item-open,.content-dragging .meeting-item-drag-handle{cursor:grabbing}
 
 /* Application preferences and honest output state. */
 #app-settings-dialog{width:min(650px,94vw);max-height:90vh;overflow:auto;padding:28px;border:1px solid #ffffff26;border-radius:18px;background:#202020;color:#ddd;box-shadow:0 24px 100px #0009}

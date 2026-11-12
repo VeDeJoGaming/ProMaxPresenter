@@ -129,13 +129,14 @@
     const planned=window.ProMaxMeetingPlan?.schedule({startTime:ProMaxMeetingPlan.start(f.plannedStart),items:f.items});
     for(const [index,item] of f.items.entries()){
       const row=node('div');row.className='meeting-item'+(activeItem===item.id?' active':'');row.dataset.folderId=f.id;row.dataset.itemId=item.id;
+      const grip=button('⠿',()=>{},'Move '+title(item)+' · Drag or use Alt+↑ / Alt+↓');grip.className='meeting-item-drag-handle';grip.title='Drag to move this item';
       const selectButton=button('',()=>open(item));selectButton.className='meeting-item-open';selectButton.setAttribute('aria-pressed',String(activeItem===item.id));selectButton.append(node('small',`${index+1} · ${item.type==='document'?'PowerPoint':item.type}`),node('span',title(item)));
       const noteFlag=node('small','✎ Operator note');noteFlag.className='meeting-item-note';noteFlag.hidden=!item.operatorNotes?.trim();selectButton.append(noteFlag);
       const liveFlag=node('small','LIVE');liveFlag.className='meeting-item-live';liveFlag.hidden=true;selectButton.append(liveFlag);liveRows.set(f.id+':'+item.id,{article:row,flag:liveFlag});
       if(planned){const time=planned.rows[index],duration=ProMaxMeetingPlan.minutes(item.plannedMinutes);if(duration!==null||time.start!==null){const badge=node('small',(time.start!==null?ProMaxMeetingPlan.clock(time.start)+(duration!==null?' · ':''):'')+(duration!==null?ProMaxMeetingPlan.durationLabel(duration):''));badge.className='meeting-item-timing';selectButton.append(badge);}}
       const actions=node('div');actions.className='meeting-item-actions';
       actions.append(button('×',()=>remove(index),'Remove '+title(item)+' from this meeting'));
-      row.append(selectButton,actions);$('meeting-items').append(row);
+      row.append(selectButton,grip,actions);$('meeting-items').append(row);
     }
     if(!f.items.length)$('meeting-items').append(node('p','Add only what you need for this meeting.'));
     markLive();document.dispatchEvent(new Event('promax:meetings-rendered'));

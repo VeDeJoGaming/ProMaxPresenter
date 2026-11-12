@@ -43,7 +43,7 @@
     document.querySelectorAll('.control-selected').forEach(e=>e.classList.remove('control-selected'));
     let visibleSelection=false;
     for(const e of document.querySelectorAll('.song,.slide-card,.meeting-folder,.meeting-item,.prepared-slide,.asset-row,.youtube-card,.document-slide,.document-deck,.verse-row')){
-      if(!e.draggable)e.draggable=true;if(!e.hasAttribute('tabindex'))e.tabIndex=0;
+      const nativeDrag=!e.matches('.meeting-item');if(e.draggable!==nativeDrag)e.draggable=nativeDrag;if(!e.hasAttribute('tabindex'))e.tabIndex=0;
       for(const image of e.querySelectorAll('img'))if(image.draggable)image.draggable=false;
       const value=choice&&!e.matches('.verse-row')?descriptor(e):null;if(value&&same(value,choice)){e.classList.add('control-selected');if(e.getClientRects().length)visibleSelection=true;}
       if(e.matches('.slide-card,.meeting-item,.prepared-slide,.meeting-folder'))e.title='Drag to reorder · Delete to remove · Ctrl+D to duplicate';
@@ -196,6 +196,7 @@
   document.addEventListener('input',event=>{const next='input:'+event.target.id;if(group!==next)flushPendingSave();group=next;},true);
   document.addEventListener('change',event=>{if(event.target.type==='file')group='action:'+ ++action;},true);
   document.addEventListener('keydown',event=>{
+    if(pointerDrag&&event.key==='Escape'){event.preventDefault();event.stopImmediatePropagation();cancelPointerDrag();return;}
     if(window.ProMaxPptxEditor?.handleKey(event))return;
     const modifier=event.ctrlKey||event.metaKey,key=event.key.toLowerCase(),text=editable(event.target);
     if(modifier&&(key==='z'||key==='y')){
@@ -226,7 +227,7 @@
   },true);
   // Keep the source stable for the entire native drag. Resolve gaps and child
   // images to the same saved identities used by keyboard editing and undo.
-  let dropMark=null,dragPoint=null,scrollFrame=0,scrollTime=0;
+  let dropMark=null,dragPoint=null,scrollFrame=0,scrollTime=0,pointerDrag=null,suppressPointerClick=false;
   const gridCard=node=>node.matches('.slide-card,.prepared-slide,.document-slide');
   function canDrop(value,target){
     if(!value||!target)return false;
@@ -269,7 +270,45 @@
     if(dropMark)dropMark.node.classList.add(style);
   }
   function stopScroll(){cancelAnimationFrame(scrollFrame);scrollFrame=0;scrollTime=0;dragPoint=null;}
-  function clearDropTargets(){stopScroll();markDrop(null);document.getElementById('folder-drop-targets')?.remove();document.body.classList.remove('content-dragging');}
+  function clearDropTargets(){stopScroll();markDrop(null);document.getElementById('folder-drop-targets')?.remove();document.getElementById('meeting-drag-preview')?.remove();document.querySelector('.pointer-drag-source')?.classList.remove('pointer-drag-source');document.body.classList.remove('content-dragging');}
+  function showDropTargets(){
+    document.body.classList.add('content-dragging');
+    if(folderItem(drag)&&meetingSelected){const targets=document.createElement('div');targets.id='folder-drop-targets';const label=document.createElement('small');label.textContent='Drop into a folder · Ctrl to copy';targets.append(label);for(const f of meetingFolders){const b=document.createElement('button');b.dataset.folderId=f.id;b.className='folder-drop-target';b.textContent=f.name;targets.append(b);}const r=document.querySelector('aside').getBoundingClientRect();targets.style.left=r.left+8+'px';targets.style.width=r.width-24+'px';targets.style.bottom=innerHeight-r.bottom+8+'px';document.body.append(targets);}
+  }
+  function releasePointer(value){if(value?.row.hasPointerCapture(value.id))value.row.releasePointerCapture(value.id);}
+  function cancelPointerDrag(){const value=pointerDrag;pointerDrag=null;releasePointer(value);if(value?.active){suppressPointerClick=true;drag=null;clearDropTargets();}}
+  // Meeting rows use pointer capture instead of the Windows native drag loop.
+  // This also keeps a short click as "open" and a real drag as one undoable move.
+  document.addEventListener('pointerdown',event=>{
+    suppressPointerClick=false;
+    const row=event.target.closest('.meeting-item');
+    if(!row||event.button!==0||busy||document.querySelector('dialog[open]')||event.target.closest('.meeting-item-actions,input,textarea,select'))return;
+    const value=descriptor(row);if(!itemFor(value))return;
+    pointerDrag={id:event.pointerId,row,value,x:event.clientX,y:event.clientY,active:false};
+  },true);
+  document.addEventListener('pointermove',event=>{
+    const pending=pointerDrag;if(!pending||pending.id!==event.pointerId)return;
+    if(!pending.active){
+      if(Math.hypot(event.clientX-pending.x,event.clientY-pending.y)<6)return;
+      if(!pending.row.isConnected||!itemFor(pending.value)){cancelPointerDrag();return;}
+      pending.active=true;clearDropTargets();drag=pending.value;choice=drag;showDropTargets();pending.row.classList.add('pointer-drag-source');
+      pending.row.setPointerCapture(event.pointerId);
+      const preview=document.createElement('div');preview.id='meeting-drag-preview';preview.textContent=itemFor(drag).title;preview.setAttribute('aria-hidden','true');document.body.append(preview);
+    }
+    event.preventDefault();dragPoint={clientX:event.clientX,clientY:event.clientY};
+    const preview=$('meeting-drag-preview');preview.style.left=event.clientX+14+'px';preview.style.top=event.clientY+14+'px';
+    markDrop(targetFor(document.elementFromPoint(event.clientX,event.clientY),event));if(!scrollFrame)scrollFrame=requestAnimationFrame(autoScroll);
+  },true);
+  document.addEventListener('pointerup',event=>{
+    const pending=pointerDrag;if(!pending||pending.id!==event.pointerId)return;pointerDrag=null;
+    if(!pending.active)return;
+    event.preventDefault();event.stopImmediatePropagation();suppressPointerClick=true;
+    const target=targetFor(document.elementFromPoint(event.clientX,event.clientY),event);releasePointer(pending);drag=null;clearDropTargets();
+    if(target)void drop(pending.value,target.value,target.after,event.ctrlKey);
+  },true);
+  document.addEventListener('pointercancel',event=>{if(pointerDrag?.id===event.pointerId)cancelPointerDrag();},true);
+  document.addEventListener('lostpointercapture',event=>{if(pointerDrag?.id===event.pointerId)cancelPointerDrag();},true);
+  document.addEventListener('click',event=>{if(suppressPointerClick&&event.detail){suppressPointerClick=false;event.preventDefault();event.stopImmediatePropagation();}},true);
   function autoScroll(time){
     scrollFrame=0;if(!drag||!dragPoint)return;
     const node=document.elementFromPoint(dragPoint.clientX,dragPoint.clientY);let pane=node?.closest('#folder-drop-targets,main>aside,main>.workspace');
@@ -282,11 +321,11 @@
     scrollFrame=requestAnimationFrame(autoScroll);
   }
   document.addEventListener('dragstart',event=>{
+    if(pointerDrag){event.preventDefault();return;}
     if(busy||document.querySelector('dialog[open]')||editable(event.target)||event.target.closest('input,select,video,a[href],.slide-edit-button,.meeting-item-actions,.feature-actions button')){event.preventDefault();return;}
     clearDropTargets();drag=descriptor(event.target);if(!drag||!event.dataTransfer){event.preventDefault();drag=null;return;}
     choice=drag;event.dataTransfer.setData('application/x-promax',JSON.stringify(drag));event.dataTransfer.effectAllowed='copyMove';
-    document.body.classList.add('content-dragging');
-    if(folderItem(drag)&&meetingSelected){const targets=document.createElement('div');targets.id='folder-drop-targets';const label=document.createElement('small');label.textContent='Drop into a folder · Ctrl to copy';targets.append(label);for(const f of meetingFolders){const b=document.createElement('button');b.dataset.folderId=f.id;b.className='folder-drop-target';b.textContent=f.name;targets.append(b);}const r=document.querySelector('aside').getBoundingClientRect();targets.style.left=r.left+8+'px';targets.style.width=r.width-24+'px';targets.style.bottom=innerHeight-r.bottom+8+'px';document.body.append(targets);}
+    showDropTargets();
   });
   document.addEventListener('dragover',event=>{
     if(!drag)return;dragPoint={clientX:event.clientX,clientY:event.clientY};if(!scrollFrame)scrollFrame=requestAnimationFrame(autoScroll);
@@ -301,7 +340,7 @@
   });
   document.addEventListener('dragend',()=>{drag=null;clearDropTargets();});
   document.addEventListener('dragleave',event=>{if(!event.relatedTarget){stopScroll();markDrop(null);}});
-  window.addEventListener('blur',()=>{drag=null;clearDropTargets();});
+  window.addEventListener('blur',()=>{cancelPointerDrag();drag=null;clearDropTargets();});
   const order=document.createElement('select');order.id='song-order';order.setAttribute('aria-label','Song order');
   for(const [value,label]of [['alphabetical','Order: A–Z'],['manual','Order: Custom (drag to reorder)']]){const option=document.createElement('option');option.value=value;option.textContent=label;order.append(option);}
   order.onchange=()=>mutate('Song order',()=>{settings.songOrder=order.value;});$('search').before(order);

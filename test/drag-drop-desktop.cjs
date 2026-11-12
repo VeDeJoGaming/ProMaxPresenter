@@ -100,6 +100,34 @@ async function run(){
   await drag('.song[data-song-id="m"]','.meeting-folder[data-folder-id="empty"]');
   assert.equal(await page.evaluate(()=>meetingFolders[1].items[0].songId),'m');assert.equal(await page.evaluate(()=>songs.length),3);await undo();
   await page.evaluate(()=>ProMaxMeetings.select('first'));
+  await page.evaluate(()=>ProMaxControls.mutate('Price-game drag fixture',()=>{
+   ProMaxMeetings.folder().items.push(ProMaxPriceGame.makeItem({title:'Guess the Price',currency:'kr',rounds:[{id:'product-one',name:'First product',price:'149,90',description:'Synthetic description'},{id:'product-two',name:'Second product',price:'99'}]},{id:'price-game-drag'}));
+  }));
+  const priceBefore=await page.evaluate(()=>JSON.stringify(ProMaxMeetings.folder().items.at(-1)));
+  await page.locator('.meeting-item[data-item-id="price-game-drag"] .meeting-item-open').dragTo(page.locator('.meeting-item[data-item-id="one"] .meeting-item-open'),{sourcePosition:{x:60,y:35},targetPosition:{x:60,y:5}});await settle();
+  assert.deepEqual(await page.evaluate(()=>ProMaxMeetings.folder().items.map(i=>i.id)),['price-game-drag','one','two'],'Guess the Price moves inside its meeting folder');
+  assert.equal(await page.evaluate(()=>JSON.stringify(ProMaxMeetings.folder().items[0])),priceBefore,'Moving the whole game preserves all round, image and slide data');
+  assert.equal(await page.evaluate(()=>state===dragCue),true,'Moving the whole price game does not show it live');
+  await page.locator('.meeting-item[data-item-id="price-game-drag"] .meeting-item-drag-handle').dragTo(page.locator('.meeting-item[data-item-id="two"]'),{sourcePosition:{x:12,y:12},targetPosition:{x:60,y:85}});await settle();
+  assert.deepEqual(await page.evaluate(()=>ProMaxMeetings.folder().items.map(i=>i.id)),['one','two','price-game-drag'],'The visible grip also moves the complete game downward');
+  await undo();
+  const grip=await page.locator('.meeting-item[data-item-id="price-game-drag"] .meeting-item-drag-handle').boundingBox(),next=await page.locator('.meeting-item[data-item-id="two"]').boundingBox();
+  await page.mouse.move(grip.x+10,grip.y+10);await page.mouse.down();await page.mouse.move(next.x+50,next.y+next.height-4,{steps:5});
+  assert.equal(await page.locator('#meeting-drag-preview').count(),1,'The captured pointer shows a preview while moving');
+  await page.keyboard.press('Escape');await page.mouse.up();await settle();
+  assert.deepEqual(await page.evaluate(()=>ProMaxMeetings.folder().items.map(i=>i.id)),['price-game-drag','one','two'],'Escape cancels a pointer move without changing order');
+  assert.equal(await page.locator('#meeting-drag-preview,#folder-drop-targets,.pointer-drag-source').count(),0,'Cancellation cleans up capture and drag visuals');
+  assert.equal(await page.evaluate(()=>state===dragCue),true,'Escape during dragging must not toggle the live blackout');
+  for(const copy of [true,false]){
+   const source=await page.locator('.meeting-item[data-item-id="price-game-drag"] .meeting-item-drag-handle').boundingBox();
+   await page.mouse.move(source.x+10,source.y+10);await page.mouse.down();await page.mouse.move(source.x+22,source.y+22,{steps:3});
+   const folderTarget=await page.locator('.folder-drop-target[data-folder-id="empty"]').boundingBox();
+   if(copy)await page.keyboard.down('Control');
+   await page.mouse.move(folderTarget.x+30,folderTarget.y+folderTarget.height/2,{steps:5});await page.mouse.up();if(copy)await page.keyboard.up('Control');await settle();
+   assert.equal(await page.evaluate(()=>meetingFolders[1].items[0].priceGame.rounds.length),2,'Pointer move/copy retains the complete price game');
+   assert.equal(await page.evaluate(()=>meetingFolders[0].items.some(i=>i.id==='price-game-drag')),copy,'Ctrl copies; an ordinary pointer drag moves between folders');await undo();
+  }
+  await undo();await undo();
   await drag('.meeting-item[data-item-id="two"]','.meeting-item[data-item-id="one"]');
   assert.deepEqual(await page.evaluate(()=>ProMaxMeetings.folder().items.map(i=>i.id)),['two','one']);await undo();
   await drag('.meeting-item[data-item-id="two"]','.folder-drop-target[data-folder-id="empty"]',{cancel:true});
