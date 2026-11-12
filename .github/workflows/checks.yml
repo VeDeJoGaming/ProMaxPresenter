@@ -41,6 +41,8 @@ jobs:
         timeout-minutes: 3
       - run: node test/youtube-library-desktop.cjs
         timeout-minutes: 3
+      - run: node test/youtube-preview-close-desktop.cjs
+        timeout-minutes: 3
       - run: node test/scoreboard-desktop.cjs
         timeout-minutes: 3
       - run: node test/price-game-desktop.cjs

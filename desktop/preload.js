@@ -32,6 +32,7 @@ contextBridge.exposeInMainWorld('promaxDesktop', {
   onPerformance: callback => ipcRenderer.on('presentation:performance',(_event,value)=>callback(value)),
   youtubeHost: () => ipcRenderer.invoke('youtube:host'),
   prepareYouTubeBrowser: value => ipcRenderer.invoke('youtube:browser-prepare',value),
+  closeYouTubePreview: id => ipcRenderer.invoke('youtube:browser-close-preview',id),
   youtubeBrowserBounds: value => ipcRenderer.send('youtube:browser-bounds',value),
   youtubeStatus: value => ipcRenderer.send('youtube:status',value),
   onYouTubeStatus: callback => ipcRenderer.on('youtube:status',(_event,value)=>callback(value)),

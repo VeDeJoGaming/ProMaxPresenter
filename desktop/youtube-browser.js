@@ -4,7 +4,7 @@ const countdownScript=require('node:fs').readFileSync(require('node:path').join(
 const presentationKeys=require('../presentation-keys.js');
 
 function createYouTubeBrowser({getControl,getPresentation,onStatus,onKey=()=>{},extensions}){
-  let view=null,owner=null,entry=null,bounds=null,live=false,blackout=false,presentationReady=false,lastCommand=null,prepareTimer=null,poll=null,requestedState=null;
+  let view=null,owner=null,entry=null,bounds=null,live=false,blackout=false,presentationReady=false,lastCommand=null,prepareTimer=null,poll=null,requestedState=null,epoch=0,preparingId=null;
   const allowed=value=>{try{const u=new URL(value);return u.protocol==='https:'&&['youtube.com','www.youtube.com','m.youtube.com','youtu.be','accounts.google.com','consent.youtube.com','consent.google.com'].includes(u.hostname);}catch{return false;}};
   const execute=code=>view&&!view.webContents.isDestroyed()&&view.webContents.getURL()?view.webContents.executeJavaScript(code,true).catch(()=>null):Promise.resolve(null);
   const updateCountdown=()=>execute(`(()=>{${countdownScript}\nconst player=document.querySelector('[data-promax-presentation]');if(player)ProMaxCountdownOverlay.render(document,player,${JSON.stringify({countdown:requestedState?.countdown,black:requestedState?.black})});})()`);
@@ -47,23 +47,27 @@ function createYouTubeBrowser({getControl,getPresentation,onStatus,onKey=()=>{},
       });
       poll=setInterval(async()=>{
         if(!entry)return;
+        const current=entry,currentView=view;
         const info=await execute(`(()=>{const v=document.querySelector('[data-promax-presentation] video')||document.querySelector('#movie_player video');if(!v)return null;let buffered=0;for(let i=0;i<v.buffered.length;i++)if(v.buffered.start(i)<=v.currentTime&&v.buffered.end(i)>=v.currentTime)buffered=v.buffered.end(i)-v.currentTime;return {position:v.currentTime,quality:v.videoHeight? v.videoHeight+'p':'Loading',buffered:Math.round(buffered),paused:v.paused,ready:v.readyState>=2};})()`);
-        if(info)onStatus({id:entry.id,type:'browser',...info,isOutput:live});
+        if(info&&entry===current&&view===currentView)onStatus({id:current.id,type:'browser',...info,isOutput:live});
       },1000);
     }
     if(entry?.videoId===value.videoId&&entry?.start===value.start){entry={...value};layout();return {prepared:true};}
-    clearTimeout(prepareTimer);await park();entry={...value,start:Math.max(0,Math.min(Number(value.start)||0,86400))};
+    const attempt=++epoch;preparingId=value.id;
+    clearTimeout(prepareTimer);await park();if(attempt!==epoch||!view)return {canceled:true};entry={...value,start:Math.max(0,Math.min(Number(value.start)||0,86400))};
     view.webContents.setAudioMuted(true);layout();
-    await view.webContents.loadURL(`https://www.youtube.com/watch?v=${entry.videoId}&t=${entry.start}s`);
+    try{await view.webContents.loadURL(`https://www.youtube.com/watch?v=${entry.videoId}&t=${entry.start}s`);}catch(error){if(attempt!==epoch)return {canceled:true};throw error;}
+    if(attempt!==epoch||!view)return {canceled:true};
     const videoId=entry.videoId;
     // Warm up the real page's video in the operator's preview, with audio muted.
     await execute("(document.querySelector('[data-promax-presentation] video')||document.querySelector('#movie_player video'))?.play().catch(()=>{})");
+    if(attempt!==epoch||!view)return {canceled:true};
     prepareTimer=setTimeout(async()=>{
-      if(live||entry?.videoId!==videoId)return;
+      if(attempt!==epoch||live||entry?.videoId!==videoId)return;
       await execute(`(()=>{const v=document.querySelector('[data-promax-presentation] video')||document.querySelector('#movie_player video');if(v){v.pause();v.currentTime=${entry.start};}})()`);
-      onStatus({id:entry.id,type:'browser-prepared',isOutput:false});
+      if(attempt===epoch&&entry)onStatus({id:entry.id,type:'browser-prepared',isOutput:false});
     },10000);
-    return {prepared:true};
+    if(attempt!==epoch)return {canceled:true};preparingId=null;return {prepared:true};
   }
   function setBounds(value){
     if(value&&[value.x,value.y,value.width,value.height].every(Number.isFinite)&&value.width>=200&&value.height>=200){bounds={x:Math.max(0,Math.round(value.x)),y:Math.max(0,Math.round(value.y)),width:Math.round(value.width),height:Math.round(value.height)};}else bounds=null;
@@ -96,8 +100,18 @@ function createYouTubeBrowser({getControl,getPresentation,onStatus,onKey=()=>{},
     if(action==='pause'){await execute("(()=>{const v=document.querySelector('[data-promax-presentation] video')||document.querySelector('#movie_player video');if(v){if(v.paused)v.play().catch(()=>{});else v.pause();}})()");}
     if(action==='restart')await execute(`(()=>{const v=document.querySelector('[data-promax-presentation] video')||document.querySelector('#movie_player video');if(v){v.currentTime=${entry?.start||0};v.play().catch(()=>{});}})()`);
   }
-  function destroy(){clearTimeout(prepareTimer);clearInterval(poll);if(view&&!view.webContents.isDestroyed())view.webContents.close();view=null;owner=null;}
+  function destroy(){epoch++;clearTimeout(prepareTimer);clearInterval(poll);if(view&&!view.webContents.isDestroyed())view.webContents.close();view=null;owner=null;entry=null;preparingId=null;}
+  function closePreview(id){
+    if(entry?.id!==id&&preparingId!==id)return {closed:false};
+    bounds=null;clearTimeout(prepareTimer);
+    // The same browser may already belong to the presentation display.
+    // Closing its preview must not pause, mute, reload or destroy that player.
+    if(live||getPresentation()&&requestedState?.youtube?.nativeBrowser&&requestedState.youtube.id===entry?.id){layout();return {closed:true,live:true};}
+    if(view&&owner&&!owner.isDestroyed())owner.contentView.removeChildView(view);
+    destroy();live=false;blackout=false;presentationReady=false;lastCommand=null;
+    return {closed:true,live:false};
+  }
   function immediate(state){requestedState=state;if(view&&live&&(state.black||!state.youtube?.nativeBrowser)){view.setVisible(false);view.webContents.setAudioMuted(true);}}
-  return {prepare,setBounds,sync,park,command,destroy,immediate,invalidate:()=>{entry=null;clearTimeout(prepareTimer);},resize:()=>{layout();if(live)updateCountdown();},getView:()=>view};
+  return {prepare,closePreview,setBounds,sync,park,command,destroy,immediate,invalidate:()=>{entry=null;clearTimeout(prepareTimer);},resize:()=>{layout();if(live)updateCountdown();},getView:()=>view};
 }
 module.exports={createYouTubeBrowser};

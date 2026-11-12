@@ -1,5 +1,5 @@
 (() => {
-  let entries=[],prepared=null,onlyEntry=null,command=0;
+  let entries=[],prepared=null,onlyEntry=null,command=0,preparation=0;
   let entryQueue=Promise.resolve();
   function entryOperation(action){const operation=entryQueue.then(action);entryQueue=operation.catch(()=>{});return operation;}
   const statuses=new Map(),outputPositions=new Map(),browserInfo=new Map();
@@ -18,12 +18,19 @@
     await entryOperation(()=>persist([...entries,entry]));await prepare(entry);return entry;
   }
   async function prepare(entry){
-    prepared=entry;
+    const attempt=++preparation;prepared=entry;
     if(nativeBrowser&&!entry.localAssetId){browserInfo.delete(entry.id);statuses.set(entry.id,'Opening browser…');}
     if(state.youtube?.nativeBrowser){state={text:'',black:false,pdf:null};paint();}
     ProMaxYouTube.warm(document,entry.localAssetId||nativeBrowser?null:entry);refresh();paint();
     if(nativeBrowser)document.querySelector('[data-native-youtube-preview]')?.scrollIntoView({block:'center'});
-    if(nativeBrowser&&!entry.localAssetId){try{await window.promaxDesktop.prepareYouTubeBrowser(entry);window.ProMaxYouTubeBrowserUI?.update();}catch(error){notify('Could not open YouTube: '+error.message);}}
+    if(nativeBrowser&&!entry.localAssetId){try{await window.promaxDesktop.prepareYouTubeBrowser(entry);if(attempt===preparation)window.ProMaxYouTubeBrowserUI?.update();}catch(error){if(attempt===preparation)notify('Could not open YouTube: '+error.message);}}
+  }
+  function closePreview(id){
+    if(prepared?.id!==id)return;
+    preparation++;prepared=null;
+    if(state.youtube?.id!==id){statuses.set(id,'Not prepared');browserInfo.delete(id);}
+    ProMaxYouTube.warm(document,null);refreshIfVisible();paint();
+    window.promaxDesktop?.closeYouTubePreview?.(id).catch(error=>notify('Could not close the YouTube preview: '+error.message));
   }
   async function play(entry){
     if(entry.localAssetId){const asset=ProMaxFeatures.getVideos().find(a=>a.id===entry.localAssetId);if(!asset){notify('The local copy is missing. Attach it again before presenting.');return;}await ProMaxFeatures.playVideo(asset,{start:entry.start,meetingContext:window.ProMaxMeetings?.cueContext('youtube',entry.id)});return;}
@@ -65,7 +72,7 @@
       const status=node('small');status.dataset.youtubeStatus=entry.id;status.textContent=entry.localAssetId?'Local copy · No YouTube ads':statuses.get(entry.id)||'Not prepared';heading.append(status);card.append(heading);
       const actions=node('div');actions.className='feature-actions';actions.append(button('Prepare',()=>prepare(entry)),button(entry.localAssetId?'Play local copy':'Show on presentation',()=>play(entry)),...(!onlyEntry?[button('＋ Meeting',()=>window.ProMaxMeetings?.add({type:'youtube',assetId:entry.id,title:entry.title}))]:[]));
       actions.append(ProMaxFilePicker.create({text:'Attach local copy',key:'youtube-local:'+entry.id,accept:'video/*,.mp4,.webm,.mov,.m4v',onFiles:files=>attach(entry,files[0])}));if(!onlyEntry)actions.append(button('Remove',async()=>{try{await remove(entry.id);}catch{notify('Could not remove this YouTube entry.');}}));card.append(actions);
-      if(prepared?.id===entry.id&&!entry.localAssetId){const preview=node('div');preview.className='youtube-preparation';if(nativeBrowser){preview.dataset.nativeYoutubePreview=entry.id;preview.textContent='Opening YouTube browser…';}else preview.dataset.youtubePreview=entry.id;card.append(preview);}
+      if(prepared?.id===entry.id&&!entry.localAssetId){const toolbar=node('div');toolbar.className='feature-actions youtube-preview-actions';const close=button('✕ Close preview',()=>closePreview(entry.id));close.dataset.youtubePreviewClose=entry.id;close.setAttribute('aria-label','Close preview for '+entry.title);toolbar.append(close);const preview=node('div');preview.className='youtube-preparation';if(nativeBrowser){preview.dataset.nativeYoutubePreview=entry.id;preview.textContent='Opening YouTube browser…';}else preview.dataset.youtubePreview=entry.id;card.append(toolbar,preview);}
       section.append(card);
     }
     if(state.youtube&&(!onlyEntry||state.youtube.id===onlyEntry)){const controls=node('div');controls.className='feature-actions';controls.append(button(state.youtube.paused?'Resume YouTube':'Pause YouTube',()=>control('pause')),button('Restart YouTube',()=>control('restart')),button('Stop YouTube',()=>control('stop')));section.append(controls);}
@@ -75,6 +82,7 @@
   }
   document.addEventListener('promax-youtube-status',event=>{
     const data=event.detail;
+    if(['browser','browser-prepared'].includes(data.type)&&prepared?.id!==data.id&&state.youtube?.id!==data.id)return;
     if(data.type==='error'&&data.code==='browser'&&data.message){notify(data.message);if(state.youtube?.nativeBrowser){state={text:'',black:true,pdf:null};paint();}return;}
     if(data.type==='browser')browserInfo.set(data.id,data);
     if(data.type==='browser'&&data.isOutput&&!state.black&&state.youtube?.nativeBrowser&&state.youtube.id===data.id)state.youtube.paused=data.paused;
@@ -94,7 +102,7 @@
     const [entry]=next.splice(i,1);next.splice(j+(after?1:0)-(i<j?1:0),0,entry);await persist(next);
   });}
   const history={take:()=>structuredClone(entries),apply:value=>entryOperation(()=>persist(structuredClone(value)))};
-  window.ProMaxYouTubeLibrary={render,add,play,prepare,attach,ready,history,remove,reorder,list:()=>entries,prepared:()=>prepared?.localAssetId||nativeBrowser?null:prepared,
+  window.ProMaxYouTubeLibrary={render,add,play,prepare,closePreview,attach,ready,history,remove,reorder,list:()=>entries,prepared:()=>prepared?.localAssetId||nativeBrowser?null:prepared,
     clearFocus:()=>{onlyEntry=null;},focused:()=>entries.find(e=>e.id===onlyEntry),
     open:entry=>{ProMaxFeatures.showTab('videos');onlyEntry=entry.id;refresh();}};
 })();

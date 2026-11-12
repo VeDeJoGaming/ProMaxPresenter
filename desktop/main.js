@@ -66,6 +66,10 @@ ipcMain.handle('youtube:browser-prepare',(event,value)=>{
   if(event.sender!==control?.webContents)throw Error('Invalid window.');
   return browserOperation(()=>youtubeBrowser.prepare(value));
 });
+ipcMain.handle('youtube:browser-close-preview',(event,id)=>{
+  if(event.sender!==control?.webContents||typeof id!=='string')throw Error('Invalid window or video.');
+  return youtubeBrowser.closePreview(id);
+});
 ipcMain.on('youtube:browser-bounds',(event,value)=>{if(event.sender===control?.webContents)youtubeBrowser?.setBounds(value);});
 ipcMain.handle('youtube:host',event=>{
   if(event.sender!==control?.webContents&&event.sender!==presentation?.webContents)throw Error('Invalid window.');

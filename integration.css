@@ -77,6 +77,7 @@ select option,select optgroup{background:var(--pm-panel);color:var(--pm-text)}
 #open-output::after,#blackout::after{display:inline-block;margin-left:8px;padding:1px 4px;border:1px solid currentColor;border-radius:3px;font-size:9px;opacity:.65;vertical-align:1px}
 #open-output::after{content:'Ctrl+Enter'}#blackout::after{content:'Ctrl+B'}#clear::after{content:'Ctrl+Shift+C';font-size:9px;opacity:.65}
 #blackout::after,#clear::after{display:block;margin:4px 0 0}
+.youtube-card .youtube-preview-actions{justify-content:flex-end;margin-top:12px}
 body>main{grid-template-rows:minmax(0,1fr)}
 body>main>aside,body>main>.workspace,body>main>.control{align-self:stretch;position:relative;top:auto}
 /* Rounded, quiet scrollbars throughout the app; no native arrow buttons. */
