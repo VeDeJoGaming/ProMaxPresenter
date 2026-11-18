@@ -71,7 +71,7 @@
     const pending=holding?pendingTeams(value):[];
     $('score-title').disabled=holding;
     $('score-ranked').disabled=holding;
-    $('score-show').disabled=holding;
+    $('score-show').disabled=!!state.scoreboard;
     $('score-hold').hidden=holding;
     $('score-hold').disabled=!state.scoreboard;
     $('score-reveal').hidden=!holding;

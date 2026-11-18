@@ -1,3 +1,9 @@
+## Sikrere hurtigtaster på poengtavlen — 18. november 2026
+
+- Sangens lysbildetaster kan ikke erstatte en live poengtavle. «Vis poengtavle» er deaktivert mens tavlen allerede er sendt ut, også ved blackout. Operatøren kan fortsatt sende en annen cue bevisst med musen.
+- 103 enhetstester består. Poengtavletesten består fra kilde og installert app. Første installerte kjøring traff én ustabil oppstartsassert for forberedelse før poengtavlen vises. Ny kjøring bestod hele testen.
+- Lokalt installert og kontrollert mot bygget. App.asar SHA256 5EF3217DE1143E339FBA9270B5BA74C89F1FEA572F291C5AC3FA31508D1107B5. Profilfiler samsvarer byte for byte med sikkerhetskopien i C:/ProMaxPresenter-Backups/before-scoreboard-keyboard-1795041161043.
+
 ## Poengavsløring og gjennomgang av operatørflyten — 18. november 2026
 
 - «Vis poengtavle» → «Hold tilbake poeng» lar operatøren føre runden mens forrige stilling vises. Avslør ett endret lag per klikk i stigende rekkefølge etter ny poengsum, eller vis alle og avslutt. Forhåndsvisning og publikum får bare annonserte tall. Blackout og angre/gjenta er testet under runden.

@@ -59,6 +59,15 @@ async function run(){
     await page.locator('#score-finish').click();
     // Browsing and navigation cannot accidentally advance an old song while scores are live.
     await page.locator('#next').click();assert.equal(await page.evaluate(()=>!!state.scoreboard),true);await page.evaluate(()=>handleKey({key:'ArrowRight',target:document.body,preventDefault(){}}));assert.equal(await page.evaluate(()=>!!state.scoreboard),true);
+    await page.evaluate(()=>{
+      const key=current().slides[0].key;
+      if(!key)throw Error('Expected a song shortcut in the fixture');
+      handleKey({key,target:document.body,preventDefault(){}});
+    });
+    assert.equal(await page.evaluate(()=>!!state.scoreboard),true,'Song shortcuts leave the live scoreboard intact');
+    await page.evaluate(()=>toggleBlackout());
+    assert.equal(await page.locator('#score-show').isDisabled(),true,'An already live board cannot reset blackout');
+    await page.evaluate(()=>toggleBlackout());
     // An intentional cue stops score updates from taking over its output.
     await page.evaluate(()=>goLive(0));await output.waitForFunction(()=>document.querySelector('.screen-text')?.textContent?.includes('Amazing grace'));await page.evaluate(()=>ProMaxFeatures.showTab('scores'));await page.locator('.score-plus').first().click();assert.equal(await output.locator('.score-stage').count(),0);
     await page.evaluate(async bytes=>{await ProMaxFeatures.addVideos([new File([Uint8Array.from(atob(bytes),c=>c.charCodeAt(0))],'Score test clip.webm',{type:'video/webm'})]);await ProMaxFeatures.playVideo(ProMaxFeatures.getVideos()[0]);ProMaxFeatures.showTab('scores');},(await fs.readFile(path.join(__dirname,'../desktop/smoke-video.webm'))).toString('base64'));
