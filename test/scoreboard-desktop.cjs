@@ -50,6 +50,13 @@ async function run(){
     assert.equal(await output.locator('.score-tile').evaluateAll(tiles=>tiles.every(tile=>{const total=tile.querySelector('.score-total');return total.getBoundingClientRect().width<=tile.clientWidth&&total.scrollWidth<=total.clientWidth+1&&tile.scrollHeight<=tile.clientHeight+1;})),true,'All 64 totals fit their tiles');await output.screenshot({path:path.join(results,'scoreboard-output-64.png')});
     await page.evaluate(()=>ProMaxControls.undo());assert.equal(await page.locator('.score-team-row').count(),12);
     await app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows().find(w=>w.getTitle()==='ProMax Presenter').setSize(850,650));await page.locator('#score-show').scrollIntoViewIfNeeded();assert.equal(await page.locator('#score-controls').evaluate(el=>el.scrollWidth<=el.clientWidth+1),true);await page.screenshot({path:path.join(results,'scoreboard-controls-compact.png')});
+    await page.locator('.score-name').first().fill('W'.repeat(40));
+    await page.locator('.score-name').first().press('Tab');
+    await page.locator('#score-hold').click();
+    await page.locator('.score-plus').first().click();
+    assert.equal(await page.locator('#score-reveal').evaluate(button=>button.scrollWidth<=button.clientWidth+1&&button.offsetWidth<=button.parentElement.clientWidth),true,'A long team name fits the compact reveal button');
+    await page.locator('#score-reveal').click();
+    await page.locator('#score-finish').click();
     // Browsing and navigation cannot accidentally advance an old song while scores are live.
     await page.locator('#next').click();assert.equal(await page.evaluate(()=>!!state.scoreboard),true);await page.evaluate(()=>handleKey({key:'ArrowRight',target:document.body,preventDefault(){}}));assert.equal(await page.evaluate(()=>!!state.scoreboard),true);
     // An intentional cue stops score updates from taking over its output.
