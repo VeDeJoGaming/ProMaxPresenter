@@ -1,3 +1,9 @@
+## Gjenbruk av pågående videolasting — 18. november 2026
+
+- Samtidige forespørsler om samme videofil deler lesingen og nettadressen til videodataene. Ved lesefeil fjernes den pågående forespørselen, slik at et nytt forsøk kan laste filen.
+- Regresjonstest teller én lesing for to overlappende avspillingsforespørsler. Alle 103 enhetstester består; videotransport, videoimport/PowerPoint og poengtavle består i installert app.
+- Siste installerte app.asar matcher bygget med SHA256 6E8F3B202D8AFA3967872C5A120886946DA902793A236EDD1D878E10E06E6732. Alle 687 profilfiler matcher sikkerhetskopien nedenfor.
+
 ## Sikrere live-veksling og PowerPoint-lagring — 18. november 2026
 
 - Forsinket lokal video og YouTube kan ikke overta etter et nyere innslag eller en endring av blackout. Lokale videoforsøk følger siste forespørsel. Møtekonteksten hentes ved klikket. Clear text rører ikke den aktive poengavsløringen.

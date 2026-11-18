@@ -19,6 +19,28 @@ async function run(){
     });
     assert.deepEqual(await page.evaluate(()=>({blackout:state.black,video:!!state.video})),{blackout:true,video:false});
     await page.evaluate(()=>ProMaxFeatures.playVideo(ProMaxFeatures.getVideos()[0]));
+    const reads=await page.evaluate(async()=>{
+      const original=storedAsset,assets=ProMaxFeatures.getVideos(),asset={...assets[0],id:'uncached-synthetic-video'};
+      const blob=await original('get',null,'video:'+assets[0].id);
+      await original('put',blob,'video:'+asset.id);
+      assets.push(asset);
+      let reads=0;
+      storedAsset=(action,value,key)=>{
+        if(action==='get'&&key==='video:'+asset.id)reads++;
+        return original(action,value,key);
+      };
+      try{
+        const first=ProMaxFeatures.playVideo(asset),second=ProMaxFeatures.playVideo(asset);
+        goLive(0);
+        await Promise.all([first,second]);
+        return reads;
+      }finally{
+        assets.pop();
+        storedAsset=original;
+      }
+    });
+    assert.equal(reads,1,'Overlapping play requests share one read of an uncached video');
+    await page.evaluate(()=>ProMaxFeatures.playVideo(ProMaxFeatures.getVideos()[0]));
     await page.waitForFunction(()=>ProMaxFeatures.videoSnapshot()?.duration>3&&document.querySelector('#preview video').currentTime>.4);await page.locator('#video-pause').click();
     const paused=await page.evaluate(()=>ProMaxFeatures.videoSnapshot().position);await page.waitForTimeout(350);assert.ok(Math.abs(await page.evaluate(()=>ProMaxFeatures.videoSnapshot().position)-paused)<.05);
     const emptyCue=await page.evaluate(()=>{const previous=selected;songs.push({id:'unprepared-draft',title:'Named draft without generated slides',lyrics:'Working lyrics',lines:4,slides:[]});selectSong('unprepared-draft');const before=state;document.body.dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowRight',bubbles:true,cancelable:true}));const result={sameCue:state===before,transport:!!ProMaxFeatures.videoSnapshot()};selectSong(previous);ProMaxFeatures.showTab('videos');return result;});assert.equal(emptyCue.sameCue,true);assert.equal(emptyCue.transport,true,'An unprepared song cannot discard the active video transport');

@@ -135,10 +135,18 @@
     if(activeVideo && e.key===' '){e.preventDefault();videoCommand('pause');return true;}
     return false;
   }
+  const pendingAssets=new Map();
   async function loadAsset(asset) {
     if(cache.has(asset.id))return cache.get(asset.id);
-    const file=await storedAsset('get',null,`video:${asset.id}`);if(!file)throw Error(`The saved video “${asset.name}” is missing.`);
-    const url=URL.createObjectURL(file);cache.set(asset.id,url);return url;
+    if(pendingAssets.has(asset.id))return pendingAssets.get(asset.id);
+    const loading=storedAsset('get',null,'video:'+asset.id).then(file=>{
+      if(!file)throw Error('The saved video “'+asset.name+'” is missing.');
+      const url=URL.createObjectURL(file);
+      cache.set(asset.id,url);
+      return url;
+    }).finally(()=>pendingAssets.delete(asset.id));
+    pendingAssets.set(asset.id,loading);
+    return loading;
   }
   function addVideos(files) {return mediaOperation(async()=>{
     let added=0;const imported=[];
