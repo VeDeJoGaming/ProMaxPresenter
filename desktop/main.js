@@ -185,7 +185,7 @@ ipcMain.on('presentation:state', (event, value) => {
   if (event.sender !== control?.webContents || !value || typeof value.text !== 'string') return;
   latest = value;
   youtubeBrowser?.immediate(value);
-  if(youtubeBrowser)browserOperation(()=>youtubeBrowser.sync(value)).catch(error=>control?.webContents.send('youtube:status',{type:'error',code:'browser',message:error.message}));
+  if(youtubeBrowser)browserOperation(()=>youtubeBrowser.sync(value)).catch(error=>control?.webContents.send('youtube:status',{type:'error',code:'browser',id:value.youtube?.id,command:value.youtube?.command,message:error.message}));
   if (presentation && !presentation.isDestroyed()) presentation.webContents.send('presentation:state', value);
 });
 ipcMain.on('presentation:key', (event, value) => {

@@ -35,7 +35,12 @@
         if(best){
           // Normalize prefixes to map folded letters back to the original text safely.
           const folded=normalize(best),at=Math.min(...terms.map(term=>folded.indexOf(term)).filter(i=>i>=0));
-          let offset=0;while(offset<best.length&&normalize(best.slice(0,offset)).length<at)offset++;
+          let offset=0,limit=best.length;
+          while(offset<limit){
+            const middle=Math.floor((offset+limit)/2);
+            if(normalize(best.slice(0,middle)).length<at)offset=middle+1;
+            else limit=middle;
+          }
           const start=Math.max(0,offset-28),end=Math.min(best.length,start+120);
           snippet=(start?'…':'')+best.slice(start,end)+(end<best.length?'…':'');
         }

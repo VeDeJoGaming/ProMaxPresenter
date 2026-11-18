@@ -1,3 +1,11 @@
+## Poengavsløring og gjennomgang av operatørflyten — 18. november 2026
+
+- «Vis poengtavle» → «Hold tilbake poeng» lar operatøren føre runden mens forrige stilling vises. Avslør ett endret lag per klikk i stigende rekkefølge etter ny poengsum, eller vis alle og avslutt. Forhåndsvisning og publikum får bare annonserte tall. Blackout og angre/gjenta er testet under runden.
+- YouTube-forberedelse mens den native spilleren er live bevarer avspillingen. En eldre feil fra en annen video eller avspillingskommando kan ikke mørklegge nåværende video. Videobiblioteket og hurtigsøket viser når en lenkes lokale kopi mangler fra videobiblioteket.
+- Bibelsøk støtter komma og mellomrom i referanser. Sangsøket finner originalposisjonen til treff i lange tekstlinjer med binærsøk. Presentasjonsknappen viser «Start presentation» eller «Stop presentation».
+- 103 enhetstester består. Nettleserprøver for tekst, ytelse, privat synkronisering, nedtelling og prisspillet består. Verifisert komplette backup-/gjenopprettingsløp og pakket native smoke/feature/release inkludert PowerPoint. Poengtavle, YouTube-forhåndsvisning, hurtigsøk og komplett app er dessuten testet mot faktisk installert exe med isolerte profiler. Kontrollflaten er vurdert i kompakt vindu og tavlen i fullskjerm.
+- Lokal 1.5.0 er bygget fra release-work med rene npm-avhengigheter i C:\ProMaxPresenter\artifacts\review-1795038917993. Installert app.asar matcher den testede pakken, SHA256 9198629E2B5BE71902A657478F4B7631E665375862890047BB1025CC3FD0494B. Forrige installasjon og profil ligger i C:\ProMaxPresenter-Backups\before-score-reveal-1795039236171. Alle 680 profilfiler ble hashkontrollert før og etter installasjon. Operatørvinduet var lagret med presentasjon av før normal lukking og ble åpnet igjen etter kontrollene.
+
 ## Lukkeknapp for YouTube-forhåndslasting — ferdig og installert 12. november 2026
 
 - Ny «✕ Close preview»-knapp over en åpnet YouTube-forhåndsvisning. Den står utenfor det native spillerlaget og er tilgjengelig under lasting. Lukking fjerner forhåndsvisningen straks og frigjør en inaktiv native spiller, uten å fjerne lenken fra biblioteket eller møteinnslag. «Prepare» åpner den igjen. Samme knapp følger kortet også når det åpnes fra en møtemappe.

@@ -6,6 +6,7 @@ const rows=[{book:'John',chapter:3,verse:16,text:'Synthetic verse with a light.'
   {book:'John',chapter:4,verse:1,text:'A light appears here.'}];
 test('chapter context includes preceding and following verses in order, confined to the same book and chapter',()=>{
   const bible=Bible.parse(JSON.stringify({verses:[rows[2],rows[1],rows[0],{book:'Matt',chapter:3,verse:16,text:'Another book'}]}));
+  assert.deepEqual(Bible.search(bible,'Joh 3, 16–17').map(v=>v.verse),[16,17]);
   const verse=Bible.search(bible,'Joh 3:17')[0],context=Bible.chapterVerses(bible,verse);
   assert.deepEqual(context.map(v=>v.verse),[16,17]);assert.equal(context[1],verse);
   assert.equal(Bible.chapterVerses(bible,Bible.search(bible,'Joh 3:16')[0]).length,2);

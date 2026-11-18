@@ -176,7 +176,7 @@ let nativeOutputActive=false;let presentationBusy=false;
 let outputWatcher=null;
 function syncOutputButton(){
     const active=window.promaxDesktop?nativeOutputActive:!!output&&!output.closed;
-    $('open-output').textContent=active?'■ Presentation on':'↗ Presentation off';
+    $('open-output').textContent=active?'■ Stop presentation':'↗ Start presentation';
     $('open-output').setAttribute('aria-pressed',String(active));
     $('open-output').setAttribute('aria-busy',String(presentationBusy));
     $('open-output').title=active?'Close presentation and release the display (Ctrl+Enter)':'Show presentation fullscreen on the second display (Ctrl+Enter)';
@@ -212,7 +212,7 @@ async function openOutput(){
             ||details.screens.find(s=>s!==details.currentScreen);
         if(!targetScreen){notify('Connect a second display and use Extend displays in Windows.');return;}
         output=window.open('','promax-output',`popup,fullscreen,left=${targetScreen.availLeft},top=${targetScreen.availTop},width=${targetScreen.availWidth},height=${targetScreen.availHeight}`);
-        if(!output){notify('Allow popups, then click Presentation off again.');return;}
+        if(!output){notify('Allow popups, then click Start presentation again.');return;}
         const presentation=output;
         presentation.document.open();
         presentation.document.write('<!doctype html><html><head><title>ProMax • Presentation</title><style>html,body{margin:0;background:#000;width:100%;height:100%;overflow:hidden;font-family:Segoe UI,Arial,sans-serif;color:white}#stage{position:relative;width:100vw;height:100vh;display:grid;place-items:center}.media{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}.shade{position:absolute;inset:0;background:#0005}.screen-text{position:relative;white-space:pre-line;line-height:1.3;font-weight:600;width:90%;text-shadow:0 2px 8px #000}#tip{position:fixed;bottom:14px;right:14px;font-size:12px;background:#0009;padding:9px;border-radius:5px;opacity:.6}</style></head><body><div id="stage"></div><div id="tip" hidden>Double-click for fullscreen</div></body></html>');

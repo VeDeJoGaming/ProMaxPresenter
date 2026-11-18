@@ -37,6 +37,12 @@ async function run(){
   await page.evaluate(()=>{window.existingYoutubeCue=state;});await close();
   assert.equal(await page.evaluate(()=>state===existingYoutubeCue&&state.youtube.id===previewEntry.id),true);
   assert.equal(await player.evaluate(()=>document.querySelector('video')===existingPreviewPlayer&&existingPreviewPlayer.currentSrc===existingPreviewSource&&!existingPreviewPlayer.paused),true,'Closing the preview keeps the same video playing on output');
+  await page.evaluate(async()=>{
+    await ProMaxYouTubeLibrary.prepare(previewEntry);
+    await ProMaxYouTubeLibrary.prepare({...previewEntry,id:'different-entry'});
+    document.dispatchEvent(new CustomEvent('promax-youtube-status',{detail:{type:'error',code:'browser',id:'different-entry',message:'Synthetic stale error'}}));
+  });
+  assert.equal(await page.evaluate(()=>state===existingYoutubeCue&&!state.black),true,'Preparing or receiving an old error preserves live video');
   assert.equal(player.isClosed(),false);assert.equal(await page.locator('.youtube-preparation').count(),0);
   assert.deepEqual(errors,[]);console.log('PASS: Close preview removes idle native player, cancels an unfinished load, ignores stale IDs, reopens, preserves library and cue, and keeps an active output playing; '+(process.argv[2]||'source'));
  }finally{clearTimeout(watchdog);await app?.close();}

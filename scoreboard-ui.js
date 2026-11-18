@@ -4,8 +4,27 @@
   const el=(tag,text,cls)=>{const node=document.createElement(tag);if(text)node.textContent=text;if(cls)node.className=cls;return node;};
   const button=(text,id,action,cls)=>{const node=el('button',text,cls);node.type='button';node.id=id;node.onclick=action;return node;};
   let root=null,rows=new Map();
+  // The audience board stays on the cue. Only settings hold unannounced scores.
+  let roundCue=null;
+  function pendingTeams(value){
+    const visible=new Map(state.scoreboard.teams.map(team=>[team.id,team.score]));
+    return value.teams.filter(team=>visible.get(team.id)!==team.score).sort((a,b)=>a.score-b.score);
+  }
+  function reveal(){
+    if(roundCue!==state||!state.scoreboard)return;
+    const next=pendingTeams(model())[0];
+    if(!next)return;
+    const team=state.scoreboard.teams.find(team=>team.id===next.id);
+    if(team)team.score=next.score;
+    else {
+      const roster=new Set(model().teams.map(team=>team.id));
+      state.scoreboard.teams=state.scoreboard.teams.filter(team=>roster.has(team.id));
+      state.scoreboard.teams.push({...next});
+    }
+    paint();
+  }
   function sync(){
-    if(state.scoreboard){state.scoreboard=structuredClone(model());paint();}
+    if(state.scoreboard&&roundCue!==state){state.scoreboard=structuredClone(model());paint();}
     if(root?.isConnected)draw();
   }
   function change(operation){
@@ -14,7 +33,7 @@
   }
   function show(){
     stopTimer();ProMaxFeatures.externalCue();state={text:'',black:false,pdf:null,scoreboard:structuredClone(model())};
-    $('live-label').textContent='Poengtavle';paint();draw();
+    $('live-label').textContent='Poengtavle';paint();
   }
   const confirmDialog=el('dialog',null,'score-confirm');confirmDialog.id='score-confirm';
   const question=el('h2'),hint=el('p','Du kan angre endringen med Ctrl+Z.'),actions=el('div',null,'dialog-actions');let confirmed=null;
@@ -27,7 +46,12 @@
   function render(view){
     root=el('section',null,'score-controls');root.id='score-controls';rows=new Map();
     const head=el('div',null,'score-heading'),intro=el('div');intro.append(el('span','UNDERHOLDNINGSKVELD','eyebrow'),el('h2','Poengtelling'));
-    head.append(intro,button('Vis poengtavle','score-show',show,'primary'));root.append(head,el('p','Start med tre lag, eller tilpass antallet. Poengene lagres automatisk. Når tavlen er live, vises endringene med en gang.','feature-help'));
+    head.append(intro,button('Vis poengtavle','score-show',show,'primary'));root.append(head,el('p','Start med tre lag, eller tilpass antallet. Poengene lagres automatisk. Velg «Hold tilbake poeng» før du fører en hemmelig runde.','feature-help'));
+    const round=el('div',null,'score-tools');
+    round.append(button('Hold tilbake poeng','score-hold',()=>{roundCue=state;draw();}),
+      button('Avslør neste lag','score-reveal',reveal,'primary'),
+      button('Avslutt runden','score-finish',()=>{roundCue=null;sync();}));
+    root.append(round);
     const options=el('div',null,'score-options'),title=el('input');title.id='score-title';title.maxLength=80;title.onchange=()=>change(b=>b.title=title.value);
     const step=el('input');step.id='score-step';step.type='number';step.min=1;step.max=10000;step.step=1;
     step.onchange=()=>{const n=Number(step.value);if(!step.value.trim()||!Number.isSafeInteger(n)||n<1||n>10000){notify('Velg et helt poengsteg fra 1 til 10 000.');step.value=model().step;return;}change(b=>b.step=n);};
@@ -43,7 +67,19 @@
   function draw(){
     if(!root?.isConnected)return;const value=model(),active=document.activeElement;
     const set=(id,v)=>{if($(id)!==active)$(id).value=v;};set('score-title',value.title);set('score-step',value.step);$('score-ranked').checked=value.ranked;
-    $('score-add').disabled=value.teams.length>=ProMaxScoreboard.MAX_TEAMS;
+    const holding=!!state.scoreboard&&roundCue===state;
+    const pending=holding?pendingTeams(value):[];
+    $('score-title').disabled=holding;
+    $('score-ranked').disabled=holding;
+    $('score-show').disabled=holding;
+    $('score-hold').hidden=holding;
+    $('score-hold').disabled=!state.scoreboard;
+    $('score-reveal').hidden=!holding;
+    $('score-reveal').disabled=!pending.length;
+    $('score-reveal').textContent=pending.length?'Avslør '+pending[0].name+' · '+pending[0].score+' poeng':'Ingen poeng å avsløre';
+    $('score-finish').hidden=!holding;
+    $('score-finish').textContent=pending.length?'Vis alle og avslutt runden':'Avslutt runden';
+    $('score-add').disabled=holding||value.teams.length>=ProMaxScoreboard.MAX_TEAMS;
     root.querySelector('.score-summary').textContent=value.teams.length+' lag · opptil '+ProMaxScoreboard.MAX_TEAMS;
     const list=$('score-team-list'),keep=new Set(value.teams.map(t=>t.id));
     for(const [id,row] of rows)if(!keep.has(id)){row.remove();rows.delete(id);}
@@ -62,15 +98,16 @@
       }
       row.querySelector('.score-row-number').textContent=String(index+1).padStart(2,'0');
       const name=row.querySelector('.score-name'),total=row.querySelector('.score-value');if(name!==active)name.value=team.name;if(total!==active)total.value=team.score;
+      name.disabled=holding;
       name.setAttribute('aria-label','Navn på lag '+(index+1));total.setAttribute('aria-label','Poeng for '+team.name);
       for(const [cls,label] of [['score-minus','Trekk fra'],['score-plus','Legg til']]){const b=row.querySelector('.'+cls);b.textContent=(cls==='score-minus'?'−':'+')+value.step;b.setAttribute('aria-label',label+' '+value.step+' poeng: '+team.name);}
-      row.querySelector('.score-remove').disabled=value.teams.length<=2;
+      row.querySelector('.score-remove').disabled=holding||value.teams.length<=2;
       if(list.children[index]!==row)list.insertBefore(row,list.children[index]||null);
     });
-    $('score-output-status').textContent=state.scoreboard?(state.black?'Poengtavlen er skjult med blackout.':(nativeOutputActive||output&&!output.closed?'Poengtavlen er live på presentasjonsskjermen.':'Poengtavlen er klar i forhåndsvisningen. Slå på «Presentation off» for å vise den på storskjermen.')):'Trykk «Vis poengtavle» når poengene skal på skjermen.';
+    $('score-output-status').textContent=holding?((state.black?'Blackout er på. ':'')+'Poengene holdes tilbake. '+pending.length+' lag venter på avsløring.'):state.scoreboard?(state.black?'Poengtavlen er skjult med blackout.':(nativeOutputActive||output&&!output.closed?'Poengtavlen er live på presentasjonsskjermen.':'Poengtavlen er klar i forhåndsvisningen. Velg «Start presentation» for å vise den på storskjermen.')):'Trykk «Vis poengtavle» når poengene skal på skjermen.';
   }
   window.ProMaxScores={render,sync};
   // Score changes must also follow a global undo/redo, without sending another cue.
-  const originalPaint=paint;paint=function(){originalPaint();if(root?.isConnected)draw();};
+  const originalPaint=paint;paint=function(){if(roundCue!==state)roundCue=null;originalPaint();if(root?.isConnected)draw();};
   for(const id of ['previous','next']){const original=$(id).onclick;$(id).onclick=function(e){if(!state.scoreboard)return original.call(this,e);};}
 })();

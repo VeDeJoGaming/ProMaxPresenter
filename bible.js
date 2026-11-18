@@ -115,7 +115,7 @@
       const key=normalize(value),exact=books.find(b=>b.some(name=>normalize(name)===key));
       return exact?[exact]:books.filter(b=>b.some(name=>normalize(name).startsWith(key)));
     };
-    const ref=query.match(/^(.+?)\s*(\d+)(?:[:.](\d*)(?:\s*[-–]\s*(\d*))?)?$/);
+    const ref=query.match(/^(.+?)\s*(\d+)(?:\s*[:.,]\s*(\d*)(?:\s*[-–]\s*(\d*))?)?$/);
     if(ref){
       const matches=matchingBooks(ref[1]),names=matches.length?matches.map(b=>normalize(b[1])):[normalize(bookName(ref[1]))];
       return ordered(names.flatMap(name=>index.byChapter.get(name+':'+Number(ref[2]))||[]).filter(v=>!ref[3]||(v.verse>=Number(ref[3])&&v.verse<=Number(ref[4]||ref[3]))));

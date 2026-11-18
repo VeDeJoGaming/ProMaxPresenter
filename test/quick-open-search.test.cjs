@@ -5,6 +5,7 @@ test('cross-library discovery keeps favorites, lyric snippets and Nordic media m
   assert.equal(find(catalog,'','all',['favorite']).results[0].source.id,'favorite');
   const lyric=find(catalog,'unique marker');assert.equal(lyric.total,1);assert.match(lyric.results[0].detail,/Unique lyric marker/);
   const media=find(catalog,'hap','media');assert.equal(media.total,3);assert.deepEqual(new Set(media.results.map(r=>r.type)),new Set(['video','document','youtube']));assert.match(media.results.find(r=>r.type==='youtube').detail,/Local copy/);
+  assert.match(find({...catalog,videos:[]},'hap','media').results.find(r=>r.type==='youtube').detail,/Local copy missing/);
   assert.equal(find(catalog,'Sunday','meetings').results[0].source.id,'meeting');assert.equal(find(catalog,'Sunday','songs').total,0);
 });
 test('Bible discovery finds references and words without enumerating verses for an empty query',()=>{

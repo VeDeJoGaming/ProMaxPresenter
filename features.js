@@ -53,7 +53,7 @@
   }
   function renderBible(initialVerse=null) {
     window.ProMaxControls?.changed();
-    heading('Bible','Search as you type: Mat, Mat 1.1, Joh 3:16–18, or words in the text.');
+    heading('Bible','Search as you type: Mat, Mat 1.1, Joh 3,16–18, or words in the text.');
     view.append(element('p',bible?bible.name+' · Available offline':'No Bible imported. Add one in Settings → Bible.','feature-help'));
     if(!bible){view.append(button('Open Bible settings',()=>window.ProMaxSettings.open('bible')));return;}
     const form=element('form',null,'feature-actions');const input=document.createElement('input');input.placeholder='Reference or text…';input.id='bible-search';input.setAttribute('aria-label','Search Bible');

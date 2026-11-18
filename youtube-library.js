@@ -18,9 +18,13 @@
     await entryOperation(()=>persist([...entries,entry]));await prepare(entry);return entry;
   }
   async function prepare(entry){
+    if(state.youtube?.nativeBrowser){
+      refreshIfVisible();
+      notify(state.youtube.id===entry.id?'This video is already on the presentation screen.':'Stop the live YouTube video before preparing another one.');
+      return;
+    }
     const attempt=++preparation;prepared=entry;
     if(nativeBrowser&&!entry.localAssetId){browserInfo.delete(entry.id);statuses.set(entry.id,'Opening browser…');}
-    if(state.youtube?.nativeBrowser){state={text:'',black:false,pdf:null};paint();}
     ProMaxYouTube.warm(document,entry.localAssetId||nativeBrowser?null:entry);refresh();paint();
     if(nativeBrowser)document.querySelector('[data-native-youtube-preview]')?.scrollIntoView({block:'center'});
     if(nativeBrowser&&!entry.localAssetId){try{await window.promaxDesktop.prepareYouTubeBrowser(entry);if(attempt===preparation)window.ProMaxYouTubeBrowserUI?.update();}catch(error){if(attempt===preparation)notify('Could not open YouTube: '+error.message);}}
@@ -35,7 +39,7 @@
   async function play(entry){
     if(entry.localAssetId){const asset=ProMaxFeatures.getVideos().find(a=>a.id===entry.localAssetId);if(!asset){notify('The local copy is missing. Attach it again before presenting.');return;}await ProMaxFeatures.playVideo(asset,{start:entry.start,meetingContext:window.ProMaxMeetings?.cueContext('youtube',entry.id)});return;}
     if(window.promaxDesktop&&!nativeOutputActive){prepare(entry);notify('Turn on Presentation before showing this YouTube video.');return;}
-    if(nativeBrowser){if(prepared?.id!==entry.id)await prepare(entry);if(!browserInfo.get(entry.id)?.ready){notify('Wait for the video to load in the browser preview. Choose its quality there before showing it.');return;}}
+    if(nativeBrowser){if(prepared?.id!==entry.id)await prepare(entry);if(prepared?.id!==entry.id)return;if(!browserInfo.get(entry.id)?.ready){notify('Wait for the video to load in the browser preview. Choose its quality there before showing it.');return;}}
     prepared=entry;stopTimer();ProMaxFeatures.externalCue();ProMaxYouTube.pauseAll(document);
     state={text:'',black:false,pdf:null,youtube:{...entry,nativeBrowser,position:entry.start||0,paused:false,muted:false,loop:false,command:++command}};
     window.ProMaxMeetings?.trackCue(ProMaxMeetings.cueContext('youtube',entry.id));
@@ -66,16 +70,23 @@
     const title=node('input');title.placeholder='Name (optional)';title.setAttribute('aria-label','YouTube video name');title.id='youtube-title';
     const submit=node('button','Add video');submit.type='submit';
     form.append(link,title,submit);form.onsubmit=async event=>{event.preventDefault();submit.disabled=true;try{await add(link.value,title.value);}catch(error){notify(error.message);submit.disabled=false;}};if(!onlyEntry)section.append(form);
+    const videoIds=new Set(ProMaxFeatures.getVideos().map(video=>video.id));
     for(const entry of entries.filter(e=>!onlyEntry||e.id===onlyEntry)){
       const card=node('div');card.className='youtube-card';card.dataset.youtubeId=entry.id;
       const heading=node('div');heading.className='youtube-card-heading';heading.append(node('strong',entry.title));
-      const status=node('small');status.dataset.youtubeStatus=entry.id;status.textContent=entry.localAssetId?'Local copy · No YouTube ads':statuses.get(entry.id)||'Not prepared';heading.append(status);card.append(heading);
-      const actions=node('div');actions.className='feature-actions';actions.append(button('Prepare',()=>prepare(entry)),button(entry.localAssetId?'Play local copy':'Show on presentation',()=>play(entry)),...(!onlyEntry?[button('＋ Meeting',()=>window.ProMaxMeetings?.add({type:'youtube',assetId:entry.id,title:entry.title}))]:[]));
+      const missingCopy=entry.localAssetId&&!videoIds.has(entry.localAssetId);
+      const status=node('small');status.dataset.youtubeStatus=entry.id;status.textContent=missingCopy?'Local copy missing · Attach it again':entry.localAssetId?'Local copy · No YouTube ads':statuses.get(entry.id)||'Not prepared';heading.append(status);card.append(heading);
+      const actions=node('div');actions.className='feature-actions';const show=button(entry.localAssetId?'Play local copy':'Show on presentation',()=>play(entry));show.disabled=!!missingCopy;
+      if(!entry.localAssetId)actions.append(button('Prepare',()=>prepare(entry)));
+      actions.append(show,...(!onlyEntry?[button('＋ Meeting',()=>window.ProMaxMeetings?.add({type:'youtube',assetId:entry.id,title:entry.title}))]:[]));
       actions.append(ProMaxFilePicker.create({text:'Attach local copy',key:'youtube-local:'+entry.id,accept:'video/*,.mp4,.webm,.mov,.m4v',onFiles:files=>attach(entry,files[0])}));if(!onlyEntry)actions.append(button('Remove',async()=>{try{await remove(entry.id);}catch{notify('Could not remove this YouTube entry.');}}));card.append(actions);
       if(prepared?.id===entry.id&&!entry.localAssetId){const toolbar=node('div');toolbar.className='feature-actions youtube-preview-actions';const close=button('✕ Close preview',()=>closePreview(entry.id));close.dataset.youtubePreviewClose=entry.id;close.setAttribute('aria-label','Close preview for '+entry.title);toolbar.append(close);const preview=node('div');preview.className='youtube-preparation';if(nativeBrowser){preview.dataset.nativeYoutubePreview=entry.id;preview.textContent='Opening YouTube browser…';}else preview.dataset.youtubePreview=entry.id;card.append(toolbar,preview);}
       section.append(card);
     }
     if(state.youtube&&(!onlyEntry||state.youtube.id===onlyEntry)){const controls=node('div');controls.className='feature-actions';controls.append(button(state.youtube.paused?'Resume YouTube':'Pause YouTube',()=>control('pause')),button('Restart YouTube',()=>control('restart')),button('Stop YouTube',()=>control('stop')));section.append(controls);}
+    if(state.youtube&&onlyEntry&&state.youtube.id!==onlyEntry){
+      section.append(button('Stop live video · '+state.youtube.title,()=>control('stop')));
+    }
     view.append(section);
     for(const preview of section.querySelectorAll('[data-youtube-preview]'))ProMaxYouTube.preview(preview,entries.find(e=>e.id===preview.dataset.youtubePreview));
     window.ProMaxYouTubeBrowserUI?.update();
@@ -83,7 +94,7 @@
   document.addEventListener('promax-youtube-status',event=>{
     const data=event.detail;
     if(['browser','browser-prepared'].includes(data.type)&&prepared?.id!==data.id&&state.youtube?.id!==data.id)return;
-    if(data.type==='error'&&data.code==='browser'&&data.message){notify(data.message);if(state.youtube?.nativeBrowser){state={text:'',black:true,pdf:null};paint();}return;}
+    if(data.type==='error'&&data.code==='browser'&&data.message){if(data.id&&(state.youtube?.id!==data.id||state.youtube.command!==data.command))return;notify(data.message);if(state.youtube?.nativeBrowser&&state.youtube.id===data.id){state={text:'',black:true,pdf:null};paint();}return;}
     if(data.type==='browser')browserInfo.set(data.id,data);
     if(data.type==='browser'&&data.isOutput&&!state.black&&state.youtube?.nativeBrowser&&state.youtube.id===data.id)state.youtube.paused=data.paused;
     if(data.isOutput&&Number.isFinite(data.position))outputPositions.set(data.id,data.position);

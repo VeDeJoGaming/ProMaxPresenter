@@ -14,9 +14,10 @@
       const matches=bible.search(catalog.bible,q);counts.bible=matches.length;
       results.push(...matches.slice(0,group==='all'?15:60).map(verse=>({type:'bible',source:verse,title:bible.formatReference([verse]),detail:'Bible · '+String(verse.text).slice(0,180)})));
     }
+    const videoIds=new Set((catalog.videos||[]).map(video=>video.id));
     if(group==='all'||group==='media')for(const [type,key,label]of [['video','videos','Local video'],['document','documents','PowerPoint'],['youtube','youtube','YouTube']]){
       const matches=search.search((catalog[key]||[]).map(source=>({title:source.title||source.name,source})),q);
-      add(type,matches.map(({song})=>({type,source:song.source,title:song.title||label,detail:label+(type==='document'?' · '+(song.source.slides?.length||0)+' slides':type==='youtube'?(song.source.localAssetId?' · Local copy':' · Internet required'):' · Saved on this computer')})),10);
+      add(type,matches.map(({song})=>({type,source:song.source,title:song.title||label,detail:label+(type==='document'?' · '+(song.source.slides?.length||0)+' slides':type==='youtube'?(song.source.localAssetId?(videoIds.has(song.source.localAssetId)?' · Local copy':' · Local copy missing'):' · Internet required'):' · Saved on this computer')})),10);
     }
     return {results,counts,total:Object.values(counts).reduce((a,b)=>a+b,0)};
   }
