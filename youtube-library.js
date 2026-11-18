@@ -39,10 +39,16 @@
   async function play(entry){
     if(entry.localAssetId){const asset=ProMaxFeatures.getVideos().find(a=>a.id===entry.localAssetId);if(!asset){notify('The local copy is missing. Attach it again before presenting.');return;}await ProMaxFeatures.playVideo(asset,{start:entry.start,meetingContext:window.ProMaxMeetings?.cueContext('youtube',entry.id)});return;}
     if(window.promaxDesktop&&!nativeOutputActive){prepare(entry);notify('Turn on Presentation before showing this YouTube video.');return;}
-    if(nativeBrowser){if(prepared?.id!==entry.id)await prepare(entry);if(prepared?.id!==entry.id)return;if(!browserInfo.get(entry.id)?.ready){notify('Wait for the video to load in the browser preview. Choose its quality there before showing it.');return;}}
+    const meetingContext=window.ProMaxMeetings?.cueContext('youtube',entry.id);
+    if(nativeBrowser){
+      const previousCue=state,previousBlackout=state.black;
+      if(prepared?.id!==entry.id)await prepare(entry);
+      if(!nativeOutputActive||state!==previousCue||state.black!==previousBlackout||prepared?.id!==entry.id)return;
+      if(!browserInfo.get(entry.id)?.ready){notify('Wait for the video to load in the browser preview. Choose its quality there before showing it.');return;}
+    }
     prepared=entry;stopTimer();ProMaxFeatures.externalCue();ProMaxYouTube.pauseAll(document);
     state={text:'',black:false,pdf:null,youtube:{...entry,nativeBrowser,position:entry.start||0,paused:false,muted:false,loop:false,command:++command}};
-    window.ProMaxMeetings?.trackCue(ProMaxMeetings.cueContext('youtube',entry.id));
+    window.ProMaxMeetings?.trackCue(meetingContext);
     $('live-label').textContent=entry.title;paint();refresh();
   }
   function control(action){

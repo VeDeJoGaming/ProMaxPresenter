@@ -142,7 +142,7 @@ function updateCountdown(value){
   }
 }
 function stopTimer(){countdownCue=null;countdownClock.stop();stopwatchClock.stop();if(state.countdown){delete state.countdown;if(!state.youtube&&!state.video)state.text='';paint();}}
-function clearText(){stopTimer();state={...state,text:'',biblePassage:undefined};paint();}
+function clearText(){if(state.scoreboard)return;stopTimer();state={...state,text:'',biblePassage:undefined};paint();}
 function startCountdown(){
   const stopwatch=selectedTimerMode()==='stopwatch',minutes=Number($('minutes').value);if(!stopwatch&&(!Number.isFinite(minutes)||minutes<=0||minutes>180)){notify('Choose a duration between 0 and 180 minutes.');return;}
   countdownCue=null;countdownClock.stop();stopwatchClock.stop();

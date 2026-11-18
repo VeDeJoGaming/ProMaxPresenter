@@ -1,3 +1,10 @@
+## Sikrere live-veksling og PowerPoint-lagring — 18. november 2026
+
+- Forsinket lokal video og YouTube kan ikke overta etter et nyere innslag eller en endring av blackout. Lokale videoforsøk følger siste forespørsel. Møtekonteksten hentes ved klikket. Clear text rører ikke den aktive poengavsløringen.
+- PowerPoint-import og -fjerning går gjennom bibliotekets eksisterende kø. Ved mislykket fjerning beholdes oppføringen. Testen dekker to samtidige importer, mislykket fjerning, ny import samtidig med fjerning og omstart.
+- Alle 103 enhetstester og målrettede tester består. Testet poengtavle, videoavspilling, import/lagring og YouTube i installert app. Full pakket smoke/feature/release bestod i ny, separat kjøring etter en midlertidig Windows-feil ved parallell kontroll av presentasjonsvinduet.
+- Lokal app.asar SHA256 BA6B1AB699AE8FD0F8981DC3251A04C8A69081A859DE9AC7C14421431F093E6C. Alle 687 profilfiler samsvarer byte for byte med sikkerhetskopien i C:/ProMaxPresenter-Backups/before-cue-and-media-1795041765399. Brukerprofil og forrige installasjon ligger kun lokalt.
+
 ## Sikrere hurtigtaster på poengtavlen — 18. november 2026
 
 - Sangens lysbildetaster kan ikke erstatte en live poengtavle. «Vis poengtavle» er deaktivert mens tavlen allerede er sendt ut, også ved blackout. Operatøren kan fortsatt sende en annen cue bevisst med musen.

@@ -29,6 +29,17 @@ async function run(){
   await main('holdPreviewLoad=false;releasePreviewLoad();releasePreviewLoad=null');
   await page.waitForTimeout(150);assert.equal(await page.locator('.youtube-preparation').count(),0,'A late network response does not restore a closed preview');
   assert.equal(await page.evaluate(()=>state===originalPreviewCue),true);
+  // A delayed Show request must yield to a newer lyric cue.
+  await page.evaluate(()=>openOutput());await page.waitForFunction(()=>nativeOutputActive);
+  await main('holdPreviewLoad=true');
+  await page.evaluate(()=>{window.pendingYoutubeShow=ProMaxYouTubeLibrary.play(previewEntry);});
+  for(let n=0;n<100&&!await main('typeof releasePreviewLoad==="function"');n++)await new Promise(r=>setTimeout(r,20));
+  assert.equal(await main('typeof releasePreviewLoad==="function"'),true);
+  await page.evaluate(()=>{goLive(0);window.newerSongCue=state;});
+  await main('holdPreviewLoad=false;releasePreviewLoad();releasePreviewLoad=null');
+  await page.evaluate(()=>pendingYoutubeShow);
+  assert.equal(await page.evaluate(()=>state===newerSongCue&&!state.youtube),true);
+  await page.evaluate(()=>openOutput());await page.waitForFunction(()=>!nativeOutputActive);
   // The shared native player must remain untouched after it has moved to output.
   await page.evaluate(()=>ProMaxYouTubeLibrary.prepare(previewEntry));player=context.pages().find(p=>p.url().startsWith('https://www.youtube.com/watch'));await player.waitForFunction(()=>document.querySelector('video')?.readyState>=2);
   await page.waitForFunction(()=>/\d+p/.test(document.querySelector('[data-youtube-status]')?.textContent));

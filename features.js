@@ -10,8 +10,8 @@
   let focusedAsset=null;
   const cache=new Map();
   const videoDurations=new Map();
-  let videoQueue=Promise.resolve();
-  function videoOperation(action){const operation=videoQueue.then(action);videoQueue=operation.catch(()=>{});return operation;}
+  let mediaQueue=Promise.resolve();
+  function mediaOperation(action){const operation=mediaQueue.then(action);mediaQueue=operation.catch(()=>{});return operation;}
   const tabs=[['songs','Songs'],['bible','Bible'],['videos','Videos'],['presentations','PowerPoint'],['scores','Poengtelling'],['price-game','Gjett prisen']];
   for (const [id,label] of tabs) { const b=document.createElement('button');b.textContent=label;b.onclick=()=>id==='songs'&&window.ProMaxMeetings?.folder()?ProMaxMeetings.refresh():showTab(id);b.dataset.tab=id;nav.append(b); }
   function showTab(id,options={}) {
@@ -140,7 +140,7 @@
     const file=await storedAsset('get',null,`video:${asset.id}`);if(!file)throw Error(`The saved video “${asset.name}” is missing.`);
     const url=URL.createObjectURL(file);cache.set(asset.id,url);return url;
   }
-  function addVideos(files) {return videoOperation(async()=>{
+  function addVideos(files) {return mediaOperation(async()=>{
     let added=0;const imported=[];
     try{
       for (const file of files) {
@@ -156,19 +156,26 @@
   });}
   function videoUrls(){return [...new Set([state.video?.url,cache.get(focusedAsset),...assets.map(a=>cache.get(a.id))].filter(Boolean))].slice(0,3);}
   function warmVideos(){ProMaxPlayback.warm(document,videoUrls());paint();}
+  let videoRequest=0;
   async function playVideo(asset,options={}) {
+    const request=++videoRequest,previousCue=state,previousBlackout=state.black;
+    const meetingContext=options.meetingContext!==undefined?options.meetingContext:window.ProMaxMeetings?.cueContext('video',asset.id);
+    const loop=$('video-loop')?.checked||false,muted=$('video-muted')?.checked??true;
+    const isCurrent=()=>request===videoRequest&&state===previousCue&&state.black===previousBlackout;
     try {
-      const url=await loadAsset(asset);const video=[...document.querySelectorAll('video')].find(v=>v.src===url);
+      const url=await loadAsset(asset);
+      if(!isCurrent()||!assets.some(entry=>entry.id===asset.id))return;
+      const video=[...document.querySelectorAll('video')].find(v=>v.src===url);
       if(video?.error)throw Error('This video format cannot be played. Convert it to MP4 (H.264) or WebM.');
       stopTimer();deck=null;activeVideo=asset.id;
-      state={text:'',black:false,pdf:null,video:{url,title:asset.name,paused:false,position:options.start||0,at:Date.now(),command:++command,loop:$('video-loop')?.checked || false,muted:$('video-muted')?.checked ?? true}};
-      window.ProMaxMeetings?.trackCue(options.meetingContext!==undefined?options.meetingContext:ProMaxMeetings.cueContext('video',asset.id));
+      state={text:'',black:false,pdf:null,video:{url,title:asset.name,paused:false,position:options.start||0,at:Date.now(),command:++command,loop,muted}};
+      window.ProMaxMeetings?.trackCue(meetingContext);
       $('live-label').textContent=asset.name;paint();
       const preview=$('preview').querySelector('video[data-cue]');
       const remember=()=>{if(Number.isFinite(preview?.duration)&&preview.duration>0)videoDurations.set(url,preview.duration);};remember();preview?.addEventListener('loadedmetadata',remember,{once:true});
       if(preview)preview.onended=()=>{if(!preview.ended||state.video?.url!==url||state.video.loop||state.video.ended||state.black)return;state.video={...state.video,position:preview.duration,at:Date.now(),paused:true,ended:true,command:++command};paint();updateVideoControls();};
       renderVideos();
-    }catch(error){notify(error.message);}
+    }catch(error){if(isCurrent())notify(error.message);}
   }
   function videoCommand(action) {
     if (!state.video || !activeVideo){notify('Play a video first.');return;}
@@ -241,8 +248,12 @@
   async function saveDocument(doc) {
     if (!doc?.id || typeof doc.title!=='string' || !Array.isArray(doc.slides) || !doc.slides.length || !doc.slides.every(s=>typeof s==='string' && s.startsWith('file:')))
       throw Error('This is not a valid imported presentation.');
-    const next=documents.some(d=>d.id===doc.id)?documents.map(d=>d.id===doc.id?doc:d):[...documents,doc];await persist('presentations',next);documents=next;
-    if(tab==='presentations')renderDocuments();
+    return mediaOperation(async()=>{
+      const next=documents.some(d=>d.id===doc.id)?documents.map(d=>d.id===doc.id?doc:d):[...documents,doc];
+      await persist('presentations',next);
+      documents=next;
+      if(tab==='presentations')renderDocuments();
+    });
   }
   function renderDocuments() {
     window.ProMaxControls?.changed();
@@ -274,10 +285,15 @@
   function openMeetingMedia(type,id){showTab(type);focusedAsset=id;if(type==='videos'){warmVideos();renderVideos();}else renderDocuments();}
   function externalCue(){deck=null;activeVideo=null;}
   async function keepTrash(ids){const trash=new Set(await storedAsset('get',null,'video-trash')||[]);ids.forEach(id=>trash.add(id));assets.forEach(a=>trash.delete(a.id));await persist('video-trash',[...trash]);}
-  function removeVideo(id){return videoOperation(async()=>{const next=assets.filter(a=>a.id!==id);await persist('video-list',next);assets=next;await keepTrash([id]);window.ProMaxControls?.changed();if(tab==='videos')renderVideos();});}
-  async function removeDocument(id){documents=documents.filter(d=>d.id!==id);await persist('presentations',documents);renderDocuments();}
+  function removeVideo(id){return mediaOperation(async()=>{const next=assets.filter(a=>a.id!==id);await persist('video-list',next);assets=next;await keepTrash([id]);window.ProMaxControls?.changed();if(tab==='videos')renderVideos();});}
+  function removeDocument(id){return mediaOperation(async()=>{
+    const next=documents.filter(document=>document.id!==id);
+    await persist('presentations',next);
+    documents=next;
+    if(tab==='presentations')renderDocuments();
+  });}
   async function persistDocuments(){await persist('presentations',documents);window.ProMaxControls?.changed();}
-  function reorderAsset(type,sourceId,targetId,after){return videoOperation(async()=>{
+  function reorderAsset(type,sourceId,targetId,after){return mediaOperation(async()=>{
     const list=type==='video'?assets:documents,next=list.slice(),i=next.findIndex(a=>a.id===sourceId),j=next.findIndex(a=>a.id===targetId);
     if(i<0||j<0||i===j)return;
     const [item]=next.splice(i,1);next.splice(j+(after?1:0)-(i<j?1:0),0,item);
@@ -286,7 +302,7 @@
   });}
   function captureDeck(){return deck?{id:deck.id,meetingItemId:deck.meetingItemId,slide:deck.slides[deck.index],index:deck.index}:null;}
   function syncDeck(previous){if(!deck||!previous)return;const source=previous.meetingItemId?meetingFolders.flatMap(f=>f.items).find(i=>i.id===previous.meetingItemId):documents.find(d=>d.id===previous.id);if(!source)return;deck.slides=source.slides;const index=source.slides.findIndex(s=>typeof s==='string'?s===previous.slide:s.id&&s.id===previous.slide?.id);deck.index=index>=0?index:Math.max(-1,Math.min(previous.index-1,source.slides.length-1));}
-  const history={take:()=>({videos:structuredClone(assets),documents:structuredClone(documents),bible}),apply:value=>videoOperation(async()=>{
+  const history={take:()=>({videos:structuredClone(assets),documents:structuredClone(documents),bible}),apply:value=>mediaOperation(async()=>{
     const bibleChanged=bible!==value.bible;
     const removed=assets.filter(a=>!value.videos.some(v=>v.id===a.id)).map(a=>a.id);
     assets=structuredClone(value.videos);documents=structuredClone(value.documents);bible=value.bible;chosen.clear();

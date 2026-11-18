@@ -16,6 +16,8 @@ async function run(){
     const opened=app.waitForEvent('window',p=>p.url().endsWith('/desktop/output.html'));await page.evaluate(()=>openOutput());const output=await opened;output.on('pageerror',e=>errors.push(e.message));
     await output.waitForFunction(()=>document.querySelector('.score-total')?.textContent==='6');await output.waitForFunction(()=>document.querySelector('.score-stage')?.clientWidth>0&&getComputedStyle(document.querySelector('.score-grid')).display==='grid');
     await page.locator('#score-hold').click();
+    await page.locator('#clear').click();
+    assert.equal(await page.locator('#score-finish').isVisible(),true,'Clear text keeps the held round active');
     await page.locator('.score-plus').first().click();
     await page.locator('.score-plus').nth(1).click();
     assert.deepEqual(await output.locator('.score-total').allTextContents(),['6','0','0']);

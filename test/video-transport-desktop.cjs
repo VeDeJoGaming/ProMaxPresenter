@@ -6,6 +6,19 @@ async function run(){
   try{
     app=await electron.launch({executablePath,args:executablePath?[`--user-data-dir=${profile}`]:[path.join(__dirname,'..')],env,timeout:45000});const page=await app.firstWindow();page.on('pageerror',e=>errors.push(e.message));await page.waitForFunction(()=>window.ProMaxControls&&window.ProMaxVideoControls);await page.evaluate(()=>ProMaxControls.ready);
     await page.evaluate(async bytes=>{ProMaxFeatures.showTab('videos');await ProMaxFeatures.addVideos([new File([Uint8Array.from(atob(bytes),c=>c.charCodeAt(0))],'Transport example.webm',{type:'video/webm'})]);document.querySelector('#video-loop').checked=true;await ProMaxFeatures.playVideo(ProMaxFeatures.getVideos()[0]);},(await fs.readFile(path.join(__dirname,'../desktop/smoke-video.webm'))).toString('base64'));
+    await page.evaluate(async()=>{
+      const pending=ProMaxFeatures.playVideo(ProMaxFeatures.getVideos()[0]);
+      goLive(0);
+      await pending;
+    });
+    assert.equal(await page.evaluate(()=>!!state.video),false,'A late video load cannot replace a newer song cue');
+    await page.evaluate(async()=>{
+      const pending=ProMaxFeatures.playVideo(ProMaxFeatures.getVideos()[0]);
+      toggleBlackout();
+      await pending;
+    });
+    assert.deepEqual(await page.evaluate(()=>({blackout:state.black,video:!!state.video})),{blackout:true,video:false});
+    await page.evaluate(()=>ProMaxFeatures.playVideo(ProMaxFeatures.getVideos()[0]));
     await page.waitForFunction(()=>ProMaxFeatures.videoSnapshot()?.duration>3&&document.querySelector('#preview video').currentTime>.4);await page.locator('#video-pause').click();
     const paused=await page.evaluate(()=>ProMaxFeatures.videoSnapshot().position);await page.waitForTimeout(350);assert.ok(Math.abs(await page.evaluate(()=>ProMaxFeatures.videoSnapshot().position)-paused)<.05);
     const emptyCue=await page.evaluate(()=>{const previous=selected;songs.push({id:'unprepared-draft',title:'Named draft without generated slides',lyrics:'Working lyrics',lines:4,slides:[]});selectSong('unprepared-draft');const before=state;document.body.dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowRight',bubbles:true,cancelable:true}));const result={sameCue:state===before,transport:!!ProMaxFeatures.videoSnapshot()};selectSong(previous);ProMaxFeatures.showTab('videos');return result;});assert.equal(emptyCue.sameCue,true);assert.equal(emptyCue.transport,true,'An unprepared song cannot discard the active video transport');

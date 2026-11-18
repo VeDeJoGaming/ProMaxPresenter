@@ -59,7 +59,19 @@ async function run(){
     assert.equal(await page.evaluate(()=>state===originalImportCue),true,'Preparation never changes the live cue');
     const savedNames=await page.evaluate(async()=>(await storedAsset('get',null,'video-list')).map(v=>v.name));
     assert.deepEqual(savedNames,['Second synthetic clip.webm','Third synthetic clip.webm','Fourth synthetic clip.webm']);
+    const savedDecks=await page.evaluate(async()=>{
+      const deck=id=>({id,title:id,slides:['file:///synthetic.png']});
+      await Promise.all([ProMaxFeatures.saveDocument(deck('first')),ProMaxFeatures.saveDocument(deck('second'))]);
+      storedAsset=async(action,value,key)=>{if(action==='put'&&key==='presentations'){storedAsset=originalStoredAsset;throw Error('Synthetic deck write failure');}return originalStoredAsset(action,value,key);};
+      let error;
+      try{await ProMaxFeatures.removeDocument('first');}catch(failure){error=failure.message;}
+      const before=ProMaxFeatures.getDocuments().map(deck=>deck.id);
+      await Promise.all([ProMaxFeatures.removeDocument('first'),ProMaxFeatures.saveDocument(deck('third'))]);
+      return {error,before,after:ProMaxFeatures.getDocuments().map(deck=>deck.id)};
+    });
+    assert.deepEqual(savedDecks,{error:'Synthetic deck write failure',before:['first','second'],after:['second','third']});
     await app.close();app=null;page=await launch();
+    assert.deepEqual(await page.evaluate(()=>ProMaxFeatures.getDocuments().map(deck=>deck.id)),savedDecks.after);
     assert.deepEqual(await page.evaluate(()=>ProMaxFeatures.getVideos().map(v=>v.name)),savedNames);
     assert.equal(await page.evaluate(async()=>{for(const asset of ProMaxFeatures.getVideos())if(!await storedAsset('get',null,'video:'+asset.id))return false;return true;}),true);
     assert.deepEqual(errors,[]);
